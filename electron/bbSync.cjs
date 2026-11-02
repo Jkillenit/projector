@@ -1,4 +1,5 @@
-const { session, net } = require("electron");
+// Loaded on first use so pure helpers (and their tests) work without the Electron binary.
+const electron = () => require("electron");
 const { assignmentKind } = require("./assignmentKind.cjs");
 
 const BB_PARTITION = "persist:blackboard";
@@ -42,9 +43,9 @@ async function getJson(pathname) {
 
 /** Read-only GET as the logged-in student using the persisted Blackboard session. */
 function getJsonViaSession(pathname) {
-  const bbSession = session.fromPartition(BB_PARTITION);
+  const bbSession = electron().session.fromPartition(BB_PARTITION);
   return new Promise((resolve, reject) => {
-    const request = net.request({
+    const request = electron().net.request({
       url: `${BB_ORIGIN}${pathname}`,
       session: bbSession,
       useSessionCookies: true,
@@ -73,9 +74,9 @@ const MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024;
 
 /** Binary GET (follows redirects) using the Blackboard session. */
 function getBuffer(pathname) {
-  const bbSession = session.fromPartition(BB_PARTITION);
+  const bbSession = electron().session.fromPartition(BB_PARTITION);
   return new Promise((resolve, reject) => {
-    const request = net.request({ url: `${BB_ORIGIN}${pathname}`, session: bbSession, useSessionCookies: true, method: "GET" });
+    const request = electron().net.request({ url: `${BB_ORIGIN}${pathname}`, session: bbSession, useSessionCookies: true, method: "GET" });
     const chunks = [];
     let size = 0;
     request.on("response", (response) => {
