@@ -1,0 +1,290 @@
+[
+  {
+    "id": "calc2",
+    "code": "MATH 126",
+    "name": "Calculus II",
+    "term": "Fall",
+    "instructor": "Dr. Example",
+    "color": "#c2556b",
+    "target_grade": 80,
+    "bb_course_id": "demo-calc2",
+    "grade_components": [
+      {
+        "id": "calc2-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "calc2-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "calc2-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "calc2-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "eng101",
+    "code": "ENGL 101",
+    "name": "English Composition",
+    "term": "Fall",
+    "instructor": "Prof. Sample",
+    "color": "#5b8def",
+    "target_grade": 80,
+    "bb_course_id": "demo-eng101",
+    "grade_components": [
+      {
+        "id": "eng101-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "eng101-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "eng101-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "eng101-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "chem101",
+    "code": "CH 101",
+    "name": "General Chemistry",
+    "term": "Fall",
+    "instructor": "Dr. Placeholder",
+    "color": "#d79a3a",
+    "target_grade": 80,
+    "bb_course_id": "demo-chem101",
+    "grade_components": [
+      {
+        "id": "chem101-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "chem101-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "chem101-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "chem101-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "psy101",
+    "code": "PSY 101",
+    "name": "Intro Psychology",
+    "term": "Fall",
+    "instructor": "Prof. Demo",
+    "color": "#5fb28a",
+    "target_grade": 80,
+    "bb_course_id": "demo-psy101",
+    "grade_components": [
+      {
+        "id": "psy101-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "psy101-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "psy101-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "psy101-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "ac310",
+    "code": "AC 310",
+    "name": "Intermediate Accounting",
+    "term": "Fall",
+    "instructor": "Prof. Ledger",
+    "color": "#c2556b",
+    "target_grade": 85,
+    "bb_course_id": "demo-ac310",
+    "grade_components": [
+      {
+        "id": "ac310-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "ac310-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "ac310-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "ac310-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "fi302",
+    "code": "FI 302",
+    "name": "Business Finance",
+    "term": "Fall",
+    "instructor": "Dr. Sample",
+    "color": "#5b8def",
+    "target_grade": 80,
+    "bb_course_id": "demo-fi302",
+    "grade_components": [
+      {
+        "id": "fi302-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "fi302-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "fi302-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "fi302-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "mkt300",
+    "code": "MKT 300",
+    "name": "Marketing Principles",
+    "term": "Fall",
+    "instructor": "Prof. Example",
+    "color": "#d79a3a",
+    "target_grade": 80,
+    "bb_course_id": "demo-mkt300",
+    "grade_components": [
+      {
+        "id": "mkt300-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "mkt300-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "mkt300-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "mkt300-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  },
+  {
+    "id": "mgt300",
+    "code": "MGT 300",
+    "name": "Managing Organizations",
+    "term": "Fall",
+    "instructor": "Prof. Placeholder",
+    "color": "#5fb28a",
+    "target_grade": 80,
+    "bb_course_id": "demo-mgt300",
+    "grade_components": [
+      {
+        "id": "mgt300-hw",
+        "name": "Homework",
+        "weight": 20,
+        "category": "homework"
+      },
+      {
+        "id": "mgt300-quiz",
+        "name": "Quizzes",
+        "weight": 20,
+        "category": "quiz"
+      },
+      {
+        "id": "mgt300-mid",
+        "name": "Midterm",
+        "weight": 25,
+        "category": "exam"
+      },
+      {
+        "id": "mgt300-final",
+        "name": "Final",
+        "weight": 35,
+        "category": "exam"
+      }
+    ]
+  }
+]

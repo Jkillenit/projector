@@ -1,0 +1,74 @@
+[
+  {
+    "id": "calc2-a1",
+    "course_id": "calc2",
+    "title": "Midterm grades are posted",
+    "body": "Midterm grades are in. Office hours are open if you want to go over the exam.",
+    "posted_days_ago": 5,
+    "read": false
+  },
+  {
+    "id": "calc2-a2",
+    "course_id": "calc2",
+    "title": "Homework 3 reminder",
+    "body": "Homework 3 is due in two days. Problems 1 to 12.",
+    "posted_days_ago": 1,
+    "read": false
+  },
+  {
+    "id": "eng101-a1",
+    "course_id": "eng101",
+    "title": "Essay peer review",
+    "body": "Bring a printed draft to class for peer review.",
+    "posted_days_ago": 3,
+    "read": true
+  },
+  {
+    "id": "chem101-a1",
+    "course_id": "chem101",
+    "title": "Lab safety quiz",
+    "body": "The lab safety quiz opens this week.",
+    "posted_days_ago": 4,
+    "read": true
+  },
+  {
+    "id": "psy101-a1",
+    "course_id": "psy101",
+    "title": "Study session",
+    "body": "A review session is planned before the final.",
+    "posted_days_ago": 6,
+    "read": true
+  },
+  {
+    "id": "ac310-a1",
+    "course_id": "ac310",
+    "title": "Case study 1 graded",
+    "body": "Case study 1 feedback is posted.",
+    "posted_days_ago": 1,
+    "read": false
+  },
+  {
+    "id": "fi302-a1",
+    "course_id": "fi302",
+    "title": "Homework 2b extended",
+    "body": "Homework 2b is still open for a late penalty.",
+    "posted_days_ago": 1,
+    "read": false
+  },
+  {
+    "id": "mkt300-a1",
+    "course_id": "mkt300",
+    "title": "Guest speaker Friday",
+    "body": "A guest speaker joins us on Friday.",
+    "posted_days_ago": 2,
+    "read": true
+  },
+  {
+    "id": "mgt300-a1",
+    "course_id": "mgt300",
+    "title": "Team project groups",
+    "body": "Team groups are posted.",
+    "posted_days_ago": 8,
+    "read": true
+  }
+]

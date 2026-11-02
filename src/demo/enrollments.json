@@ -1,0 +1,34 @@
+[
+  {
+    "student_id": "maya",
+    "course_id": "calc2"
+  },
+  {
+    "student_id": "maya",
+    "course_id": "eng101"
+  },
+  {
+    "student_id": "maya",
+    "course_id": "chem101"
+  },
+  {
+    "student_id": "maya",
+    "course_id": "psy101"
+  },
+  {
+    "student_id": "devon",
+    "course_id": "ac310"
+  },
+  {
+    "student_id": "devon",
+    "course_id": "fi302"
+  },
+  {
+    "student_id": "devon",
+    "course_id": "mkt300"
+  },
+  {
+    "student_id": "devon",
+    "course_id": "mgt300"
+  }
+]

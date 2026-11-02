@@ -1,0 +1,42 @@
+[
+  {
+    "id": "intramurals",
+    "name": "intramurals"
+  },
+  {
+    "id": "coding",
+    "name": "coding"
+  },
+  {
+    "id": "volunteering",
+    "name": "volunteering"
+  },
+  {
+    "id": "finance club",
+    "name": "finance club"
+  },
+  {
+    "id": "lifting",
+    "name": "lifting"
+  },
+  {
+    "id": "music",
+    "name": "music"
+  },
+  {
+    "id": "art",
+    "name": "art"
+  },
+  {
+    "id": "outdoors",
+    "name": "outdoors"
+  },
+  {
+    "id": "gaming",
+    "name": "gaming"
+  },
+  {
+    "id": "writing",
+    "name": "writing"
+  }
+]

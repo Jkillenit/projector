@@ -1,0 +1,56 @@
+[
+  {
+    "id": "maya",
+    "name": "Maya",
+    "class_year": "Freshman",
+    "major": "Undeclared",
+    "transfer": false,
+    "interests": [
+      "intramurals",
+      "coding",
+      "volunteering"
+    ],
+    "free_times": [
+      {
+        "day": "Tue",
+        "from": "12:00",
+        "to": "17:00"
+      },
+      {
+        "day": "Thu",
+        "from": "12:00",
+        "to": "17:00"
+      }
+    ],
+    "schedule_note": "Free afternoons Tuesday and Thursday"
+  },
+  {
+    "id": "devon",
+    "name": "Devon",
+    "class_year": "Junior",
+    "major": "Accounting",
+    "transfer": true,
+    "interests": [
+      "finance club",
+      "lifting"
+    ],
+    "free_times": [
+      {
+        "day": "Mon",
+        "from": "08:00",
+        "to": "16:00"
+      },
+      {
+        "day": "Wed",
+        "from": "08:00",
+        "to": "16:00"
+      },
+      {
+        "day": "Sat",
+        "from": "10:00",
+        "to": "18:00"
+      }
+    ],
+    "schedule_note": "Works nights"
+  }
+]

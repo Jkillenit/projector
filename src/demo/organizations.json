@@ -1,0 +1,176 @@
+[
+  {
+    "id": "midnight-coders",
+    "name": "Midnight Coders (demo)",
+    "description": "Build small projects together and share what you learned. (Fictional club for the demo.)",
+    "interests": [
+      "coding",
+      "gaming"
+    ],
+    "meets": {
+      "day": "Tue",
+      "start": "15:00",
+      "end": "16:30"
+    },
+    "fictional": true
+  },
+  {
+    "id": "quad-gardeners",
+    "name": "Quad Gardeners (demo)",
+    "description": "Tend a shared garden and trade recipes. (Fictional club for the demo.)",
+    "interests": [
+      "volunteering",
+      "outdoors"
+    ],
+    "meets": {
+      "day": "Sat",
+      "start": "10:00",
+      "end": "12:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "pickup-frisbee",
+    "name": "Pickup Frisbee Crew (demo)",
+    "description": "Casual ultimate games for all skill levels. (Fictional club for the demo.)",
+    "interests": [
+      "intramurals",
+      "outdoors"
+    ],
+    "meets": {
+      "day": "Thu",
+      "start": "16:00",
+      "end": "17:30"
+    },
+    "fictional": true
+  },
+  {
+    "id": "pantry-helpers",
+    "name": "Pantry Helpers (demo)",
+    "description": "Pack and hand out food boxes. (Fictional club for the demo.)",
+    "interests": [
+      "volunteering"
+    ],
+    "meets": {
+      "day": "Thu",
+      "start": "13:00",
+      "end": "15:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "ledger-roundtable",
+    "name": "Ledger Roundtable (demo)",
+    "description": "Talk markets, budgeting and careers in finance. (Fictional club for the demo.)",
+    "interests": [
+      "finance club"
+    ],
+    "meets": {
+      "day": "Wed",
+      "start": "12:00",
+      "end": "13:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "iron-and-ideas",
+    "name": "Iron and Ideas (demo)",
+    "description": "Lift together, then talk about a book chapter. (Fictional club for the demo.)",
+    "interests": [
+      "lifting",
+      "writing"
+    ],
+    "meets": {
+      "day": "Sat",
+      "start": "11:00",
+      "end": "13:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "open-mic-society",
+    "name": "Open Mic Society (demo)",
+    "description": "Music, poetry and comedy nights. (Fictional club for the demo.)",
+    "interests": [
+      "music",
+      "writing"
+    ],
+    "meets": {
+      "day": "Fri",
+      "start": "19:00",
+      "end": "21:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "board-game-guild",
+    "name": "Board Game Guild (demo)",
+    "description": "Weekly game night with snacks. (Fictional club for the demo.)",
+    "interests": [
+      "gaming"
+    ],
+    "meets": {
+      "day": "Mon",
+      "start": "18:00",
+      "end": "20:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "trail-trekkers",
+    "name": "Trail Trekkers (demo)",
+    "description": "Weekend hikes near campus. (Fictional club for the demo.)",
+    "interests": [
+      "outdoors"
+    ],
+    "meets": {
+      "day": "Sat",
+      "start": "09:00",
+      "end": "13:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "sketch-and-sip",
+    "name": "Sketch and Sip (demo)",
+    "description": "Draw together over tea. (Fictional club for the demo.)",
+    "interests": [
+      "art"
+    ],
+    "meets": {
+      "day": "Tue",
+      "start": "13:00",
+      "end": "14:30"
+    },
+    "fictional": true
+  },
+  {
+    "id": "pickup-soccer",
+    "name": "Pickup Soccer League (demo)",
+    "description": "Pick a team and play on the intramural fields. (Fictional club for the demo.)",
+    "interests": [
+      "intramurals"
+    ],
+    "meets": {
+      "day": "Mon",
+      "start": "12:30",
+      "end": "14:00"
+    },
+    "fictional": true
+  },
+  {
+    "id": "code-for-good",
+    "name": "Code for Good (demo)",
+    "description": "Build tools for local nonprofits. (Fictional club for the demo.)",
+    "interests": [
+      "coding",
+      "volunteering"
+    ],
+    "meets": {
+      "day": "Thu",
+      "start": "14:00",
+      "end": "15:30"
+    },
+    "fictional": true
+  }
+]

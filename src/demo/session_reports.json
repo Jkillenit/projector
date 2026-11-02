@@ -1,0 +1,38 @@
+[
+  {
+    "id": "s1",
+    "resource_id": "ingenuity-lab-tutoring",
+    "student_id": "maya",
+    "subject": "Calculus II",
+    "scheduled_days_ago": 9,
+    "status": "happened",
+    "note": "Went over series. Tutor was on time."
+  },
+  {
+    "id": "s2",
+    "resource_id": "ingenuity-lab-tutoring",
+    "student_id": "maya",
+    "subject": "Calculus II",
+    "scheduled_days_ago": 2,
+    "status": "did_not_happen",
+    "note": "Booked but no tutor showed up. Waited 20 minutes."
+  },
+  {
+    "id": "s3",
+    "resource_id": "ingenuity-lab-tutoring",
+    "student_id": "devon",
+    "subject": "Intermediate Accounting",
+    "scheduled_days_ago": 6,
+    "status": "happened",
+    "note": "Short session but helpful."
+  },
+  {
+    "id": "s4",
+    "resource_id": "writing-center",
+    "student_id": "maya",
+    "subject": "ENGL 101 essay",
+    "scheduled_days_ago": 4,
+    "status": "happened",
+    "note": "Got feedback on the thesis."
+  }
+]

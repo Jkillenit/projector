@@ -1,0 +1,749 @@
+[
+  {
+    "id": "blackboard",
+    "name": "Blackboard",
+    "category": "tech",
+    "sensitive": false,
+    "description": "Where course materials, assignments and grades are posted.",
+    "tags": [
+      "blackboard",
+      "grades",
+      "assignments",
+      "course",
+      "class",
+      "ualearn"
+    ],
+    "hours": "Online",
+    "location": "Online",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Go to the Blackboard site",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in with your UA account",
+        "login_needed": true
+      },
+      {
+        "text": "Open the course from your course list",
+        "login_needed": true
+      }
+    ],
+    "source_url": "https://ualearn.blackboard.com",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "mybama",
+    "name": "myBama",
+    "category": "tech",
+    "sensitive": false,
+    "description": "Student portal for registration, billing and links to other campus tools.",
+    "tags": [
+      "mybama",
+      "portal",
+      "register",
+      "registration",
+      "bill",
+      "billing",
+      "schedule"
+    ],
+    "hours": "Online",
+    "location": "Online",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Go to the myBama site",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in with your UA account",
+        "login_needed": true
+      },
+      {
+        "text": "Use the search bar. Search needs the exact name of the page.",
+        "login_needed": true
+      }
+    ],
+    "source_url": "https://mybama.ua.edu",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "okta-verify-help",
+    "name": "Okta Verify help",
+    "category": "tech",
+    "sensitive": false,
+    "description": "Help with the sign-in prompts and the Okta Verify app.",
+    "tags": [
+      "okta",
+      "login",
+      "log in",
+      "sign in",
+      "verify",
+      "password",
+      "mfa",
+      "code"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the tech support page for sign-in help",
+        "login_needed": false
+      },
+      {
+        "text": "Pick the Okta Verify topic",
+        "login_needed": false
+      },
+      {
+        "text": "If you are locked out, ask the help desk to reset your sign-in",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "ingenuity-lab-tutoring",
+    "name": "Ingenuity Lab tutoring",
+    "category": "tutoring",
+    "sensitive": false,
+    "description": "Free tutoring for math, science and business classes.",
+    "tags": [
+      "tutoring",
+      "tutor",
+      "calc",
+      "calculus",
+      "math",
+      "chemistry",
+      "stats",
+      "failing",
+      "homework"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Look up your course on the tutoring page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to book a session",
+        "login_needed": true
+      },
+      {
+        "text": "Pick a time and confirm it",
+        "login_needed": true
+      },
+      {
+        "text": "Check for a confirmation message before you go",
+        "login_needed": true
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "center-for-academic-success",
+    "name": "Center for Academic Success",
+    "category": "academic",
+    "sensitive": false,
+    "description": "Study skills coaching, workshops and academic help.",
+    "tags": [
+      "study",
+      "skills",
+      "coaching",
+      "tutoring",
+      "failing",
+      "grades",
+      "workshop",
+      "time management",
+      "academic"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the coaching sign-up page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in and request an appointment",
+        "login_needed": true
+      },
+      {
+        "text": "Bring your syllabus to the first visit",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "writing-center",
+    "name": "Writing center",
+    "category": "academic",
+    "sensitive": false,
+    "description": "Feedback on papers at any stage of writing.",
+    "tags": [
+      "writing",
+      "essay",
+      "paper",
+      "english",
+      "composition",
+      "citations",
+      "draft"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the writing center page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in and book a time",
+        "login_needed": true
+      },
+      {
+        "text": "Bring your draft and the assignment sheet",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "counseling-center",
+    "name": "Counseling Center",
+    "category": "health",
+    "sensitive": true,
+    "description": "Talk with a counselor about stress, anxiety, mood or personal concerns.",
+    "tags": [
+      "counseling",
+      "stress",
+      "anxiety",
+      "depressed",
+      "mental health",
+      "therapy",
+      "overwhelmed",
+      "lonely"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the Counseling Center page",
+        "login_needed": false
+      },
+      {
+        "text": "Call or book a first visit",
+        "login_needed": false
+      },
+      {
+        "text": "If it is an emergency, call or text 988",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "student-health",
+    "name": "Student Health Center",
+    "category": "health",
+    "sensitive": true,
+    "description": "Medical care for students.",
+    "tags": [
+      "health",
+      "sick",
+      "doctor",
+      "medical",
+      "clinic",
+      "nurse",
+      "illness",
+      "vaccine",
+      "injury"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the Student Health Center page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to make an appointment",
+        "login_needed": true
+      },
+      {
+        "text": "Bring your student ID",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "disability-services",
+    "name": "Office of Disability Services",
+    "category": "academic",
+    "sensitive": true,
+    "description": "Accommodations for classes and exams.",
+    "tags": [
+      "disability",
+      "accommodation",
+      "accommodations",
+      "extra time",
+      "adhd",
+      "dyslexia",
+      "accessible"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the Disability Services page",
+        "login_needed": false
+      },
+      {
+        "text": "Start a registration request",
+        "login_needed": true
+      },
+      {
+        "text": "Meet with a staff member to talk about your needs",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "title-ix",
+    "name": "Title IX office",
+    "category": "health",
+    "sensitive": true,
+    "description": "Support and options for harassment, discrimination or assault.",
+    "tags": [
+      "title ix",
+      "harassment",
+      "assault",
+      "discrimination",
+      "stalking",
+      "abuse",
+      "unsafe",
+      "report"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the Title IX office page",
+        "login_needed": false
+      },
+      {
+        "text": "Reach out by phone or email. You choose what happens next.",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "financial-aid",
+    "name": "Financial aid office",
+    "category": "money",
+    "sensitive": true,
+    "description": "Questions about aid, bills and paying for school.",
+    "tags": [
+      "financial aid",
+      "aid",
+      "tuition",
+      "scholarship",
+      "fafsa",
+      "loan",
+      "money",
+      "pay",
+      "bill",
+      "afford",
+      "hardship"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the financial aid page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to see your aid and any holds",
+        "login_needed": true
+      },
+      {
+        "text": "Ask a staff member about your situation",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "emergency-aid",
+    "name": "Emergency money help",
+    "category": "money",
+    "sensitive": true,
+    "description": "Short-term help for students in a money crisis. TODO verify the program name and rules.",
+    "tags": [
+      "emergency",
+      "hardship",
+      "can't afford",
+      "books",
+      "textbooks",
+      "rent",
+      "food",
+      "money"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Ask the financial aid office what emergency help exists",
+        "login_needed": false
+      },
+      {
+        "text": "Fill out the request form if one applies",
+        "login_needed": true
+      },
+      {
+        "text": "Keep receipts or bills you may need to show",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "textbook-help",
+    "name": "Help paying for books",
+    "category": "money",
+    "sensitive": false,
+    "description": "Ways to lower course material costs. TODO verify what UA offers.",
+    "tags": [
+      "books",
+      "textbooks",
+      "course materials",
+      "cheaper",
+      "rent",
+      "library",
+      "reserve",
+      "cost",
+      "paying"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Check the syllabus for the exact book",
+        "login_needed": false
+      },
+      {
+        "text": "Ask the library if a copy is on reserve",
+        "login_needed": false
+      },
+      {
+        "text": "Ask your instructor if an older edition works",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "library",
+    "name": "Campus library",
+    "category": "academic",
+    "sensitive": false,
+    "description": "Books on reserve, study rooms and research help.",
+    "tags": [
+      "library",
+      "books",
+      "textbooks",
+      "reserve",
+      "research",
+      "study rooms",
+      "course materials",
+      "paying"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Search the library catalog for your course book",
+        "login_needed": false
+      },
+      {
+        "text": "Ask at the front desk if a copy is on reserve",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to book a study room",
+        "login_needed": true
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "career-center",
+    "name": "Career Center",
+    "category": "career",
+    "sensitive": false,
+    "description": "Resume help, mock interviews and job and internship leads.",
+    "tags": [
+      "career",
+      "resume",
+      "internship",
+      "job",
+      "interview",
+      "linkedin",
+      "career fair"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the Career Center page",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to book a resume review",
+        "login_needed": true
+      },
+      {
+        "text": "Bring a draft resume",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "imleagues",
+    "name": "IMLeagues",
+    "category": "rec",
+    "sensitive": false,
+    "description": "Sign up for intramural sports teams and leagues.",
+    "tags": [
+      "intramurals",
+      "sports",
+      "league",
+      "team",
+      "imleagues",
+      "rec",
+      "soccer",
+      "basketball",
+      "flag football"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Go to the IMLeagues site",
+        "login_needed": false
+      },
+      {
+        "text": "Create an account with your UA email",
+        "login_needed": true
+      },
+      {
+        "text": "Join a team or list yourself as a free agent",
+        "login_needed": true
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "rec-center",
+    "name": "Campus recreation",
+    "category": "rec",
+    "sensitive": false,
+    "description": "Gym, classes and fitness programs.",
+    "tags": [
+      "gym",
+      "lifting",
+      "fitness",
+      "workout",
+      "weights",
+      "rec",
+      "exercise",
+      "swim"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the campus recreation page",
+        "login_needed": false
+      },
+      {
+        "text": "Check hours before you go",
+        "login_needed": false
+      },
+      {
+        "text": "Bring your student ID",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "the-source",
+    "name": "The SOURCE",
+    "category": "org_directory",
+    "sensitive": false,
+    "description": "Directory of student clubs and groups. Hard to browse, so try our Clubs screen first.",
+    "tags": [
+      "clubs",
+      "organizations",
+      "groups",
+      "involvement",
+      "the source",
+      "meet people",
+      "join"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Go to the club directory",
+        "login_needed": false
+      },
+      {
+        "text": "Sign in to join or see events",
+        "login_needed": true
+      },
+      {
+        "text": "Message the club contact to ask about the next meeting",
+        "login_needed": true
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "tech-help-desk",
+    "name": "IT help desk",
+    "category": "tech",
+    "sensitive": false,
+    "description": "Help with accounts, Wi-Fi and campus software.",
+    "tags": [
+      "wifi",
+      "wi-fi",
+      "computer",
+      "account",
+      "email",
+      "software",
+      "laptop",
+      "login",
+      "log in",
+      "sign in",
+      "password",
+      "okta",
+      "locked out"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find the IT help page",
+        "login_needed": false
+      },
+      {
+        "text": "Pick your issue",
+        "login_needed": false
+      },
+      {
+        "text": "Contact the help desk if the guide does not fix it",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  },
+  {
+    "id": "academic-advising",
+    "name": "Academic advising",
+    "category": "academic",
+    "sensitive": false,
+    "description": "Plan your schedule, change your major or check your degree path.",
+    "tags": [
+      "advising",
+      "advisor",
+      "major",
+      "undeclared",
+      "schedule",
+      "degree",
+      "register",
+      "drop",
+      "add"
+    ],
+    "hours": "TODO verify",
+    "location": "TODO verify",
+    "contact": "TODO verify",
+    "how_to_get_in": [
+      {
+        "text": "Find your advisor in your student portal",
+        "login_needed": true
+      },
+      {
+        "text": "Book a time",
+        "login_needed": true
+      },
+      {
+        "text": "Bring questions and your draft schedule",
+        "login_needed": false
+      }
+    ],
+    "source_url": "TODO verify",
+    "last_checked": "TODO verify",
+    "verified": false
+  }
+]
