@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BLACKBOARD_URL } from "../../constants/app.js";
 
 export function BlackboardTab() {
   const bb = window.studyHub?.blackboard;
@@ -17,7 +18,8 @@ export function BlackboardTab() {
   }, [bb, desktop]);
 
   async function handleOpen() {
-    await bb.open();
+    if (status.loggedIn) await bb.openUrl(`${BLACKBOARD_URL}/ultra/course`);
+    else await bb.open();
     setTimeout(async () => {
       const s = await bb.getStatus();
       if (s) setStatus(s);

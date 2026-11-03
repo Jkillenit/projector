@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld("studyHub", {
     },
   },
   blackboard: {
+    /** Connect: opens the sign-in window (closes itself once signed in), or just syncs if already connected. */
     open: () => ipcRenderer.invoke("bb:open"),
     /** Opens a *.blackboard.com URL in the signed-in Blackboard window. */
     openUrl: (url) => ipcRenderer.invoke("bb:open-url", url),
@@ -61,6 +62,10 @@ contextBridge.exposeInMainWorld("studyHub", {
     onSyncProgress: (callback) => subscribe("bb:sync-progress", callback),
     /** @returns {() => void} unsubscribe */
     onSyncComplete: (callback) => subscribe("bb:sync-complete", callback),
+    /** @returns {() => void} unsubscribe */
+    onSyllabus: (callback) => subscribe("bb:syllabus", callback),
+    /** @returns {() => void} unsubscribe */
+    onConnected: (callback) => subscribe("bb:connected", callback),
     /** @returns {() => void} unsubscribe */
     onDisconnected: (callback) => subscribe("bb:disconnected", callback),
   },

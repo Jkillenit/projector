@@ -4,12 +4,15 @@ const path = require("path");
 const { getDb } = require("./database.cjs");
 const { applyBbSync, ensureCourseForBb } = require("./dbMirrorHandlers.cjs");
 const { wipeBlackboardData } = require("./bbWipe.cjs");
+const { needsFull, syllabusUnchanged } = require("./syncMode.cjs");
 const {
   BB_PARTITION,
   BB_ORIGIN: BB_URL,
   getJson,
-  listEnrolledCourses,
+  listEnrollments,
+  sessionWorks,
   syncCourse,
+  findSyllabus,
   checkCourse,
   resetUserCache,
   setPageFetcher,
@@ -20,6 +23,7 @@ let bbWindow = null;
 const syllabusPopups = new Set();
 let getMainWindow = () => null;
 let onDisconnect = () => {};
+let extractBufferText = null;
 
 const BB_TEMP_DIR = path.join(app.getPath("temp"), "projector-bb");
 const BB_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -157,6 +161,7 @@ function createHiddenBbWindow() {
   const win = new BrowserWindow({ show: false, width: 1200, height: 900, webPreferences: HIDDEN_PREFS });
   const popups = [];
   win.webContents.setAudioMuted(true);
+  win.on("show", () => win.hide());
   win.webContents.setWindowOpenHandler(({ url }) =>
     isSyllabusToolUrl(url) || isBlackboardUrl(url)
       ? { action: "allow", overrideBrowserWindowOptions: { show: false, webPreferences: HIDDEN_PREFS } }
@@ -164,6 +169,7 @@ function createHiddenBbWindow() {
   );
   win.webContents.on("did-create-window", (child) => {
     popups.push(child);
+    child.on("show", () => child.hide());
     watchLtiLaunches(child.webContents);
   });
   watchLtiLaunches(win.webContents);
@@ -224,6 +230,8 @@ async function waitForSyllabusText(getWebContents, timeoutMs) {
   return last.length >= 500 ? last : "";
 }
 
+const LAST_FULL_KEY = "bb.lastFull";
+const SYLLABUS_CACHE_KEY = "bb.syllabusCache";
 const COURSE_ID_RE = /^_\d+_\d+$/;
 
 /** Loads `relativeUrl` in a hidden Blackboard-session window and reads the syllabus tool page it leads to. */
@@ -286,16 +294,6 @@ async function readCourseSyllabus(bbCourseId) {
   return readSyllabusViaTab(bbCourseId);
 }
 
-/** A syllabus the student already has open in the Blackboard window, only while that window is on this course. */
-async function readOpenSyllabus(bbCourseId) {
-  if (!bbWindow || bbWindow.isDestroyed()) return "";
-  if (parseCourseFromUrl(bbWindow.webContents.getURL())?.bbCourseId !== bbCourseId) return "";
-  const list = [bbWindow.webContents];
-  for (const popup of syllabusPopups) if (!popup.isDestroyed()) list.push(popup.webContents);
-  if (!syllabusFrames(list).length) return "";
-  return waitForSyllabusText(() => list, 5000);
-}
-
 async function openBlackboardWindow(targetUrl = null) {
   if (bbWindow && !bbWindow.isDestroyed()) {
     if (targetUrl) await bbWindow.loadURL(targetUrl).catch(() => {});
@@ -351,6 +349,31 @@ async function openBlackboardWindow(targetUrl = null) {
   await bbWindow.loadURL(startUrl);
 }
 
+let loginWatch = null;
+
+/** Sign in only: once the real users/me call works, the login window closes by itself. */
+function watchForLogin() {
+  clearInterval(loginWatch);
+  loginWatch = setInterval(async () => {
+    if (!bbWindow || bbWindow.isDestroyed()) return clearInterval(loginWatch);
+    if (!(await sessionWorks())) return;
+    clearInterval(loginWatch);
+    closeBlackboardWindow();
+    sendToMain("bb:connected", {});
+  }, 2000);
+}
+
+/** Connect Blackboard: no window when already connected, otherwise the sign-in window until it works. */
+async function connectBlackboard() {
+  if (await sessionWorks()) {
+    sendToMain("bb:connected", { already: true });
+    return { success: true, opened: false };
+  }
+  await openBlackboardWindow();
+  watchForLogin();
+  return { success: true, opened: true };
+}
+
 function closeBlackboardWindow() {
   if (bbWindow && !bbWindow.isDestroyed()) {
     bbWindow.close();
@@ -373,6 +396,7 @@ async function disconnectBlackboard() {
 function registerBlackboardHandlers(mainWindowGetter, options = {}) {
   getMainWindow = typeof mainWindowGetter === "function" ? mainWindowGetter : () => mainWindowGetter;
   if (typeof options.onDisconnect === "function") onDisconnect = options.onDisconnect;
+  if (typeof options.extractBufferText === "function") extractBufferText = options.extractBufferText;
 
   setPageFetcher(async (pathname) => {
     if (!bbWindow || bbWindow.isDestroyed()) return null;
@@ -390,8 +414,7 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
 
   ipcMain.handle("bb:open", async (event) => {
     if (!isMainWindowSender(event)) return { success: false };
-    await openBlackboardWindow();
-    return { success: true };
+    return connectBlackboard();
   });
 
   ipcMain.handle("bb:open-url", async (event, url) => {
@@ -421,22 +444,75 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
     if (!isMainWindowSender(event)) return { ok: false, error: "untrusted" };
     if (!(await isLoggedIn())) return { ok: false, error: "not-logged-in" };
     try {
-      return { ok: true, courses: await listEnrolledCourses() };
+      const enrollments = await listEnrollments();
+      return { ok: true, courses: enrollments.filter((e) => e.reason === "kept"), enrollments };
     } catch (err) {
       const error = err?.status === 401 || err?.status === 403 ? "not-logged-in" : err?.message || String(err);
       return { ok: false, error };
     }
   });
 
-  let syncing = false;
+  const syncingIds = new Set();
+  let syllabusChain = Promise.resolve();
 
-  /** Finds or creates the linked course, sweeps Blackboard into it, and reports to the main window. */
-  async function runSync({ bbCourseId, name, courseCode, term, fallbackName } = {}) {
+  const readJsonSetting = (key) => {
+    try {
+      return JSON.parse(getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || "{}") || {};
+    } catch {
+      return {};
+    }
+  };
+  const writeJsonSetting = (key, value) => {
+    try {
+      getDb()
+        .prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')")
+        .run(key, JSON.stringify(value));
+    } catch {
+      /* best effort */
+    }
+  };
+
+  /** The slow part, one course at a time in hidden windows, after the course has already landed. Counts only leave here. */
+  function queueSyllabus(bbCourseId, courseUuid, candidates) {
+    syllabusChain = syllabusChain
+      .then(async () => {
+        const cache = readJsonSetting(SYLLABUS_CACHE_KEY);
+        if (syllabusUnchanged(cache[bbCourseId], candidates.fingerprint)) {
+          sendToMain("bb:syllabus", { bbCourseId, courseUuid, cached: true, source: cache[bbCourseId].source });
+          return;
+        }
+        let found = null;
+        try {
+          found = await findSyllabus(bbCourseId, candidates.items, { extractBufferText, readLtiText, readCourseSyllabus });
+        } catch {
+          found = null;
+        }
+        if (found) {
+          writeJsonSetting(SYLLABUS_CACHE_KEY, {
+            ...readJsonSetting(SYLLABUS_CACHE_KEY),
+            [bbCourseId]: { found: true, fingerprint: candidates.fingerprint, source: found.source, at: new Date().toISOString() },
+          });
+        }
+        sendToMain("bb:syllabus", {
+          bbCourseId,
+          courseUuid,
+          syllabus: found ? { source: found.source, title: found.title, text: found.text.slice(0, 200000) } : null,
+        });
+      })
+      .catch(() => {});
+  }
+
+  /**
+   * Finds or creates the linked course and sweeps Blackboard into it. Full the first time, on `force`,
+   * or weekly; light (assignments, gradebook, announcements) otherwise. A full sync sends the syllabus
+   * later on "bb:syllabus", so the course shows up first.
+   */
+  async function runSync({ bbCourseId, name, courseCode, term, fallbackName, force } = {}) {
     const id = String(bbCourseId || "");
-    if (!/^_\d+_\d+$/.test(id)) return { ok: false, error: "Invalid Blackboard course id" };
-    if (syncing) return { ok: false, error: "A sync is already running." };
+    if (!COURSE_ID_RE.test(id)) return { ok: false, error: "Invalid Blackboard course id" };
+    if (syncingIds.has(id)) return { ok: false, error: "A sync is already running." };
     if (!(await isLoggedIn())) return { ok: false, error: "not-logged-in" };
-    syncing = true;
+    syncingIds.add(id);
     let courseUuid = null;
     try {
       let info = { name, courseCode, term };
@@ -444,33 +520,34 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
       if (!info.name) info.name = fallbackName;
       const ensured = ensureCourseForBb(getDb(), { bbCourseId: id, ...info });
       courseUuid = ensured.courseUuid;
-      const payload = await syncCourse(id, (progress) => sendToMain("bb:sync-progress", { bbCourseId: id, courseUuid, ...progress }), {
-        readLtiText,
-        readOpenSyllabus,
-        readCourseSyllabus,
-      });
+      const lastFull = readJsonSetting(LAST_FULL_KEY);
+      const full = needsFull({ lastFullAt: lastFull[id], force: !!force });
+      const payload = await syncCourse(id, (progress) => sendToMain("bb:sync-progress", { bbCourseId: id, courseUuid, ...progress }), { light: !full });
+      const { candidates } = payload;
+      delete payload.candidates;
       const result = applyBbSync(getDb(), courseUuid, payload);
-      const syllabus = payload.syllabus
-        ? { source: payload.syllabus.source, title: payload.syllabus.title, text: payload.syllabus.text.slice(0, 200000) }
-        : null;
+      if (full && result.success) writeJsonSetting(LAST_FULL_KEY, { ...readJsonSetting(LAST_FULL_KEY), [id]: new Date().toISOString() });
       const summary = {
         ok: result.success,
         bbCourseId: id,
         courseUuid,
         created: ensured.created,
+        full,
+        syllabusPending: full && result.success,
         counts: result.counts ? { ...result.counts, scored: payload.scoredCount || 0 } : result.counts,
         gradeSource: payload.gradeSource,
         error: result.error,
-        syllabus,
+        syllabus: null,
       };
       sendToMain("bb:sync-complete", summary);
+      if (summary.syllabusPending) queueSyllabus(id, courseUuid, candidates);
       return summary;
     } catch (err) {
       const error = err?.status === 401 || err?.status === 403 ? "not-logged-in" : err?.message || String(err);
       sendToMain("bb:sync-complete", { ok: false, bbCourseId: id, courseUuid, error });
       return { ok: false, bbCourseId: id, courseUuid, error };
     } finally {
-      syncing = false;
+      syncingIds.delete(id);
     }
   }
 

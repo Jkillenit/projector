@@ -120,7 +120,7 @@ export function AppRail({ view, courseId, courses, onNavigate, onOpenCourse, onS
                   className={`sh-rail-item sh-rail-course${active ? " is-active" : ""}`}
                   aria-current={active ? "page" : undefined}
                   onClick={() => onOpenCourse(c.id)}
-                  title={c.code}
+                  title={c.title ? `${c.title} (${c.hint})` : c.code}
                 >
                   <span className="sh-rail-code-pre">{pre}</span>
                   <span className="sh-rail-label sh-rail-code-num">{num}</span>

@@ -2,7 +2,7 @@
  * Shapes the Today snapshot for the holographic Today screen. Pure and read-only: it reuses the
  * priority engine's ranking and standing math and only decides what goes in which panel.
  */
-import { shortCourse } from "../dashboard/courseLabel.js";
+import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { letterFor } from "../grades/gradeMath.js";
 import { localDayKey, startOfLocalDay } from "../../lib/dates.js";
 import { ITEM_TYPES, PRIORITY_CONFIG, assignmentItemId, courseStanding, daysUntil, formatPct, rankToday } from "./priority.js";
@@ -17,7 +17,7 @@ const DAY_MS = 86400000;
 export { letterFor };
 
 export function courseLabel(course) {
-  return shortCourse(course?.courseCode || course?.name) || course?.name || "";
+  return friendlyCourse(course).label;
 }
 
 /** "warn" below target, "ok" at or above it, "none" before any grade is in. */

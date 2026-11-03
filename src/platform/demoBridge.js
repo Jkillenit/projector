@@ -66,7 +66,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
   const rowsFor = (courseId) => assignments.filter((a) => a.course_id === courseId).map(asgRow);
   const withCourse = (row) => {
     const c = courseById(row.course_uuid);
-    return { ...row, course_name: c?.name, course_color: c?.color };
+    return { ...row, course_name: c?.name, course_code: c?.code, course_color: c?.color };
   };
 
   const componentScore = (courseId, comp) => {
@@ -224,7 +224,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
             upcoming: rows.filter((r) => !r.completed && Date.parse(r.due_date) >= now().getTime() - DAY && Date.parse(r.due_date) < horizon).map(withCourse),
             announcements: mine.flatMap((c) => annRows(c.id)).slice(0, 8),
             dueCards: [],
-            recentGrades: rows.filter((r) => r.score != null).sort((a, b) => b.posted_at.localeCompare(a.posted_at)).slice(0, 6).map((r) => ({ name: r.title, score: r.score, points_possible: r.points_possible, graded_at: r.posted_at, course_uuid: r.course_uuid, course_name: courseById(r.course_uuid)?.name })),
+            recentGrades: rows.filter((r) => r.score != null).sort((a, b) => b.posted_at.localeCompare(a.posted_at)).slice(0, 6).map((r) => ({ name: r.title, score: r.score, points_possible: r.points_possible, graded_at: r.posted_at, course_uuid: r.course_uuid, course_name: courseById(r.course_uuid)?.name, course_code: courseById(r.course_uuid)?.code })),
             stats: {},
           };
         },

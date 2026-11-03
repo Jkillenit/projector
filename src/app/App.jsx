@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import resources from "../demo/resources.json";
 import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
+import { SyncBar } from "../features/blackboard/SyncBar.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
-import { shortCourse } from "../features/dashboard/courseLabel.js";
+import { friendlyCourse } from "../features/dashboard/courseLabel.js";
 import { FrontDoorScreen } from "../features/frontdoor/FrontDoorScreen.jsx";
 import { GradesScreen } from "../features/grades/GradesScreen.jsx";
 import { AskScreen } from "../features/guide/AskScreen.jsx";
@@ -43,7 +44,7 @@ function useTheme() {
 }
 
 function Shell({ profile, onProfile, theme, onTheme, mode }) {
-  const { courses, loaded, reloadCourse } = useUserCourses();
+  const { courses, loaded, reloadCourse, reloadAll } = useUserCourses();
   const [view, setView] = useState("home");
   const [courseId, setCourseId] = useState(null);
   const [resourceId, setResourceId] = useState(null);
@@ -84,27 +85,44 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     const offSync = bb.onSyncComplete(async (res) => {
       if (!res?.courseUuid) return;
       await reloadCourse(res.courseUuid);
-      let syllabusStatus = res.syllabus ? "none" : "missing";
-      if (res.ok && res.syllabus?.text) {
-        syllabusStatus = (await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }))).status;
-      }
-      window.dispatchEvent(new CustomEvent("studyhub-bb-synced", { detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, syllabusStatus } }));
+      // The course (assignments, grades, announcements) has landed; its syllabus arrives later on onSyllabus.
+      window.dispatchEvent(
+        new CustomEvent("studyhub-bb-synced", {
+          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, phase: "course", syllabusStatus: res.syllabusPending ? "pending" : "none" },
+        })
+      );
     });
+    const offSyllabus = bb.onSyllabus?.(async (res) => {
+      if (!res?.courseUuid) return;
+      let applied = { status: res.cached ? "cached" : res.syllabus ? "none" : "missing" };
+      if (res.syllabus?.text) applied = await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }));
+      await reloadCourse(res.courseUuid);
+      window.dispatchEvent(
+        new CustomEvent("studyhub-bb-synced", {
+          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: true, phase: "syllabus", syllabusStatus: applied.status, source: res.syllabus?.source || res.source || null, weights: applied.count ?? 0, mapped: applied.mapped ?? 0 },
+        })
+      );
+    });
+    // Old-term courses were removed from the database: re-read the list.
+    const onPruned = () => void reloadAll();
+    window.addEventListener("projector-courses-pruned", onPruned);
     // Disconnect wiped everything mirrored from Blackboard: start over from a clean screen.
     const offGone = bb.onDisconnected?.(() => window.location.reload());
     return () => {
       offSync?.();
+      offSyllabus?.();
       offGone?.();
+      window.removeEventListener("projector-courses-pruned", onPruned);
     };
-  }, [reloadCourse]);
+  }, [reloadCourse, reloadAll]);
 
-  const railCourses = useMemo(() => courses.map((c) => ({ id: c.id, code: shortCourse(c.courseCode || c.name) || c.name })), [courses]);
+  const railCourses = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.label, hint: f.raw }; }), [courses]);
   const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;
 
   const paletteItems = useMemo(
     () => [
       ...SCREENS.map(([id, label]) => ({ key: `go-${id}`, group: "screens", icon: "›", primary: label, sub: "Screen", run: () => go(id) })),
-      ...courses.map((c) => ({ key: `course-${c.id}`, group: "courses", icon: "◎", primary: c.name, sub: c.courseCode || "Course", run: () => openCourse(c.id) })),
+      ...courses.map((c) => ({ key: `course-${c.id}`, group: "courses", icon: "◎", primary: friendlyCourse(c).label, sub: "Course", run: () => openCourse(c.id) })),
       ...resources.map((r) => ({ key: `res-${r.id}`, group: "resources", icon: "§", primary: r.name, sub: `Resource · ${r.tags.slice(0, 4).join(", ")}`, run: () => openResource(r.id) })),
     ],
     [courses, go, openCourse, openResource]
@@ -126,6 +144,7 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
       <AppRail view={view} courseId={courseId} courses={railCourses} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
       <div className="sh-frame-main">
         <TitleBar />
+        <SyncBar />
         <main className="fd-main">
           <ErrorBoundary resetKey={`${view}-${courseId}-${resourceId}`} onReset={() => go("home")}>
             {screen}
