@@ -1,4 +1,5 @@
 import { APP_NAME } from "../constants/app.js";
+import { useCourseColor } from "./CourseColors.jsx";
 
 function Icon({ children }) {
   return (
@@ -67,24 +68,20 @@ function RailItem({ icon, label, active, hint, ...rest }) {
   );
 }
 
-function splitCode(code) {
-  const s = String(code || "").trim();
-  const i = s.indexOf(" ");
-  return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)];
-}
-
 function CourseButton({ c, active, onOpen }) {
-  const [pre, num] = splitCode(c.code);
+  const color = useCourseColor(c.id);
   return (
     <button
       type="button"
       className={`sh-rail-item sh-rail-course${active ? " is-active" : ""}`}
+      style={{ "--course": color }}
       aria-current={active ? "page" : undefined}
       onClick={() => onOpen(c.id)}
       title={c.title ? `${c.title} (${c.hint})` : c.hint}
     >
-      <span className="sh-rail-code-pre">{pre}</span>
-      <span className="sh-rail-label sh-rail-code-num">{num}</span>
+      <span className="fd-dot" aria-hidden />
+      <span className="sh-rail-label sh-rail-code">{c.code}</span>
+      {c.title ? <span className="sh-rail-label sh-rail-short">{c.title}</span> : null}
     </button>
   );
 }

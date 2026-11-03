@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { courseStore } from "../../db/courseStore.js";
 import { parseSyllabusGrading } from "../import/syllabusImport.js";
-import { dueLabel } from "../dashboard/dateLabels.js";
+import { plainDue } from "../../lib/dates.js";
 import { formatPct } from "../today/priority.js";
 import { computeCourseGrade } from "./courseGrade.js";
 import { gradeTone, totalWeight } from "./gradeMath.js";
@@ -14,18 +14,19 @@ const toSave = (rows) => rows.map((r) => ({ id: r.id, uuid: r.uuid, name: r.name
 
 function NeedLine({ label, entry, letter }) {
   if (!entry) return null;
+  const needed = entry.needed;
   const text =
-    entry.needed == null ? "Not enough to tell yet"
-    : entry.needed > 100 ? `Even 100% won't reach ${letter}`
-    : entry.needed <= 0 ? `Already there for ${letter}`
-    : `Need ${formatPct(entry.needed)}% for ${letter}`;
+    needed == null ? "Not enough to tell yet"
+    : needed > 100 ? `Even 100% won't reach ${letter}`
+    : needed <= 0 ? `Already there for ${letter}`
+    : <>Need <span className="fd-num">{formatPct(needed)}%</span> for {letter}</>;
   return (
     <li>
       <span className="fd-row-main">
         <strong>{entry.title}</strong>
-        <span className="fd-meta">{label}{entry.dueDate ? ` · ${dueLabel(entry.dueDate)}` : ""}</span>
+        <span className="fd-meta">{label}{entry.dueDate ? ` · ${plainDue(entry.dueDate)}` : ""}</span>
       </span>
-      <span className="fd-num">{text}</span>
+      <span>{text}</span>
     </li>
   );
 }
@@ -64,7 +65,7 @@ function ComponentBlock({ row, open, whatIf, setWhatIf, drop, setDrop, onEdit, o
         ))}
         {open.map((a) => (
           <li key={a.uuid} className={hypos.has(a.uuid) ? "is-hypo" : ""}>
-            <span>{a.title}<span className="fd-meta"> · {a.dueDate ? dueLabel(a.dueDate) : "no date"}</span></span>
+            <span>{a.title}<span className="fd-meta"> · {a.dueDate ? plainDue(a.dueDate) : "no date"}</span></span>
             <label className="fd-gr-field">
               <input className="fd-input fd-num fd-gr-small" type="number" min="0" placeholder="What if" aria-label={`What if score on ${a.title}`} value={whatIf[a.uuid] ?? ""} onChange={(e) => setWhatIf((w) => { const { [a.uuid]: _, ...rest } = w; const v = num(e.target.value); return v == null ? rest : { ...rest, [a.uuid]: v }; })} />
               <span className="fd-meta">/ {a.pointsPossible || 100}</span>

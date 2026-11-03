@@ -25,7 +25,6 @@ export function TitleBar() {
       <div className="sh-titlebar-left">
         <span className="fd-brand">{APP_NAME}</span>
       </div>
-      <span className="sh-titlebar-date">{new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }).replace(/,/g, "")}</span>
       <div className="sh-titlebar-right">
         <span className={`fd-badge fd-badge--${mode}`} title={mode === "live" ? "Showing your real Blackboard data" : "Showing made-up demo data"}>
           {mode === "live" ? "Live" : "Demo"}

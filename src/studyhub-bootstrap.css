@@ -2,13 +2,13 @@
 
 :root {
   /* surfaces */
-  --fd-bg: #0B0A0B;
-  --fd-side: #0B0A0B;
-  --fd-panel: rgba(18, 20, 22, 0.62);
-  --fd-panel-strong: rgba(18, 20, 22, 0.82);
-  --fd-panel-solid: #0E1012;
-  --fd-border: rgba(255, 255, 255, 0.06);
-  --fd-border-strong: rgba(255, 255, 255, 0.10);
+  --fd-bg: #0D0E10;
+  --fd-side: #0D0E10;
+  --fd-panel: #16181B;
+  --fd-panel-strong: #1B1E22;
+  --fd-panel-solid: #16181B;
+  --fd-border: rgba(255, 255, 255, 0.08);
+  --fd-border-strong: rgba(255, 255, 255, 0.14);
   --fd-track: rgba(255, 255, 255, 0.07);
   --fd-scrim: rgba(0, 0, 0, 0.72);
 
@@ -16,16 +16,16 @@
   --fd-text: #ECEEF0;
   --fd-text-strong: #FFFFFF;
   --fd-text-2: #A3A8AE;
-  --fd-text-3: #73787F;
+  --fd-text-3: #858A91;
 
-  --fd-accent: #C95A6E;
+  --fd-accent: #B05A6A;
   --fd-accent-hover: color-mix(in oklab, var(--fd-accent) 80%, white);
   --fd-accent-press: color-mix(in oklab, var(--fd-accent) 82%, black);
-  --fd-accent-ink: #1B060A;
+  --fd-accent-ink: #FFFFFF;
   --fd-accent-soft: color-mix(in oklab, var(--fd-accent) 8%, transparent);
   --fd-accent-line: color-mix(in oklab, var(--fd-accent) 38%, transparent);
   --fd-accent-glow: color-mix(in oklab, var(--fd-accent) 30%, transparent);
-  --fd-link: var(--fd-accent);
+  --fd-link: color-mix(in oklab, var(--fd-accent) 45%, var(--fd-text-strong));
   /* legacy secondary: neutral now; remove decorative uses as areas are touched */
   --fd-accent-2: var(--fd-text-3);
   --fd-accent-2-soft: color-mix(in oklab, var(--fd-accent-2) 10%, transparent);
@@ -53,22 +53,35 @@
   /* type */
   --fd-font-body: "Geist Sans", system-ui, sans-serif;
   --fd-font-display: "Geist Sans", system-ui, sans-serif;
-  --fd-font-mono: "Geist Mono", ui-monospace, monospace;
+  --fd-font-num: "Geist Mono", ui-monospace, monospace;
+  /* legacy name: everything that used mono is sans now. Only numbers use --fd-font-num (.fd-num). */
+  --fd-font-mono: var(--fd-font-body);
   /* deprecated: HUD labels are body text now; mono is for numbers, times, keys */
   --fd-font-hud: var(--fd-font-body);
 
-  /* shape: small radii; sm controls, md panels, lg composer */
-  --fd-radius-xl: 14px;
-  --fd-radius-lg: 14px;
-  --fd-radius-md: 10px;
-  --fd-radius-sm: 6px;
-  --fd-radius-xs: 4px;
+  /* shape: one radius everywhere (the -sm/-md/-lg names stay so old rules keep working) */
+  --fd-radius: 8px;
+  --fd-radius-xl: var(--fd-radius);
+  --fd-radius-lg: var(--fd-radius);
+  --fd-radius-md: var(--fd-radius);
+  --fd-radius-sm: var(--fd-radius);
+  --fd-radius-xs: var(--fd-radius);
   --fd-cut: 0;
 
   /* depth */
   --fd-shadow-panel: 0 20px 50px rgba(0, 0, 0, 0.40);
   --fd-glow-accent: 0 0 18px var(--fd-accent-glow);
   --fd-glow-dot: none;
+
+  /* course colors: one fixed set, assigned by src/features/dashboard/courseColor.js */
+  --course-1: #6EA8E8;
+  --course-2: #E6A95C;
+  --course-3: #7DC38C;
+  --course-4: #B994E8;
+  --course-5: #E58A8A;
+  --course-6: #5CC2C2;
+  --course-7: #D98BBE;
+  --course-8: #A3B65A;
 
   /* layout */
   --fd-topbar-h: 40px;
@@ -80,6 +93,7 @@
   --bs-body-bg: var(--fd-bg);
   --bs-body-color: var(--fd-text);
   --bs-body-font-family: var(--fd-font-body);
+  --bs-body-font-size: 15px;
   --bs-font-monospace: var(--fd-font-mono);
   --bs-border-radius: var(--fd-radius-sm);
   --bs-border-radius-sm: var(--fd-radius-xs);
@@ -87,7 +101,7 @@
   --bs-border-radius-xl: var(--fd-radius-lg);
   --bs-border-radius-xxl: var(--fd-radius-lg);
   --bs-border-radius-2xl: var(--fd-radius-lg);
-  --bs-border-radius-pill: 999px;
+  --bs-border-radius-pill: var(--fd-radius);
 }
 
 
@@ -127,8 +141,11 @@ html {
   font-size: 16px;
 }
 
+/* Base text is 15px. Spacing steps are 4, 8, 16, 24, 32, 48. */
+
 body {
   margin: 0;
+  font-size: 15px;
   background-color: var(--fd-bg);
   color: var(--fd-text);
   -webkit-font-smoothing: antialiased;
@@ -139,7 +156,7 @@ body {
 }
 
 .mono {
-  font-family: var(--fd-font-mono);
+  font-family: var(--fd-font-body);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
@@ -10188,8 +10205,8 @@ html[data-motion="reduced"] .sh-powerup[data-lead] {
 html[data-theme="light"] {
   --fd-bg: #F6F4F2;
   --fd-side: #EFECE9;
-  --fd-panel: rgba(255, 255, 255, 0.78);
-  --fd-panel-strong: rgba(255, 255, 255, 0.94);
+  --fd-panel: #FFFFFF;
+  --fd-panel-strong: #FFFFFF;
   --fd-panel-solid: #FFFFFF;
   --fd-border: rgba(30, 20, 22, 0.10);
   --fd-border-strong: rgba(30, 20, 22, 0.18);
@@ -10198,9 +10215,17 @@ html[data-theme="light"] {
   --fd-text: #1E1A1B;
   --fd-text-strong: #000000;
   --fd-text-2: #51484A;
-  --fd-text-3: #7A6F72;
-  --fd-accent: #A63A4E;
+  --fd-text-3: #6F6467;
+  --fd-accent: #9A3B4B;
   --fd-accent-ink: #FFFFFF;
+  --course-1: #2F6FB8;
+  --course-2: #A86200;
+  --course-3: #2E7D45;
+  --course-4: #7447B8;
+  --course-5: #B8454A;
+  --course-6: #137A7A;
+  --course-7: #A8458A;
+  --course-8: #667A12;
   --fd-warn-text: #8A5A00;
   --fd-danger-text: #B3262B;
   --fd-shadow-panel: 0 10px 30px rgba(30, 20, 22, 0.12);

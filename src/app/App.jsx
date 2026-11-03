@@ -4,6 +4,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
 import { SyncBar } from "../features/blackboard/SyncBar.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
+import { useOrgIds } from "../features/courses/useOrgIds.js";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
 import { friendlyCourse } from "../features/dashboard/courseLabel.js";
@@ -15,11 +16,11 @@ import { ResourceDetail } from "../features/resources/ResourceDetail.jsx";
 import { ResourcesScreen } from "../features/resources/ResourcesScreen.jsx";
 import { SettingsScreen } from "../features/settings/SettingsScreen.jsx";
 import { WelcomeScreen } from "../features/welcome/WelcomeScreen.jsx";
-import { courseStore } from "../db/courseStore.js";
 import { loadJson, saveJson } from "../lib/storage.js";
 import { useProfile } from "../platform/profile.js";
 import { AppRail } from "../shell/AppRail.jsx";
 import { CommandPalette } from "../shell/CommandPalette.jsx";
+import { CourseColorProvider } from "../shell/CourseColors.jsx";
 import { ShellProvider } from "../shell/ShellContext.jsx";
 
 const THEME_KEY = "fd.theme";
@@ -115,14 +116,8 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     };
   }, [reloadCourse, reloadAll]);
 
-  // Blackboard marks organizations (clubs, "Bama Bound"); the sync saves their ids here.
-  const [orgIds, setOrgIds] = useState([]);
-  useEffect(() => {
-    const load = () => courseStore.getSetting("bb.orgs").then((v) => { try { setOrgIds(JSON.parse(v) || []); } catch { setOrgIds([]); } });
-    void load();
-    window.addEventListener("studyhub-mirror-changed", load);
-    return () => window.removeEventListener("studyhub-mirror-changed", load);
-  }, []);
+  // Blackboard marks organizations (clubs, "Bama Bound"); the sync saves their ids.
+  const orgIds = useOrgIds();
   const railItems = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.title, hint: f.raw, org: orgIds.includes(c.bbCourseId) }; }), [courses, orgIds]);
   const railCourses = useMemo(() => railItems.filter((c) => !c.org), [railItems]);
   const railOrgs = useMemo(() => railItems.filter((c) => c.org), [railItems]);
@@ -147,20 +142,25 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
   else if (view === "calendar") screen = <div className="fd-screen"><h1 className="fd-title">Calendar</h1><CalendarView userCourses={courses} /></div>;
   else screen = <SettingsScreen profile={profile} onProfile={onProfile} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} />;
 
+  const colorIds = useMemo(() => railItems.map((c) => c.id), [railItems]);
+  const colorLast = useMemo(() => railOrgs.map((c) => c.id), [railOrgs]);
+
   return (
-    <div className="sh-app-root sh-app-shell">
-      <AppRail view={view} courseId={courseId} courses={railCourses} orgs={railOrgs} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
-      <div className="sh-frame-main">
-        <TitleBar />
-        <SyncBar />
-        <main className="fd-main">
-          <ErrorBoundary resetKey={`${view}-${courseId}-${resourceId}`} onReset={() => go("home")}>
-            {screen}
-          </ErrorBoundary>
-        </main>
+    <CourseColorProvider ids={colorIds} last={colorLast}>
+      <div className="sh-app-root sh-app-shell">
+        <AppRail view={view} courseId={courseId} courses={railCourses} orgs={railOrgs} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
+        <div className="sh-frame-main">
+          <TitleBar />
+          <SyncBar />
+          <main className="fd-main">
+            <ErrorBoundary resetKey={`${view}-${courseId}-${resourceId}`} onReset={() => go("home")}>
+              {screen}
+            </ErrorBoundary>
+          </main>
+        </div>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={paletteItems} />
       </div>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={paletteItems} />
-    </div>
+    </CourseColorProvider>
   );
 }
 

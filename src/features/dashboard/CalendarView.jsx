@@ -74,7 +74,6 @@ export function CalendarView({ userCourses }) {
 
   const todayKey = dayKey(new Date());
   const selectedItems = byDay.get(selected) || [];
-  const courses = userCourses.map((c) => ({ uuid: c.uuid || c.id, name: c.name }));
   const selectedLabel = new Date(`${selected}T12:00`).toLocaleDateString([], {
     weekday: "long",
     month: "short",

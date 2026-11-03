@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { BLACKBOARD_URL } from "../../constants/app.js";
+import { useCourseColor } from "../../shell/CourseColors.jsx";
 import { GradesTab } from "../grades/GradesTab.jsx";
 import { AnnouncementsView } from "../mirror/AnnouncementsView.jsx";
 import { AssignmentsView } from "../mirror/AssignmentsView.jsx";
@@ -19,10 +20,14 @@ const TABS = [
 export function CourseScreen({ course, onBack, tab: firstTab = "overview" }) {
   const [tab, setTab] = useState(firstTab);
   const id = course.uuid || course.id;
+  const color = useCourseColor(course.id);
   return (
-    <div className="fd-screen">
+    <div className="fd-screen" style={{ "--course": color }}>
       <button type="button" className="fd-back" onClick={onBack}>Back</button>
-      <h1 className="fd-title" title={friendlyCourse(course).raw}>{friendlyCourse(course).label}</h1>
+      <h1 className="fd-title fd-course-title" title={friendlyCourse(course).raw}>
+        <span className="fd-dot" aria-hidden />
+        {friendlyCourse(course).label}
+      </h1>
       <p className="fd-meta">
         {[course.instructor].filter(Boolean).join(" · ")}
         {course.instructor ? " · " : ""}

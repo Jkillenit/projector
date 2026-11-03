@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { relativeTime } from "../dashboard/dateLabels.js";
 import { courseStore } from "../../db/courseStore.js";
 
@@ -160,9 +161,8 @@ export function BlackboardSyncPanel({ userCourses, onSynced }) {
             return (
               <li key={c.bbCourseId} className="sh-bb-sync-row">
                 <div className="sh-bb-sync-row-text">
-                  <div className="sh-bb-sync-name">{c.name}</div>
+                  <div className="sh-bb-sync-name" title={friendlyCourse(c).raw}>{friendlyCourse(c).label}</div>
                   <div className={`sh-bb-sync-status${res && !res.ok ? " sh-bb-sync-status--error" : ""}`}>
-                    {c.courseCode ? `${c.courseCode} · ` : ""}
                     {status}
                   </div>
                   {syl ? (

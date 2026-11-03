@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { courseStore } from "../../db/courseStore.js";
-import { dueLabel, shortDate } from "../dashboard/dateLabels.js";
+import { plainDate, plainDue } from "../../lib/dates.js";
 import { groupAssignments } from "../mirror/assignmentState.js";
 import { computeCourseGrade } from "../grades/courseGrade.js";
 import { useCourseGrade } from "../grades/useCourseGrade.js";
@@ -39,7 +39,7 @@ export function OverviewTab({ courseUuid, go }) {
         <button type="button" className="fd-panel fd-ov-stat" onClick={() => go("assignments")}>
           <span className="fd-meta">Next due</span>
           <strong className="fd-ov-next">{next ? next.title : "Nothing due"}</strong>
-          <span className="fd-meta">{next?.due_date ? dueLabel(next.due_date) : "You are clear"}</span>
+          <span className="fd-meta">{next?.due_date ? plainDue(next.due_date) : "You are clear"}</span>
         </button>
         <button type="button" className="fd-panel fd-ov-stat" onClick={() => go("assignments")}>
           <span className="fd-meta">Missing</span>
@@ -55,7 +55,7 @@ export function OverviewTab({ courseUuid, go }) {
               <li key={a.uuid}>
                 <span className="fd-row-main">
                   <strong>{a.title}</strong>
-                  <span className="fd-meta">{shortDate(a.posted_at || a.created_at)}{a.read ? "" : " · New"}</span>
+                  <span className="fd-meta">{plainDate(a.posted_at || a.created_at)}{a.read ? "" : " · New"}</span>
                 </span>
               </li>
             ))}

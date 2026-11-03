@@ -45,3 +45,22 @@ export function daysUntilExam(examDate, now = new Date()) {
   const exam = dayNumber(examDate);
   return exam == null ? null : exam - dayNumber(now);
 }
+
+/** "Today 5:00 PM", "Tomorrow 5:00 PM", "Thu 5:00 PM" (within a week), else "Nov 12". Empty for a bad date. */
+export function plainDue(iso, now = new Date()) {
+  const d = new Date(iso);
+  const days = daysBetween(iso, now);
+  if (Number.isNaN(d.getTime()) || days === null) return "";
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (days === 0) return `Today ${time}`;
+  if (days === 1) return `Tomorrow ${time}`;
+  if (days > 1 && days < 7) return `${d.toLocaleDateString([], { weekday: "short" })} ${time}`;
+  if (days === -1) return "Yesterday";
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+/** "Nov 1". */
+export const plainDate = (iso) => {
+  const d = new Date(iso);
+  return !iso || Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString([], { month: "short", day: "numeric" });
+};
