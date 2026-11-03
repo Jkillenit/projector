@@ -10,7 +10,7 @@ const pool = [...resources, ...orgsAsResources(organizations)];
 const ask = (text, student = maya) => match(text, student, pool);
 
 describe("crisis", () => {
-  it.each(["I want to kill myself", "thinking about suicide", "I might hurt someone", "self harm", "I don't want to live anymore"])("catches %s", (text) => {
+  it.each(["I want to kill myself", "thinking about suicide", "I might hurt someone", "self harm", "I don't want to live anymore", "I'm not okay and I don't know who to talk to.", "I can't do this anymore"])("catches %s", (text) => {
     const out = ask(text);
     expect(out.kind).toBe("crisis");
     expect(out.items).toEqual([]);
@@ -117,5 +117,14 @@ describe("never asks for a password or a code", () => {
   it("answers a login question with a place to get help, not a request", () => {
     const out = ask("I forgot my password for okta");
     expect(out.items.map((i) => i.resource.id)).toContain("okta-verify-help");
+  });
+});
+
+describe("Ask demo questions", () => {
+  it("covers all four states", () => {
+    expect(ask("I'm behind in MATH 126 and the exam is Sunday").kind).toBe("matched");
+    expect(ask("How do I get extra time on exams?").kind).toBe("sensitive");
+    expect(ask("I'm not okay and I don't know who to talk to.").kind).toBe("crisis");
+    expect(ask("Who do I talk to about a late drop refund?").kind).toBe("not_sure");
   });
 });

@@ -31,7 +31,7 @@ describe("coursePicks", () => {
       resources,
       { now: NOW }
     );
-    expect(picks.map((p) => p.text)).toEqual(["ENGL 101 Essay draft due Thursday → Writing center", "AC 310 is at 70%, you want 80% → Center for Academic Success"]);
+    expect(picks.map((p) => p.text)).toEqual(["ENGL 101 Essay draft due Thursday → Writing center", "AC 310 under your target → Center for Academic Success"]);
   });
 
   it("says nothing when nothing in the student's classes calls for help", () => {

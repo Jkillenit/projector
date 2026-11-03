@@ -21,26 +21,27 @@ export class ErrorBoundary extends Component {
     if (!this.state.error) return this.props.children;
     if (this.props.fallback !== undefined) return this.props.fallback;
     return (
-      <div className="sh-error-boundary">
-        <div className="sh-section-label">Something went wrong</div>
-        <p className="sh-error-boundary-text">
-          This view hit an error. Your data is saved locally. {String(this.state.error?.message || "")}
-        </p>
-        <div className="sh-empty-actions">
-          <button className="sh-btn-ghost" onClick={() => this.setState({ error: null })}>
-            TRY AGAIN
-          </button>
-          {this.props.onReset ? (
-            <button
-              className="sh-btn-ghost sh-btn-green"
-              onClick={() => {
-                this.setState({ error: null });
-                this.props.onReset();
-              }}
-            >
-              BACK TO HUB
+      <div className="page">
+        <div className="ui-card">
+          <h2 className="t-heading">Something went wrong on this screen</h2>
+          <p className="t-small t-muted">Your saved data is still here.</p>
+          <div className="ui-chips">
+            <button type="button" className="ui-btn ui-btn--secondary ui-btn--md" onClick={() => this.setState({ error: null })}>
+              Try again
             </button>
-          ) : null}
+            {this.props.onReset ? (
+              <button
+                type="button"
+                className="ui-btn ui-btn--quiet ui-btn--md"
+                onClick={() => {
+                  this.setState({ error: null });
+                  this.props.onReset();
+                }}
+              >
+                Go to Home
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     );

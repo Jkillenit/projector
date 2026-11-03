@@ -49,28 +49,28 @@
     "bb_course_id": "demo-eng101",
     "grade_components": [
       {
-        "id": "eng101-hw",
-        "name": "Homework",
-        "weight": 20,
-        "category": "homework"
+        "id": "eng101-essay",
+        "name": "Essays",
+        "weight": 35,
+        "category": "paper"
       },
       {
         "id": "eng101-quiz",
         "name": "Quizzes",
-        "weight": 20,
+        "weight": 30,
         "category": "quiz"
       },
       {
-        "id": "eng101-mid",
-        "name": "Midterm",
-        "weight": 25,
-        "category": "exam"
+        "id": "eng101-disc",
+        "name": "Discussion posts",
+        "weight": 20,
+        "category": "discussion"
       },
       {
-        "id": "eng101-final",
-        "name": "Final",
-        "weight": 35,
-        "category": "exam"
+        "id": "eng101-part",
+        "name": "Participation",
+        "weight": 15,
+        "category": "participation"
       }
     ]
   },

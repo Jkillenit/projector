@@ -78,3 +78,53 @@ export function averageScore(entries) {
   const avg = entries.reduce((sum, e) => sum + Number(e.score || 0), 0) / entries.length;
   return Math.round(avg * 10) / 10;
 }
+
+/**
+ * Share (0..1) of one category that is already graded: by points when both are known, else by item count.
+ * A category with nothing listed yet counts as not started.
+ */
+export function gradedShare({ gradedPossible = 0, totalPossible = 0, gradedCount = 0, totalCount = 0 }) {
+  if (totalPossible > 0 && gradedPossible >= 0) return Math.min(1, gradedPossible / totalPossible);
+  return totalCount > 0 ? Math.min(1, gradedCount / totalCount) : 0;
+}
+
+/**
+ * Where a student stands. `rows`: [{ done, score }] where `done` is the share of the final grade
+ * already graded in that category (percent points, e.g. 23 of a 35% category) and `score` is the
+ * percent earned on that graded work. Returns { earned, doneW, leftW, current }; current is null
+ * when nothing is graded.
+ */
+export function standing(rows) {
+  let earned = 0;
+  let doneW = 0;
+  for (const r of rows || []) {
+    const done = Number(r.done) || 0;
+    if (done <= 0 || r.score == null || Number.isNaN(Number(r.score))) continue;
+    earned += done * Number(r.score);
+    doneW += done;
+  }
+  earned /= 100;
+  const leftW = Math.max(0, 100 - doneW);
+  return { earned, doneW, leftW, current: doneW > 0 ? (earned / doneW) * 100 : null };
+}
+
+/** Average needed on what is left to finish at `cut` percent. null when the grade is final. */
+export const neededFor = (st, cut) => (st.leftW > 0 ? ((cut - st.earned) / st.leftW) * 100 : null);
+
+/** Final percent if the student averages `avg` on what is left. */
+export const projectedFor = (st, avg) => st.earned + (st.leftW * avg) / 100;
+
+/** Verdict for a needed average: { word, tone, note }. */
+export function verdict(needed) {
+  if (needed <= 0) return { word: "Already safe", tone: "good", note: "Even zeros on what is left keep this grade." };
+  if (needed <= 85) return { word: "Doable", tone: "good", note: "Stay close to how you are doing now." };
+  if (needed <= 100) return { word: "Tight", tone: "warn", note: "You need near perfect work on everything left." };
+  return { word: "Out of reach", tone: "accent", note: "Not possible with what is left. Ask your professor about extra credit." };
+}
+
+/** The next letter above `current` on `scale`, or the top letter when already there. */
+export function nextLetterUp(current, scale) {
+  const s = Object.entries(scale && Object.keys(scale).length ? scale : DEFAULT_SCALE).filter(([l]) => l !== "F").sort((a, b) => a[1] - b[1]);
+  if (current == null) return s[s.length - 1][0];
+  return (s.find(([, min]) => min > current) || s[s.length - 1])[0];
+}

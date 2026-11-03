@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  gradedShare,
+  neededFor,
+  nextLetterUp,
+  projectedFor,
+  standing,
+  verdict,
   averageScore,
   currentGrade,
   gradeTone,
@@ -106,5 +112,50 @@ describe("averageScore", () => {
     expect(averageScore([{ score: 90 }, { score: 85 }, { score: 80 }])).toBe(85);
     expect(averageScore([{ score: 90 }, { score: 85.15 }])).toBe(87.6);
     expect(averageScore([])).toBeNull();
+  });
+});
+
+describe("standing (where you stand now)", () => {
+  // Weights 35/30/20/15, graded so far 23/20/15/15, scores 88/79/86/96.
+  const st = standing([
+    { done: 23, score: 88 },
+    { done: 20, score: 79 },
+    { done: 15, score: 86 },
+    { done: 15, score: 96 },
+  ]);
+
+  it("matches the mockup numbers", () => {
+    expect(st.doneW).toBe(73);
+    expect(st.leftW).toBe(27);
+    expect(st.current).toBeCloseTo(86.77, 2);
+    expect(neededFor(st, 90)).toBeCloseTo(98.7, 1);
+    expect(neededFor(st, 80)).toBeCloseTo(61.7, 1);
+    expect(projectedFor(st, 85)).toBeCloseTo(86.29, 2);
+  });
+
+  it("handles a final grade and no grades", () => {
+    const final = standing([{ done: 100, score: 91 }]);
+    expect(final.leftW).toBe(0);
+    expect(neededFor(final, 90)).toBeNull();
+    expect(standing([{ done: 0, score: null }]).current).toBeNull();
+  });
+
+  it("reads graded share by points, then by count", () => {
+    expect(gradedShare({ gradedPossible: 230, totalPossible: 350 })).toBeCloseTo(23 / 35);
+    expect(gradedShare({ gradedCount: 6, totalCount: 8 })).toBe(0.75);
+    expect(gradedShare({})).toBe(0);
+  });
+
+  it("gives plain verdicts", () => {
+    expect(verdict(-5).word).toBe("Already safe");
+    expect(verdict(61.7).word).toBe("Doable");
+    expect(verdict(98.7)).toMatchObject({ word: "Tight", tone: "warn" });
+    expect(verdict(120).tone).toBe("accent");
+  });
+
+  it("picks the next letter up", () => {
+    expect(nextLetterUp(86.8)).toBe("A");
+    expect(nextLetterUp(78)).toBe("B");
+    expect(nextLetterUp(95)).toBe("A");
   });
 });

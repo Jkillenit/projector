@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BLACKBOARD_URL } from "../../constants/app.js";
+import { Button, Card } from "../../components/ui/index.jsx";
 
 export function BlackboardTab() {
   const bb = window.studyHub?.blackboard;
@@ -32,27 +33,20 @@ export function BlackboardTab() {
   }
 
   return (
-    <section className="sh-settings-section">
-      <div className="sh-settings-section-label">Blackboard</div>
-      <div className="sh-settings-kv">
-        <span>Status</span>
-        <span className={`sh-settings-mono${status.loggedIn ? " sh-settings-on" : ""}`}>{status.loggedIn ? "● Connected" : "○ Not connected"}</span>
+    <Card aria-labelledby="set-bb">
+      <div className="card-head">
+        <h2 id="set-bb" className="t-heading">Blackboard</h2>
+        <span className="t-small t-muted">{status.loggedIn ? "Connected" : "Not connected"}</span>
       </div>
-      <p className="sh-settings-hint">
+      <p className="t-small t-muted">
         {desktop
-          ? "Read only. You sign in on Blackboard's own page; Projector never stores your password, and your data stays on this computer."
+          ? "Read only. You sign in on Blackboard's own page. Projector never stores your password, and your data stays on this computer."
           : "Blackboard connects in the desktop app."}
       </p>
-      <div className="sh-settings-buttons">
-        <button type="button" className="sh-btn-outline" disabled={!desktop} onClick={handleOpen}>
-          {status.loggedIn ? "Open Blackboard" : "Connect Blackboard"}
-        </button>
-        {status.loggedIn ? (
-          <button type="button" className="sh-btn-quiet" onClick={handleDisconnect}>
-            Disconnect
-          </button>
-        ) : null}
+      <div className="ui-chips">
+        <Button disabled={!desktop} onClick={handleOpen} external={status.loggedIn}>{status.loggedIn ? "Open Blackboard" : "Connect Blackboard"}</Button>
+        {status.loggedIn ? <Button variant="quiet" onClick={handleDisconnect}>Disconnect</Button> : null}
       </div>
-    </section>
+    </Card>
   );
 }

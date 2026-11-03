@@ -24,10 +24,10 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     /* start fresh */
   }
   const save = () => storage.setItem(DEMO_KEY, JSON.stringify(state));
-  const iso = (offsetDays, hour = 12) => {
+  const iso = (offsetDays, hour = 12, minute = 0) => {
     const d = new Date(now());
     d.setDate(d.getDate() + offsetDays);
-    d.setHours(hour, 0, 0, 0);
+    d.setHours(hour, minute, 0, 0);
     return d.toISOString();
   };
   const ago = (days) => new Date(now().getTime() - days * DAY).toISOString();
@@ -65,7 +65,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     course_uuid: a.course_id,
     title: a.title,
     kind: a.kind,
-    due_date: iso(a.due_in_days, a.due_hour),
+    due_date: iso(a.due_in_days, a.due_hour, a.due_minute),
     completed: state.completed[a.id] ?? a.completed ? 1 : 0,
     submitted: 0,
     score: a.score,

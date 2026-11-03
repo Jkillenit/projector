@@ -1,225 +1,136 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import resources from "../demo/resources.json";
+import organizations from "../demo/organizations.json";
+import { Icon } from "../components/ui/index.jsx";
 import { fuzzyFilter } from "../lib/fuzzy.js";
+import { getCourseLabel } from "../features/dashboard/courseLabel.js";
+import { categoryLabel, searchText } from "../features/resources/resourceView.js";
 
-function matchHighlightParts(primary, query) {
-  const q = query.trim();
-  if (!q) return { pre: primary, match: null, post: null };
-  const lower = primary.toLowerCase();
-  const qi = q.toLowerCase();
-  const i = lower.indexOf(qi);
-  if (i < 0) return { pre: primary, match: null, post: null };
-  return {
-    pre: primary.slice(0, i),
-    match: primary.slice(i, i + q.length),
-    post: primary.slice(i + q.length),
-  };
+const PER_GROUP = 5;
+
+/** Every searchable thing as { key, group, label, sub, text, run }. */
+function buildItems({ courses, upcoming, paletteActions, actions }) {
+  return [
+    ...courses.map((c) => ({ key: `c-${c.id}`, group: "Courses", label: c.label, sub: c.hint, text: `${c.label} ${c.hint}`, run: () => actions.openCourse(c.id) })),
+    ...upcoming.map((a) => {
+      const code = getCourseLabel({ courseCode: a.course_code, name: a.course_name });
+      return { key: `a-${a.uuid}`, group: "Assignments", label: a.title, sub: code, text: `${a.title} ${code}`, run: () => actions.openCourse(a.course_uuid, "assignments", a.uuid) };
+    }),
+    ...resources.map((r) => ({ key: `r-${r.id}`, group: "Resources", label: r.name, sub: categoryLabel(r), text: searchText(r), run: () => actions.openResource(r.id) })),
+    ...organizations.map((o) => ({ key: `o-${o.id}`, group: "Clubs", label: o.name, sub: o.interests.join(", "), text: `${o.name} club ${o.interests.join(" ")}`, run: () => actions.navigate("campus", ["clubs"]) })),
+    ...paletteActions.map((a) => ({ key: a.key, group: "Actions", label: a.label, sub: "", text: a.label, run: a.run })),
+  ];
 }
 
-function PrimaryLabel({ text, query }) {
-  const { pre, match, post } = matchHighlightParts(text, query);
-  if (!match) return <span className="sh-palette-row-primary">{text}</span>;
-  return (
-    <span className="sh-palette-row-primary">
-      {pre}
-      <span className="sh-palette-match">{match}</span>
-      {post}
-    </span>
-  );
-}
+const GROUPS = ["Courses", "Assignments", "Resources", "Clubs", "Actions"];
 
-export function CommandPalette({ open, onClose, items }) {
+/** Ctrl/⌘ K. Arrow keys move, Enter opens, Esc closes. Enter with no match asks the question instead. */
+export function CommandPalette({ open, onClose, courses, upcoming, paletteActions, actions }) {
   const [query, setQuery] = useState("");
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [hi, setHi] = useState(0);
   const inputRef = useRef(null);
-  const prevFocusRef = useRef(null);
-
-  const [mounted, setMounted] = useState(false);
-  const [fadeIn, setFadeIn] = useState(false);
-
-  const isMac =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPod|iPad/i.test(navigator.platform || "");
-  const prefixChar = isMac ? "⌘" : "›";
 
   useEffect(() => {
-    if (open) {
-      prevFocusRef.current = document.activeElement;
-      setMounted(true);
-      setFadeIn(false);
-      setQuery("");
-      setHighlightedIndex(0);
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => setFadeIn(true));
-      });
-      return () => cancelAnimationFrame(id);
-    }
-    setFadeIn(false);
-    const t = window.setTimeout(() => {
-      setMounted(false);
-      setQuery("");
-      try {
-        const el = prevFocusRef.current;
-        if (el && typeof el.focus === "function") el.focus();
-      } catch {
-        /* ignore */
-      }
-    }, 60);
-    return () => window.clearTimeout(t);
+    if (!open) return undefined;
+    const before = document.activeElement;
+    setQuery("");
+    setHi(0);
+    requestAnimationFrame(() => inputRef.current?.focus());
+    return () => before?.focus?.();
   }, [open]);
 
+  const all = useMemo(() => buildItems({ courses, upcoming, paletteActions, actions }), [courses, upcoming, paletteActions, actions]);
+  const groups = useMemo(() => {
+    const q = query.trim();
+    const found = q ? fuzzyFilter(all, q, (i) => i.text) : all.filter((i) => i.group !== "Clubs" && i.group !== "Resources");
+    return GROUPS.map((g) => ({ g, rows: found.filter((i) => i.group === g).slice(0, PER_GROUP) })).filter((x) => x.rows.length);
+  }, [all, query]);
+  const flat = groups.flatMap((x) => x.rows);
   useEffect(() => {
-    if (!open || !mounted || !fadeIn) return;
-    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
-    return () => window.clearTimeout(id);
-  }, [open, mounted, fadeIn]);
-
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", fn);
-    return () => window.removeEventListener("keydown", fn);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    setHighlightedIndex(0);
+    setHi(0);
   }, [query]);
 
-  const rows = useMemo(() => {
-    if (!mounted) return [];
-    const q = query.trim();
-    return (q ? fuzzyFilter(items, q, (r) => `${r.primary} ${r.sub || ""}`) : items).slice(0, 12);
-  }, [mounted, items, query]);
-  const indexRows = { groups: rows.length ? [{ key: "all", label: query.trim() ? "Results" : "Go to", rows }] : [], flat: rows };
-
-  const flatRows = indexRows.flat;
-  const totalNav = flatRows.length;
-
-  useEffect(() => {
-    setHighlightedIndex((i) => {
-      const max = Math.max(0, flatRows.length - 1);
-      return Math.min(i, max);
-    });
-  }, [flatRows.length]);
-
-  const executeRow = useCallback(
-    (row) => {
-      if (!row) return;
-      row.run();
-      if (!row.keepOpen) onClose();
-    },
-    [onClose]
-  );
-
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
-        e.preventDefault();
-        if (!totalNav) return;
-        setHighlightedIndex((i) => (i + 1) % totalNav);
-        return;
+  if (!open) return null;
+  const run = (item) => {
+    onClose();
+    item.run();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHi((i) => (flat.length ? (i + 1) % flat.length : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHi((i) => (flat.length ? (i - 1 + flat.length) % flat.length : 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (flat[hi]) run(flat[hi]);
+      else if (query.trim()) {
+        onClose();
+        actions.ask(query.trim());
       }
-      if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
-        e.preventDefault();
-        if (!totalNav) return;
-        setHighlightedIndex((i) => (i - 1 + totalNav) % totalNav);
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const row = flatRows[highlightedIndex];
-        executeRow(row);
-      }
-    },
-    [onClose, totalNav, flatRows, highlightedIndex, executeRow]
-  );
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+    }
+  };
 
-  if (!mounted) return null;
-
-  const emptySearch =
-    query.trim().length > 0 &&
-    indexRows.groups.length === 0;
-
-  const fadeClass = fadeIn ? "sh-palette-fade-in" : "sh-palette-fade-out";
-
+  let n = -1;
   return (
-    <>
-      <div
-        className={`sh-palette-backdrop ${fadeClass}`}
-        aria-hidden
-        onMouseDown={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-      />
-      <div
-        className={`sh-palette ${fadeClass}`}
-        data-palette="true"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Search"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="sh-palette-input-row">
-          <span className="sh-palette-prefix mono" aria-hidden>
-            {prefixChar}
-          </span>
+    <div className="pal-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="pal" role="dialog" aria-modal="true" aria-label="Search everything">
+        <div className="pal-input-row">
+          <Icon name="search" size={16} />
           <input
             ref={inputRef}
-            type="search"
-            className="sh-palette-input mono"
-            placeholder="Search screens, courses, resources..."
+            className="pal-input"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="pal-list"
+            aria-activedescendant={flat[hi] ? `pal-${flat[hi].key}` : undefined}
+            aria-label="Search everything"
+            placeholder="Search courses, assignments, resources and clubs"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={onKey}
             autoComplete="off"
             spellCheck={false}
           />
-          <span className="sh-palette-esc-badge mono" aria-hidden>
-            ESC
-          </span>
+          <kbd className="sb-kbd">Esc</kbd>
         </div>
-        <div className="sh-palette-results sh-scroll-hover">
-          {emptySearch ? (
-            <div className="sh-palette-empty mono">{`NO RESULTS FOR "${query.trim()}"`}</div>
+        <div id="pal-list" className="pal-list" role="listbox" aria-label="Results">
+          {flat.length ? (
+            groups.map(({ g, rows }) => (
+              <div key={g} role="group" aria-label={g}>
+                <div className="pal-group">{g}</div>
+                {rows.map((item) => {
+                  n += 1;
+                  const i = n;
+                  return (
+                    <div
+                      key={item.key}
+                      id={`pal-${item.key}`}
+                      role="option"
+                      aria-selected={i === hi}
+                      className="pal-row"
+                      onMouseEnter={() => setHi(i)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => run(item)}
+                    >
+                      <span className="pal-label">{item.label}</span>
+                      {item.sub ? <span className="pal-sub">{item.sub}</span> : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           ) : (
-            (() => {
-              let navI = 0;
-              return indexRows.groups.map((g) => (
-                <div key={g.key}>
-                  <div className="sh-palette-group-label">{g.label}</div>
-                  {g.rows.map((row) => {
-                    const globalIdx = navI++;
-                    const hi = globalIdx === highlightedIndex;
-                    return (
-                      <div
-                        key={row.key}
-                        className={`sh-palette-row sh-palette-row--${row.group} ${hi ? "highlighted" : ""}`}
-                        role="option"
-                        aria-label={`${row.primary} ${row.sub || ""}`}
-                        aria-selected={hi}
-                        onMouseEnter={() => setHighlightedIndex(globalIdx)}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => executeRow(row)}
-                      >
-                        <span className="sh-palette-row-icon mono">{row.icon}</span>
-                        <div className="sh-palette-row-center">
-                          <PrimaryLabel text={row.primary} query={query} />
-                          <div className="sh-palette-row-sub mono">{row.sub}</div>
-                        </div>
-                        {hi && row.shortcut ? <span className="kbd">{row.shortcut}</span> : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              ));
-            })()
+            <p className="pal-empty">No match. Press Enter to ask "{query.trim()}".</p>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
