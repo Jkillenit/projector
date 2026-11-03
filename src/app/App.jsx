@@ -33,12 +33,21 @@ const SCREENS = [
   ["settings", "Settings"],
 ];
 
+/** "dark" (default), "light" or "system" (follows the OS). */
 function useTheme() {
   const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "dark"));
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.bsTheme = theme;
     saveJson(THEME_KEY, theme);
+    const mq = window.matchMedia?.("(prefers-color-scheme: light)");
+    const apply = () => {
+      const resolved = theme === "system" ? (mq?.matches ? "light" : "dark") : theme;
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.dataset.bsTheme = resolved;
+    };
+    apply();
+    if (theme !== "system") return undefined;
+    mq?.addEventListener?.("change", apply);
+    return () => mq?.removeEventListener?.("change", apply);
   }, [theme]);
   return [theme, setTheme];
 }
