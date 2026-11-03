@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import resources from "../demo/resources.json";
 import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
+import { SyncBar } from "../features/blackboard/SyncBar.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
@@ -84,11 +85,13 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     const offSync = bb.onSyncComplete(async (res) => {
       if (!res?.courseUuid) return;
       await reloadCourse(res.courseUuid);
-      let syllabusStatus = res.syllabus ? "none" : "missing";
-      if (res.ok && res.syllabus?.text) {
-        syllabusStatus = (await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }))).status;
-      }
-      window.dispatchEvent(new CustomEvent("studyhub-bb-synced", { detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, syllabusStatus } }));
+      let applied = { status: res.syllabus ? "none" : "missing" };
+      if (res.ok && res.syllabus?.text) applied = await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }));
+      window.dispatchEvent(
+        new CustomEvent("studyhub-bb-synced", {
+          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, syllabusStatus: applied.status, weights: applied.count ?? 0, mapped: applied.mapped ?? 0 },
+        })
+      );
     });
     // Disconnect wiped everything mirrored from Blackboard: start over from a clean screen.
     const offGone = bb.onDisconnected?.(() => window.location.reload());
@@ -126,6 +129,7 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
       <AppRail view={view} courseId={courseId} courses={railCourses} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
       <div className="sh-frame-main">
         <TitleBar />
+        <SyncBar />
         <main className="fd-main">
           <ErrorBoundary resetKey={`${view}-${courseId}-${resourceId}`} onReset={() => go("home")}>
             {screen}

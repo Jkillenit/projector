@@ -5,6 +5,7 @@ const { registerDbHandlers } = require("./dbHandlers.cjs");
 const { registerMirrorHandlers } = require("./dbMirrorHandlers.cjs");
 const { registerBlackboardHandlers } = require("./blackboardWindow.cjs");
 const { registerMaintenanceHandlers } = require("./maintenance.cjs");
+const { extractBufferText } = require("./extractText.cjs");
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -102,7 +103,7 @@ app.whenReady().then(() => {
   registerMirrorHandlers();
   registerMaintenanceHandlers(() => mainWindow);
   createWindow();
-  registerBlackboardHandlers(() => mainWindow);
+  registerBlackboardHandlers(() => mainWindow, { extractBufferText });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

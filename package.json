@@ -20,18 +20,20 @@
   "dependencies": {
     "@fontsource/geist-mono": "^5.3.0",
     "@fontsource/geist-sans": "^5.3.0",
+    "better-sqlite3": "^12.9.0",
     "bootstrap": "^5.3.8",
+    "officeparser": "^6.1.1",
+    "pdf-parse": "^2.4.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "better-sqlite3": "^12.9.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.3",
-    "vitest": "^3.2.7",
     "electron": "^34.2.0",
     "electron-builder": "^25.1.8",
-    "@electron/rebuild": "^4.0.4"
+    "vite": "^6.0.3",
+    "vitest": "^3.2.7"
   },
   "main": "electron/main.cjs",
   "build": {

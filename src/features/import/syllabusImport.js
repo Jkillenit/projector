@@ -35,20 +35,20 @@ export function parseSyllabusGrading(text) {
 /**
  * Turns a synced syllabus into grade components when the course has none yet, then sorts the
  * synced Blackboard grades into them. Existing components are never replaced automatically.
- * @returns {Promise<{ status: "applied"|"kept"|"none", count?: number }>}
+ * @returns {Promise<{ status: "applied"|"kept"|"none", count?: number, mapped?: number }>}
  */
 export async function applySyllabusText(courseUuid, text) {
   const db = window.studyHub?.db;
   if (!db || !courseUuid || !text) return { status: "none" };
   const existing = await db.grades.getComponents(courseUuid);
   if (existing?.length) {
-    await db.bb.applyGrades(courseUuid);
-    return { status: "kept", count: existing.length };
+    const applied = await db.bb.applyGrades(courseUuid);
+    return { status: "kept", count: existing.length, mapped: applied?.mapped ?? 0 };
   }
   const parsed = parseSyllabusGrading(text);
   if (parsed.grading.length < 2) return { status: "none" };
   await courseStore.saveGradeComponents(courseUuid, parsed.grading);
   if (parsed.gradingScale) await db.grades.saveGradingScale({ courseUuid, scale: parsed.gradingScale });
-  await db.bb.applyGrades(courseUuid);
-  return { status: "applied", count: parsed.grading.length };
+  const applied = await db.bb.applyGrades(courseUuid);
+  return { status: "applied", count: parsed.grading.length, mapped: applied?.mapped ?? 0 };
 }

@@ -20,6 +20,7 @@ let bbWindow = null;
 const syllabusPopups = new Set();
 let getMainWindow = () => null;
 let onDisconnect = () => {};
+let extractBufferText = null;
 
 const BB_TEMP_DIR = path.join(app.getPath("temp"), "projector-bb");
 const BB_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -373,6 +374,7 @@ async function disconnectBlackboard() {
 function registerBlackboardHandlers(mainWindowGetter, options = {}) {
   getMainWindow = typeof mainWindowGetter === "function" ? mainWindowGetter : () => mainWindowGetter;
   if (typeof options.onDisconnect === "function") onDisconnect = options.onDisconnect;
+  if (typeof options.extractBufferText === "function") extractBufferText = options.extractBufferText;
 
   setPageFetcher(async (pathname) => {
     if (!bbWindow || bbWindow.isDestroyed()) return null;
@@ -445,6 +447,7 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
       const ensured = ensureCourseForBb(getDb(), { bbCourseId: id, ...info });
       courseUuid = ensured.courseUuid;
       const payload = await syncCourse(id, (progress) => sendToMain("bb:sync-progress", { bbCourseId: id, courseUuid, ...progress }), {
+        extractBufferText,
         readLtiText,
         readOpenSyllabus,
         readCourseSyllabus,
