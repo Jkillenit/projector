@@ -68,10 +68,10 @@ describe("buildGradesView", () => {
   it("lists at-risk courses first, then on track, then ungraded, by name within each", () => {
     const view = buildGradesView(
       [
-        course({ uuid: "a", name: "ACC 201", components: [] }),
-        course({ uuid: "b", name: "BUS 300", components: [comp("h", "Homework", 1, 95)] }),
-        course({ uuid: "z", name: "ZOO 100", components: [comp("h", "Homework", 1, 70)] }),
-        course({ uuid: "m", name: "MKT 310", components: [comp("h", "Homework", 1, 60)] }),
+        course({ uuid: "a", name: "ACC 201", courseCode: "ACC 201", components: [] }),
+        course({ uuid: "b", name: "BUS 300", courseCode: "BUS 300", components: [comp("h", "Homework", 1, 95)] }),
+        course({ uuid: "z", name: "ZOO 100", courseCode: "ZOO 100", components: [comp("h", "Homework", 1, 70)] }),
+        course({ uuid: "m", name: "MKT 310", courseCode: "MKT 310", components: [comp("h", "Homework", 1, 60)] }),
       ],
       { now: NOW }
     );

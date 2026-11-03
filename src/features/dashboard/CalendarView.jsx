@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { courseStore } from "../../db/courseStore.js";
 import { loadJson, saveJson } from "../../lib/storage.js";
 import { KindTag } from "./KindTag.jsx";
-import { shortCourse } from "./courseLabel.js";
+import { friendlyCourse } from "./courseLabel.js";
 import { dayKey, groupByDay, itemEdge, monthGrid, rangeFor, shiftWeek, weekDays, weekStart } from "./calendarWeek.js";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -132,7 +132,7 @@ export function CalendarView({ userCourses }) {
                   <span key={a.uuid} className={`sh-calw-item sh-calw-item--${itemEdge(a)}`}>
                     <span className="sh-calw-time">{timeOf(a)}</span>
                     <span className="sh-calw-title">{a.title}</span>
-                    {a.course_name ? <span className="sh-calw-course">{shortCourse(a.course_name)}</span> : null}
+                    {a.course_name ? <span className="sh-calw-course" title={friendlyCourse({ courseCode: a.course_code, name: a.course_name }).raw}>{friendlyCourse({ courseCode: a.course_code, name: a.course_name }).code || a.course_name}</span> : null}
                   </span>
                 ))}
               </button>
@@ -190,7 +190,7 @@ export function CalendarView({ userCourses }) {
                     <KindTag kind={a.kind} />
                     {a.title}
                   </span>
-                  <span className="sh-today-row-sub">{a.course_name}</span>
+                  <span className="sh-today-row-sub">{friendlyCourse({ courseCode: a.course_code, name: a.course_name }).label}</span>
                 </span>
                 <span className="sh-today-when">{timeOf(a)}</span>
               </li>

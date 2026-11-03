@@ -16,7 +16,7 @@ export function scoreText(g) {
   return `${g.score}/${pts} (${Math.round((g.score / pts) * 100)}%)`;
 }
 
-/** The visit marker: when the student was last here. A first visit looks back four days so the demo has news. */
+/** The visit marker: when the student was last here. A first visit looks back 14 days so the first sync shows recent grades. */
 export function lastVisitOrDefault(saved, now = new Date()) {
-  return saved && !Number.isNaN(Date.parse(saved)) ? saved : new Date(now.getTime() - 4 * 86400000).toISOString();
+  return saved && !Number.isNaN(Date.parse(saved)) ? saved : new Date(now.getTime() - 14 * 86400000).toISOString();
 }

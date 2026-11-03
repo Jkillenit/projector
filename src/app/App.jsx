@@ -6,7 +6,7 @@ import { SyncBar } from "../features/blackboard/SyncBar.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
-import { shortCourse } from "../features/dashboard/courseLabel.js";
+import { friendlyCourse } from "../features/dashboard/courseLabel.js";
 import { FrontDoorScreen } from "../features/frontdoor/FrontDoorScreen.jsx";
 import { GradesScreen } from "../features/grades/GradesScreen.jsx";
 import { AskScreen } from "../features/guide/AskScreen.jsx";
@@ -101,13 +101,13 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     };
   }, [reloadCourse]);
 
-  const railCourses = useMemo(() => courses.map((c) => ({ id: c.id, code: shortCourse(c.courseCode || c.name) || c.name })), [courses]);
+  const railCourses = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.label, hint: f.raw }; }), [courses]);
   const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;
 
   const paletteItems = useMemo(
     () => [
       ...SCREENS.map(([id, label]) => ({ key: `go-${id}`, group: "screens", icon: "›", primary: label, sub: "Screen", run: () => go(id) })),
-      ...courses.map((c) => ({ key: `course-${c.id}`, group: "courses", icon: "◎", primary: c.name, sub: c.courseCode || "Course", run: () => openCourse(c.id) })),
+      ...courses.map((c) => ({ key: `course-${c.id}`, group: "courses", icon: "◎", primary: friendlyCourse(c).label, sub: "Course", run: () => openCourse(c.id) })),
       ...resources.map((r) => ({ key: `res-${r.id}`, group: "resources", icon: "§", primary: r.name, sub: `Resource · ${r.tags.slice(0, 4).join(", ")}`, run: () => openResource(r.id) })),
     ],
     [courses, go, openCourse, openResource]

@@ -330,7 +330,7 @@ function registerMirrorHandlers() {
   ipcMain.handle("db:assignments:getRange", (_, { from, to }) => {
     return db
       .prepare(`
-        SELECT a.*, c.uuid AS course_uuid, c.name AS course_name, c.color AS course_color
+        SELECT a.*, c.uuid AS course_uuid, c.name AS course_name, c.course_code AS course_code, c.color AS course_color
         FROM assignments a JOIN courses c ON c.id = a.course_id
         WHERE a.due_date IS NOT NULL AND a.due_date >= ? AND a.due_date < ?
         ORDER BY a.due_date ASC
@@ -427,7 +427,7 @@ function registerMirrorHandlers() {
     const horizon = new Date(now.getTime() + 14 * 86400000);
     const upcoming = db
       .prepare(`
-        SELECT a.*, c.uuid AS course_uuid, c.name AS course_name, c.color AS course_color
+        SELECT a.*, c.uuid AS course_uuid, c.name AS course_name, c.course_code AS course_code, c.color AS course_color
         FROM assignments a JOIN courses c ON c.id = a.course_id
         WHERE a.completed = 0 AND a.due_date IS NOT NULL AND a.due_date >= ? AND a.due_date < ?
         ORDER BY a.due_date ASC LIMIT 20
@@ -436,7 +436,7 @@ function registerMirrorHandlers() {
     const announcements = db
       .prepare(`
         SELECT a.uuid, a.title, substr(a.body, 1, 600) AS body, a.posted_at, a.read,
-               c.uuid AS course_uuid, c.name AS course_name
+               c.uuid AS course_uuid, c.name AS course_name, c.course_code AS course_code
         FROM announcements a JOIN courses c ON c.id = a.course_id
         ORDER BY COALESCE(a.posted_at, a.created_at) DESC LIMIT 8
       `)
@@ -444,7 +444,7 @@ function registerMirrorHandlers() {
     const today = localDate(0);
     const dueCards = db
       .prepare(`
-        SELECT c.uuid AS course_uuid, c.name AS course_name, COUNT(f.id) AS total,
+        SELECT c.uuid AS course_uuid, c.name AS course_name, c.course_code AS course_code, COUNT(f.id) AS total,
                SUM(CASE WHEN m.next_review IS NULL OR m.next_review <= ? THEN 1 ELSE 0 END) AS due
         FROM courses c JOIN flashcards f ON f.course_id = c.id
         LEFT JOIN mastery m ON m.flashcard_id = f.id
@@ -455,7 +455,7 @@ function registerMirrorHandlers() {
       .all(today);
     const recentGrades = db
       .prepare(`
-        SELECT g.name, g.score, g.points_possible, g.graded_at, c.uuid AS course_uuid, c.name AS course_name
+        SELECT g.name, g.score, g.points_possible, g.graded_at, c.uuid AS course_uuid, c.name AS course_name, c.course_code AS course_code
         FROM bb_grade_items g JOIN courses c ON c.id = g.course_id
         WHERE g.score IS NOT NULL
         ORDER BY COALESCE(g.graded_at, g.synced_at) DESC LIMIT 6

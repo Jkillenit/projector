@@ -23,9 +23,9 @@ describe("helpers", () => {
     expect(scoreText(rows[0])).toBe("8/10 (80%)");
     expect(scoreText({ score: 5 })).toBe("5");
   });
-  it("defaults a first visit to four days ago", () => {
+  it("defaults a first visit to 14 days ago", () => {
     const now = new Date("2026-11-02T12:00:00Z");
-    expect(lastVisitOrDefault(null, now)).toBe("2026-10-29T12:00:00.000Z");
+    expect(lastVisitOrDefault(null, now)).toBe("2026-10-19T12:00:00.000Z");
     expect(lastVisitOrDefault("2026-11-01T00:00:00Z", now)).toBe("2026-11-01T00:00:00Z");
   });
 });

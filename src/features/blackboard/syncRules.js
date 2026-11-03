@@ -11,13 +11,15 @@ export function shouldSync({ loggedIn, running, reason, lastTryAt = null, now = 
   return lastTryAt == null || now - lastTryAt >= SYNC_EVERY_MS;
 }
 
+const termOf = (c) => String(c.courseCode || "").match(/^(\d{6})/)?.[1] || null;
+
 /**
- * Courses of the current term only. UA course codes start with the term ("202640-..."), so the
- * latest term prefix wins. shortcut: codes without a prefix are kept when none has one, and a
- * future term would win over the current one; upgrade if Blackboard lists future terms as available.
+ * Drops only courses from an older term. UA course codes start with the term ("202640-..."), so a
+ * code with an older prefix than the latest is old; codes with no prefix (MIS 430 style, XC
+ * items) are kept, never guessed away. shortcut: a future term would win over the current one;
+ * upgrade if Blackboard lists future terms as available.
  */
 export function currentTermCourses(courses) {
-  const term = (c) => String(c.courseCode || "").match(/^(\d{6})/)?.[1] || null;
-  const latest = courses.map(term).filter(Boolean).sort().pop();
-  return latest ? courses.filter((c) => term(c) === latest) : courses;
+  const latest = courses.map(termOf).filter(Boolean).sort().pop();
+  return courses.filter((c) => !termOf(c) || termOf(c) === latest);
 }

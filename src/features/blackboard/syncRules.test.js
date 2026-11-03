@@ -29,6 +29,11 @@ describe("currentTermCourses", () => {
     expect(currentTermCourses(list).map((c) => c.courseCode)).toEqual(["202640-B-2", "202640-C-3"]);
   });
 
+  it("keeps courses whose code has no term prefix", () => {
+    const list = [{ courseCode: "202640-B-2" }, { courseCode: "202540-A-1" }, { courseCode: "MIS430-001" }, { courseCode: "XC" }];
+    expect(currentTermCourses(list).map((c) => c.courseCode)).toEqual(["202640-B-2", "MIS430-001", "XC"]);
+  });
+
   it("keeps everything when no code has a term", () => {
     const list = [{ courseCode: "MIS430" }, { courseCode: "" }];
     expect(currentTermCourses(list)).toEqual(list);

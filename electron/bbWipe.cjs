@@ -14,7 +14,7 @@ function wipeBlackboardData(db) {
     db.prepare("DELETE FROM bb_grade_items").run();
     db.prepare("DELETE FROM assignments WHERE source = 'blackboard'").run();
     db.prepare("DELETE FROM announcements WHERE course_id NOT IN (SELECT id FROM courses)").run();
-    db.prepare("DELETE FROM settings WHERE key LIKE 'bb.%' OR key LIKE 'blackboard%'").run();
+    db.prepare("DELETE FROM settings WHERE key LIKE 'bb.%' OR key LIKE 'blackboard%' OR key = 'fd.lastVisit'").run();
   });
   tx();
 }

@@ -11,11 +11,11 @@ function line(r) {
 
 /** Live mode only: "Synced 5m ago · Sync now", progress while it runs, and a counts-only report. */
 export function SyncBar() {
-  const { available, loggedIn, running, progress, lastSyncAt, error, report, syncNow } = useStaySynced();
+  const { available, loggedIn, running, progress, lastSyncAt, error, report, toast, enrollments, syncNow } = useStaySynced();
   if (!available || (!loggedIn && !running)) return null;
   return (
     <div className="fd-syncbar" role="status">
-      <span>
+      <span title={running ? progress?.hint : undefined}>
         {running
           ? `Syncing ${progress?.name || "your courses"}${progress?.total ? ` (${progress.index} of ${progress.total})` : ""}${STEP[progress?.step] ? ` · ${STEP[progress.step]}` : ""}…`
           : syncedAgo(lastSyncAt) || "Not synced yet"}
@@ -25,11 +25,18 @@ export function SyncBar() {
           Sync now
         </button>
       )}
+      {toast && <span role="status">{toast}</span>}
       {error && <span className="fd-syncbar-error">{error}</span>}
+      {!running && enrollments.length > 0 && (
+        <details>
+          <summary>Every course Blackboard returned</summary>
+          <ul>{enrollments.map((e, i) => <li key={i} title={e.hint}>{e.name} · {e.line} → {e.reason}</li>)}</ul>
+        </details>
+      )}
       {!running && report.length > 0 && (
         <details>
           <summary>Report</summary>
-          <ul>{report.map((r) => <li key={r.name}>{line(r)}</li>)}</ul>
+          <ul>{report.map((r) => <li key={r.name} title={r.hint}>{line(r)}</li>)}</ul>
         </details>
       )}
     </div>

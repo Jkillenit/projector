@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { BLACKBOARD_URL } from "../../constants/app.js";
 import { AnnouncementsView } from "../mirror/AnnouncementsView.jsx";
 import { AssignmentsView } from "../mirror/AssignmentsView.jsx";
@@ -13,7 +14,7 @@ export function CourseScreen({ course, onBack }) {
   return (
     <div className="fd-screen">
       <button type="button" className="fd-back" onClick={onBack}>Back</button>
-      <h1 className="fd-title">{course.name}</h1>
+      <h1 className="fd-title" title={friendlyCourse(course).raw}>{friendlyCourse(course).label}</h1>
       <p className="fd-meta">
         {[course.courseCode, course.instructor].filter(Boolean).join(" · ")}
         {" · "}

@@ -67,7 +67,7 @@ export function GradesScreen({ onOpenCourse }) {
           {rows.map((r) => (
             <li key={r.courseId} className={`sh-ghub-row${r.atRisk ? " sh-ghub-row--risk" : ""}`}>
               <div className="sh-ghub-main">
-                <div className="sh-ghub-name">{r.name}</div>
+                <div className="sh-ghub-name" title={r.hint}>{r.name}</div>
                 <div className="sh-ghub-next">{r.nextStep || "No grades in yet"}</div>
               </div>
               <Sparkline points={r.trend} />

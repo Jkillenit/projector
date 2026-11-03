@@ -8,7 +8,8 @@ const {
   BB_PARTITION,
   BB_ORIGIN: BB_URL,
   getJson,
-  listEnrolledCourses,
+  listEnrollments,
+  sessionWorks,
   syncCourse,
   checkCourse,
   resetUserCache,
@@ -158,6 +159,7 @@ function createHiddenBbWindow() {
   const win = new BrowserWindow({ show: false, width: 1200, height: 900, webPreferences: HIDDEN_PREFS });
   const popups = [];
   win.webContents.setAudioMuted(true);
+  win.on("show", () => win.hide());
   win.webContents.setWindowOpenHandler(({ url }) =>
     isSyllabusToolUrl(url) || isBlackboardUrl(url)
       ? { action: "allow", overrideBrowserWindowOptions: { show: false, webPreferences: HIDDEN_PREFS } }
@@ -165,6 +167,7 @@ function createHiddenBbWindow() {
   );
   win.webContents.on("did-create-window", (child) => {
     popups.push(child);
+    child.on("show", () => child.hide());
     watchLtiLaunches(child.webContents);
   });
   watchLtiLaunches(win.webContents);
@@ -287,16 +290,6 @@ async function readCourseSyllabus(bbCourseId) {
   return readSyllabusViaTab(bbCourseId);
 }
 
-/** A syllabus the student already has open in the Blackboard window, only while that window is on this course. */
-async function readOpenSyllabus(bbCourseId) {
-  if (!bbWindow || bbWindow.isDestroyed()) return "";
-  if (parseCourseFromUrl(bbWindow.webContents.getURL())?.bbCourseId !== bbCourseId) return "";
-  const list = [bbWindow.webContents];
-  for (const popup of syllabusPopups) if (!popup.isDestroyed()) list.push(popup.webContents);
-  if (!syllabusFrames(list).length) return "";
-  return waitForSyllabusText(() => list, 5000);
-}
-
 async function openBlackboardWindow(targetUrl = null) {
   if (bbWindow && !bbWindow.isDestroyed()) {
     if (targetUrl) await bbWindow.loadURL(targetUrl).catch(() => {});
@@ -352,6 +345,31 @@ async function openBlackboardWindow(targetUrl = null) {
   await bbWindow.loadURL(startUrl);
 }
 
+let loginWatch = null;
+
+/** Sign in only: once the real users/me call works, the login window closes by itself. */
+function watchForLogin() {
+  clearInterval(loginWatch);
+  loginWatch = setInterval(async () => {
+    if (!bbWindow || bbWindow.isDestroyed()) return clearInterval(loginWatch);
+    if (!(await sessionWorks())) return;
+    clearInterval(loginWatch);
+    closeBlackboardWindow();
+    sendToMain("bb:connected", {});
+  }, 2000);
+}
+
+/** Connect Blackboard: no window when already connected, otherwise the sign-in window until it works. */
+async function connectBlackboard() {
+  if (await sessionWorks()) {
+    sendToMain("bb:connected", { already: true });
+    return { success: true, opened: false };
+  }
+  await openBlackboardWindow();
+  watchForLogin();
+  return { success: true, opened: true };
+}
+
 function closeBlackboardWindow() {
   if (bbWindow && !bbWindow.isDestroyed()) {
     bbWindow.close();
@@ -392,8 +410,7 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
 
   ipcMain.handle("bb:open", async (event) => {
     if (!isMainWindowSender(event)) return { success: false };
-    await openBlackboardWindow();
-    return { success: true };
+    return connectBlackboard();
   });
 
   ipcMain.handle("bb:open-url", async (event, url) => {
@@ -423,7 +440,8 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
     if (!isMainWindowSender(event)) return { ok: false, error: "untrusted" };
     if (!(await isLoggedIn())) return { ok: false, error: "not-logged-in" };
     try {
-      return { ok: true, courses: await listEnrolledCourses() };
+      const enrollments = await listEnrollments();
+      return { ok: true, courses: enrollments.filter((e) => e.reason === "kept"), enrollments };
     } catch (err) {
       const error = err?.status === 401 || err?.status === 403 ? "not-logged-in" : err?.message || String(err);
       return { ok: false, error };
@@ -449,7 +467,6 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
       const payload = await syncCourse(id, (progress) => sendToMain("bb:sync-progress", { bbCourseId: id, courseUuid, ...progress }), {
         extractBufferText,
         readLtiText,
-        readOpenSyllabus,
         readCourseSyllabus,
       });
       const result = applyBbSync(getDb(), courseUuid, payload);

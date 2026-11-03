@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
 import organizations from "../../demo/organizations.json";
 import { courseStore } from "../../db/courseStore.js";
@@ -11,6 +11,7 @@ import { syncedAgo } from "../today/syncedAgo.js";
 import { useTodayModel } from "../today/useTodayModel.js";
 import { OverdueStrip } from "../today/components/OverdueStrip.jsx";
 import { TonightList } from "../today/components/TonightList.jsx";
+import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { lastVisitOrDefault, newGradesSince, scoreText } from "./newGrades.js";
 
 const VISIT_KEY = "fd.lastVisit";
@@ -66,18 +67,18 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
     };
   }, [loadGrades]);
 
-  // The marker moves forward right away, but this visit keeps comparing with the old one.
+  // The marker moves forward once there is data to look at (the first sync in live mode), so the
+  // first visit shows the last 14 days. This visit keeps comparing with the old marker.
+  const syncedAt = view?.syncedAt;
+  const visitRead = useRef(false);
   useEffect(() => {
-    let alive = true;
+    if (visitRead.current || (mode !== "demo" && !syncedAt)) return;
+    visitRead.current = true;
     void courseStore.getSetting(VISIT_KEY).then((saved) => {
-      if (!alive) return;
       setLastVisit(lastVisitOrDefault(saved));
       void courseStore.setSetting(VISIT_KEY, new Date().toISOString());
     });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  }, [mode, syncedAt]);
 
   const fresh = useMemo(() => (lastVisit ? newGradesSince(recent, lastVisit) : []), [recent, lastVisit]);
   const weak = view?.standing?.courses?.find((r) => r.state === "warn");
@@ -112,7 +113,7 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
                       <span className="fd-new-dot" aria-label="New" />
                       <span className="fd-row-main">
                         <strong>{g.name}</strong>
-                        <span className="fd-meta">{g.course_name}</span>
+                        <span className="fd-meta" title={friendlyCourse({ courseCode: g.course_code, name: g.course_name }).raw}>{friendlyCourse({ courseCode: g.course_code, name: g.course_name }).label}</span>
                       </span>
                       <span className="fd-score">{scoreText(g)}</span>
                     </li>

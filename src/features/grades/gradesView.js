@@ -2,6 +2,7 @@
  * Shapes the Today snapshot for the Grades hub. Pure: standing and needed scores come from the
  * priority engine, letters from todayView; this only words the next step and builds the trend.
  */
+import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { PRIORITY_CONFIG, formatPct, neededScores } from "../today/priority.js";
 import { courseState, letterFor } from "../today/todayView.js";
 import { currentGrade, hasScore } from "./gradeMath.js";
@@ -68,7 +69,8 @@ export function buildGradesView(courses, { scales = {}, gradeItems = {}, now, co
       const state = courseState(needs);
       return {
         courseId: c.uuid,
-        name: c.name,
+        name: friendlyCourse(c).label,
+        hint: friendlyCourse(c).raw,
         current: needs.current,
         letter: letterFor(needs.current, scale),
         atRisk: state === "warn",

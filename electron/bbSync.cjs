@@ -158,23 +158,47 @@ function contentKind(handlerId) {
   return "item";
 }
 
-async function listEnrolledCourses() {
+/** Every enrollment Blackboard returns, each with whether it is synced and why (names, codes and flags only). */
+async function listEnrollments() {
   const userId = await currentUserId();
   const memberships = await getPaged(
     `/learn/api/public/v1/users/${encodeURIComponent(userId)}/courses?expand=course&limit=100`,
     300
   );
-  return memberships
-    .filter((m) => m?.course && m.course.availability?.available !== "No")
-    .map((m) => ({
-      bbCourseId: m.course.id,
-      name: m.course.name || m.course.courseId || m.course.id,
-      courseCode: m.course.courseId || "",
-      termId: m.course.termId || "",
-      lastAccessed: m.lastAccessed || null,
-      role: m.courseRoleId || "Student",
-    }))
-    .filter((c) => /student/i.test(c.role));
+  return memberships.map((m) => {
+    const c = m?.course;
+    const role = m?.courseRoleId || "Student";
+    const available = c?.availability?.available || "";
+    let reason = "kept";
+    if (!c) reason = "skipped: no course record";
+    else if (available === "No") reason = "skipped: course unavailable";
+    else if (!/student/i.test(role)) reason = `skipped: role is ${role}`;
+    return {
+      bbCourseId: c?.id || "",
+      name: c?.name || c?.courseId || c?.id || "",
+      courseCode: c?.courseId || "",
+      termId: c?.termId || "",
+      lastAccessed: m?.lastAccessed || null,
+      role,
+      available,
+      enrollmentAvailable: m?.availability?.available || "",
+      reason,
+    };
+  });
+}
+
+async function listEnrolledCourses() {
+  return (await listEnrollments()).filter((e) => e.reason === "kept");
+}
+
+/** Uncached, read-only check that the saved session works outside the page (the real users/me call). */
+async function sessionWorks() {
+  try {
+    await getJsonViaSession("/learn/api/v1/users/me");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function collectContents(bbCourseId) {
@@ -588,6 +612,8 @@ module.exports = {
   BB_ORIGIN,
   getJson,
   listEnrolledCourses,
+  listEnrollments,
+  sessionWorks,
   syncCourse,
   checkCourse,
   resetUserCache,
