@@ -778,5 +778,44 @@
     "score": null,
     "posted_days_ago": null,
     "completed": false
+  },
+  {
+    "id": "mkt300-exam2",
+    "course_id": "mkt300",
+    "title": "Exam 2",
+    "kind": "exam",
+    "component_id": "mkt300-mid",
+    "due_in_days": 6,
+    "points_possible": 100,
+    "score": null,
+    "posted_days_ago": null,
+    "completed": false,
+    "due_hour": 14
+  },
+  {
+    "id": "calc2-exam2",
+    "course_id": "calc2",
+    "title": "Exam 2",
+    "kind": "exam",
+    "component_id": "calc2-mid",
+    "due_in_days": 8,
+    "points_possible": 100,
+    "score": null,
+    "posted_days_ago": null,
+    "completed": false,
+    "due_hour": 14
+  },
+  {
+    "id": "eng101-essay",
+    "course_id": "eng101",
+    "title": "Essay draft",
+    "kind": "assignment",
+    "component_id": "eng101-hw",
+    "due_in_days": 4,
+    "points_possible": 50,
+    "score": null,
+    "posted_days_ago": null,
+    "completed": false,
+    "due_hour": 23
   }
 ]

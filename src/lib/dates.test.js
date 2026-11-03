@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayNumber, daysBetween, localDayKey, startOfLocalDay } from "./dates.js";
+import { dayNumber, daysBetween, localDayKey, plainDate, plainDue, startOfLocalDay } from "./dates.js";
 
 describe("localDayKey", () => {
   it("formats local dates and treats bare dates as local", () => {
@@ -32,5 +32,20 @@ describe("startOfLocalDay", () => {
   it("returns local midnight", () => {
     const d = startOfLocalDay(new Date(2026, 9, 1, 15, 45));
     expect([d.getHours(), d.getMinutes(), d.getDate()]).toEqual([0, 0, 1]);
+  });
+});
+
+describe("plainDue / plainDate", () => {
+  const now = new Date(2026, 10, 2, 9, 0);
+  it("uses everyday words for near dates", () => {
+    expect(plainDue(new Date(2026, 10, 2, 17, 0).toISOString(), now)).toMatch(/^Today /);
+    expect(plainDue(new Date(2026, 10, 3, 17, 0).toISOString(), now)).toMatch(/^Tomorrow /);
+    expect(plainDue(new Date(2026, 10, 5, 17, 0).toISOString(), now)).toMatch(/^\w{3} /);
+    expect(plainDue(new Date(2026, 10, 1, 17, 0).toISOString(), now)).toBe("Yesterday");
+    expect(plainDue("junk", now)).toBe("");
+  });
+  it("formats a short date", () => {
+    expect(plainDate(new Date(2026, 10, 1, 12).toISOString())).toMatch(/Nov/);
+    expect(plainDate(null)).toBe("");
   });
 });

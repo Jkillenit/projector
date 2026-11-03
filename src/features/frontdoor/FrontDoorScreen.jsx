@@ -1,25 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
-import organizations from "../../demo/organizations.json";
 import { courseStore } from "../../db/courseStore.js";
-import { toStudent } from "../../platform/profile.js";
 import { AskBar } from "../../shell/AskBar.jsx";
-import { orgsAsResources, pickForYou } from "../guide/matcher.js";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
-import { runTodayAction } from "../today/runAction.js";
 import { syncedAgo } from "../today/syncedAgo.js";
-import { useTodayModel } from "../today/useTodayModel.js";
-import { OverdueStrip } from "../today/components/OverdueStrip.jsx";
-import { TonightList } from "../today/components/TonightList.jsx";
+import { useOrgIds } from "../courses/useOrgIds.js";
+import { CourseCards } from "./CourseCards.jsx";
+import { DueSoon } from "./DueSoon.jsx";
+import { coursePicks } from "./coursePicks.js";
+import { greeting } from "./dueSoon.js";
+import { useHomeData } from "./useHomeData.js";
 import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { lastVisitOrDefault, newGradesSince, scoreText } from "./newGrades.js";
 
 const VISIT_KEY = "fd.lastVisit";
-const POOL = [...resources, ...orgsAsResources(organizations)];
 
 function DataStatus({ mode, syncedAt }) {
-  if (mode === "demo") return <p className="fd-meta">Demo data, last updated {new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</p>;
-  return <p className="fd-meta">{syncedAgo(syncedAt) || "Not synced yet"}</p>;
+  if (mode === "demo") return <span className="fd-meta">Demo data, updated today</span>;
+  return <span className="fd-meta">{syncedAgo(syncedAt) || "Not synced yet"}</span>;
 }
 
 /** Live mode only: one clear card when Blackboard needs a sign in. Never a silent failure. */
@@ -37,18 +35,18 @@ function SignInCard() {
   }, [bb]);
   if (!bb || loggedIn) return null;
   return (
-    <div className="fd-note fd-note--warn" role="status">
-      <strong>{everSynced ? "Sign in to Blackboard again" : "Connect Blackboard"}</strong>
-      <p>{everSynced ? "Your Blackboard sign in ran out. Sign in to see new grades and due dates." : "Connect once to see your classes here."}</p>
-      <button type="button" className="fd-btn fd-btn--small" onClick={() => bb.open()}>
-        {everSynced ? "Sign in to Blackboard" : "Connect Blackboard"}
+    <div className="fd-banner" role="status">
+      <span>{everSynced ? "Your Blackboard sign in ran out." : "Connect Blackboard to see your classes."}</span>
+      <button type="button" className="fd-btn-quiet" onClick={() => bb.open()}>
+        {everSynced ? "Sign in again" : "Connect"}
       </button>
     </div>
   );
 }
 
-export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, onNavigate, onAsk }) {
-  const { loaded, view } = useTodayModel();
+export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, onAsk }) {
+  const orgIds = useOrgIds();
+  const { loaded, cards, due, facts, syncedAt } = useHomeData(orgIds);
   const [recent, setRecent] = useState([]);
   const [lastVisit, setLastVisit] = useState(null);
 
@@ -69,7 +67,6 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
 
   // The marker moves forward once there is data to look at (the first sync in live mode), so the
   // first visit shows the last 14 days. This visit keeps comparing with the old marker.
-  const syncedAt = view?.syncedAt;
   const visitRead = useRef(false);
   useEffect(() => {
     if (visitRead.current || (mode !== "demo" && !syncedAt)) return;
@@ -81,27 +78,26 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
   }, [mode, syncedAt]);
 
   const fresh = useMemo(() => (lastVisit ? newGradesSince(recent, lastVisit) : []), [recent, lastVisit]);
-  const weak = view?.standing?.courses?.find((r) => r.state === "warn");
-  const picks = useMemo(() => pickForYou(toStudent(profile), POOL, { weakCourse: weak?.label }), [profile, weak?.label]);
-  const run = useCallback((action) => runTodayAction(action, onOpenCourse), [onOpenCourse]);
-  const openOverdue = useCallback((item) => (item.url ? openInBlackboard(item.url) : onOpenCourse(item.courseUuid)), [onOpenCourse]);
+  const picks = useMemo(() => coursePicks(facts, resources), [facts]);
+  const openItem = useCallback((a) => (a.url ? openInBlackboard(a.url) : onOpenCourse(a.course_uuid)), [onOpenCourse]);
+  const done = useCallback((a) => void courseStore.setAssignmentCompleted(a.uuid, true), []);
 
   return (
     <div className="fd-screen fd-home">
-      <header>
-        <h1 className="fd-title">{profile.name ? `Hi ${profile.name}` : "Welcome"}</h1>
-        {view ? <DataStatus mode={mode} syncedAt={view.syncedAt} /> : null}
+      <header className="fd-home-head">
+        <h1 className="fd-title">{profile.name ? `${greeting()}, ${profile.name}` : greeting()}</h1>
+        {loaded ? <DataStatus mode={mode} syncedAt={syncedAt} /> : null}
       </header>
 
       <SignInCard />
 
-      {!loaded || !view ? (
+      {!loaded ? (
         <div className="sh-skeleton-pulse" style={{ height: 160 }} aria-busy="true" />
       ) : (
         <div className="fd-home-grid">
           <div className="fd-col">
-            <TonightList items={view.tonight} hasCourses={view.hasCourses} synced={view.synced} onRun={run} />
-            <OverdueStrip items={view.overdue} onMarkSubmitted={(uuid) => void courseStore.setAssignmentCompleted(uuid, true)} onOpen={openOverdue} />
+            <DueSoon due={due} cards={cards} onOpen={openItem} onDone={done} />
+            <CourseCards cards={cards} onOpen={onOpenCourse} />
           </div>
           <div className="fd-col">
             <section className="fd-panel" aria-label="New grades">
@@ -126,19 +122,18 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
 
             <section className="fd-panel" aria-label="Picked for you">
               <h2 className="fd-h2">Picked for you</h2>
-              <ul className="fd-rows">
-                {picks.map(({ resource, why }) => (
-                  <li key={resource.id} className="fd-pick">
-                    <span className="fd-row-main">
-                      <strong>{resource.name}</strong>
-                      <span className="fd-why">{why}</span>
-                    </span>
-                    <button type="button" className="fd-btn fd-btn--small" onClick={() => (resource.id.startsWith("org-") ? onNavigate("clubs") : onOpenResource(resource.id))}>
-                      {resource.id.startsWith("org-") ? "See clubs" : "How to get in"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              {picks.length ? (
+                <ul className="fd-rows">
+                  {picks.map(({ key, text, resource }) => (
+                    <li key={key} className="fd-pick">
+                      <span className="fd-row-main">{text}</span>
+                      <button type="button" className="fd-btn-quiet" onClick={() => onOpenResource(resource.id)}>How to get in</button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="fd-meta">Nothing in your classes needs help right now.</p>
+              )}
             </section>
           </div>
         </div>

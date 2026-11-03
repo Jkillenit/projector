@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { shortDate } from "../dashboard/dateLabels.js";
+import { plainDate } from "../../lib/dates.js";
 import { courseStore } from "../../db/courseStore.js";
 
 export function AnnouncementsView({ courseUuid }) {
@@ -36,12 +36,12 @@ export function AnnouncementsView({ courseUuid }) {
   const unread = rows.filter((a) => !a.read).length;
 
   return (
-    <div className="main-content sh-mirror-view">
+    <div className="fd-panel sh-mirror-view">
       <div className="sh-mirror-head">
-        <div className="sh-section-label">ANNOUNCEMENTS{unread ? ` · ${unread} UNREAD` : ""}</div>
+        <h2 className="fd-h2">Announcements{unread ? ` · ${unread} unread` : ""}</h2>
         {unread ? (
-          <button type="button" className="sh-btn-ghost sh-bb-sync-btn" onClick={markAllRead}>
-            MARK ALL READ
+          <button type="button" className="fd-btn-quiet" onClick={markAllRead}>
+            Mark all read
           </button>
         ) : null}
       </div>
@@ -65,7 +65,7 @@ export function AnnouncementsView({ courseUuid }) {
                   <span className={`sh-today-dot${a.read ? "" : " sh-today-dot--unread"}`} />
                   <span className="sh-today-row-main">
                     <span className="sh-today-row-title">{a.title}</span>
-                    <span className="sh-today-row-sub">{shortDate(a.posted_at || a.created_at)}</span>
+                    <span className="sh-today-row-sub">{plainDate(a.posted_at || a.created_at)}</span>
                   </span>
                 </button>
                 {open ? <p className="sh-today-ann-body sh-ann-body-full">{a.body || "No text."}</p> : null}

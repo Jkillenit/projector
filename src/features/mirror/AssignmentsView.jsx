@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { dueLabel } from "../dashboard/dateLabels.js";
+import { plainDue } from "../../lib/dates.js";
 import { groupAssignments, isDone } from "./assignmentState.js";
 import { KindTag } from "../dashboard/KindTag.jsx";
 import { openInBlackboard } from "./openInBlackboard.js";
@@ -25,17 +25,15 @@ function AssignmentRow({ a, onToggle, onDelete }) {
           {a.title}
         </span>
         <span className="sh-today-row-sub">
-          {a.source === "manual" ? "ADDED BY YOU" : "BLACKBOARD"}
-          {a.points_possible ? ` · ${a.points_possible} PTS` : ""}
-          {scored ? ` · SCORED ${a.score}/${a.points_possible}` : ""}
+          {[a.source === "manual" ? "Added by you" : "", a.points_possible ? `${a.points_possible} pts` : "", scored ? `Scored ${a.score}/${a.points_possible}` : ""].filter(Boolean).join(" · ")}
         </span>
       </span>
       <span className={`sh-today-when${overdue ? " sh-today-when--overdue" : ""}`}>
-        {a.due_date ? dueLabel(a.due_date) : "—"}
+        {a.due_date ? plainDue(a.due_date) : "—"}
       </span>
       {a.url ? (
         <button type="button" className="sh-asg-action" onClick={() => openInBlackboard(a.url)} title="Open in Blackboard">
-          OPEN
+          Open
         </button>
       ) : null}
       {a.source === "manual" ? (
@@ -57,7 +55,7 @@ function AssignmentGroups({ groups, onToggle, onDelete }) {
   );
   return (
     <>
-      {[["TO DO", groups.todo], ["MISSING", groups.missing]].map(([label, items]) =>
+      {[["To do", groups.todo], ["Missing", groups.missing]].map(([label, items]) =>
         items.length ? (
           <div key={label} className="sh-mirror-group">
             <div className="sh-hub-section-label">
@@ -69,7 +67,7 @@ function AssignmentGroups({ groups, onToggle, onDelete }) {
       )}
       {groups.done.length ? (
         <details className="sh-mirror-group">
-          <summary className="sh-hub-section-label">DONE · {groups.done.length}</summary>
+          <summary className="sh-hub-section-label">Done · {groups.done.length}</summary>
           {list(groups.done)}
         </details>
       ) : null}
@@ -113,10 +111,7 @@ export function AssignmentsView({ courseUuid }) {
   if (rows === null) return <div className="sh-skeleton-pulse" style={{ height: 200 }} />;
 
   return (
-    <div className="main-content sh-mirror-view">
-      <div className="sh-mirror-head">
-        <div className="sh-section-label">Assignments</div>
-      </div>
+    <div className="fd-panel sh-mirror-view">
       {!rows.length ? (
         <p className="sh-today-empty">No assignments yet. Nothing is due here.</p>
       ) : (
