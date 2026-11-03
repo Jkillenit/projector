@@ -9,7 +9,7 @@ const GROUPS = [
 ];
 
 function Row({ a, course, overdue, onOpen, onDone }) {
-  const color = useCourseColor(a.course_uuid);
+  const color = useCourseColor(a.course_uuid).dot;
   return (
     <li className="fd-due-row" style={{ "--course": color }}>
       <span className="fd-due-main">

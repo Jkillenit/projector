@@ -69,7 +69,7 @@ function RailItem({ icon, label, active, hint, ...rest }) {
 }
 
 function CourseButton({ c, active, onOpen }) {
-  const color = useCourseColor(c.id);
+  const color = useCourseColor(c.id).dot;
   return (
     <button
       type="button"

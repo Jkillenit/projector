@@ -8,6 +8,7 @@ import { useOrgIds } from "../features/courses/useOrgIds.js";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
 import { friendlyCourse } from "../features/dashboard/courseLabel.js";
+import { isShell } from "../features/dashboard/courseColor.js";
 import { FrontDoorScreen } from "../features/frontdoor/FrontDoorScreen.jsx";
 import { AskScreen } from "../features/guide/AskScreen.jsx";
 import { applySyllabusText } from "../features/import/syllabusImport.js";
@@ -155,7 +156,7 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
   const colorLast = useMemo(() => railOrgs.map((c) => c.id), [railOrgs]);
 
   return (
-    <CourseColorProvider ids={colorIds} last={colorLast}>
+    <CourseColorProvider courses={colorCourses}>
       <div className="sh-app-root sh-app-shell">
         <AppRail view={view} courseId={courseId} courses={railCourses} orgs={railOrgs} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
         <div className="sh-frame-main">

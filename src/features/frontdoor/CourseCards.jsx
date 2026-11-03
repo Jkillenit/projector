@@ -4,7 +4,7 @@ import { formatPct } from "../today/priority.js";
 import { plainDue } from "../../lib/dates.js";
 
 function Card({ card, onOpen }) {
-  const color = useCourseColor(card.id);
+  const color = useCourseColor(card.id).dot;
   const { next } = card;
   return (
     <li>

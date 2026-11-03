@@ -20,7 +20,7 @@ const TABS = [
 export function CourseScreen({ course, onBack, tab: firstTab = "overview" }) {
   const [tab, setTab] = useState(firstTab);
   const id = course.uuid || course.id;
-  const color = useCourseColor(course.id);
+  const color = useCourseColor(course.id).dot;
   return (
     <div className="fd-screen" style={{ "--course": color }}>
       <button type="button" className="fd-back" onClick={onBack}>Back</button>

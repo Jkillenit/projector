@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { friendlyCourse } from "./courseLabel.js";
+import { friendlyCourse, getCourseLabel } from "./courseLabel.js";
 
 describe("friendlyCourse", () => {
   it("joins the code from the course ID with the Blackboard name", () => {
@@ -24,5 +24,16 @@ describe("friendlyCourse", () => {
   it("falls back to the name when there is no code", () => {
     expect(friendlyCourse({ name: "Study Skills" }).label).toBe("Study Skills");
     expect(friendlyCourse({ courseCode: "XC", name: "XC" }).label).toBe("XC");
+  });
+});
+
+describe("getCourseLabel", () => {
+  it("uses the short code when there is one", () => {
+    expect(getCourseLabel({ courseCode: "202640-GBA-490-911", name: "Strategy" })).toBe("GBA 490");
+  });
+
+  it("cleans titles of courses without a code", () => {
+    expect(getCourseLabel({ courseCode: "202640_AIX", name: "The University of Alabama AI Experience (Fall 2026)" })).toBe("UA AI Experience");
+    expect(getCourseLabel({ name: "Bama Bound Orientation 2026" })).toBe("Bama Bound Orientation");
   });
 });
