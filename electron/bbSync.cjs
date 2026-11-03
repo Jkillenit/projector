@@ -201,6 +201,7 @@ async function listEnrollments() {
       name: c?.name || c?.courseId || c?.id || "",
       courseCode: c?.courseId || "",
       termId: c?.termId || "",
+      organization: !!c?.organization,
       lastAccessed: m?.lastAccessed || null,
       role,
       available,

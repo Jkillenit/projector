@@ -1,0 +1,14 @@
+Course syllabus (demo)
+
+Grading breakdown
+Homework      15%
+Quizzes       20%
+Midterm       25%
+Final         40%
+
+Grading scale
+A 90-100
+B 80-89
+C 70-79
+D 60-69
+F below 60

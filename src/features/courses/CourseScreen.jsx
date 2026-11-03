@@ -1,33 +1,45 @@
 import { useState } from "react";
 import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { BLACKBOARD_URL } from "../../constants/app.js";
+import { GradesTab } from "../grades/GradesTab.jsx";
 import { AnnouncementsView } from "../mirror/AnnouncementsView.jsx";
 import { AssignmentsView } from "../mirror/AssignmentsView.jsx";
+import { ContentTab } from "./ContentTab.jsx";
+import { OverviewTab } from "./OverviewTab.jsx";
 
 const TABS = [
+  ["overview", "Overview"],
   ["assignments", "Assignments"],
+  ["grades", "Grades"],
   ["announcements", "Announcements"],
+  ["content", "Content"],
 ];
 
-export function CourseScreen({ course, onBack }) {
-  const [tab, setTab] = useState("assignments");
+/** `tab` opens a specific tab first (for example "grades"). */
+export function CourseScreen({ course, onBack, tab: firstTab = "overview" }) {
+  const [tab, setTab] = useState(firstTab);
+  const id = course.uuid || course.id;
   return (
     <div className="fd-screen">
       <button type="button" className="fd-back" onClick={onBack}>Back</button>
       <h1 className="fd-title" title={friendlyCourse(course).raw}>{friendlyCourse(course).label}</h1>
       <p className="fd-meta">
-        {[course.courseCode, course.instructor].filter(Boolean).join(" · ")}
-        {" · "}
+        {[course.instructor].filter(Boolean).join(" · ")}
+        {course.instructor ? " · " : ""}
         <a href={BLACKBOARD_URL} target="_blank" rel="noopener noreferrer">Open in Blackboard</a>
       </p>
       <div className="fd-chip-row" role="tablist">
-        {TABS.map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} className={`fd-chip${tab === id ? " is-on" : ""}`} onClick={() => setTab(id)}>
+        {TABS.map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} className={`fd-chip${tab === key ? " is-on" : ""}`} onClick={() => setTab(key)}>
             {label}
           </button>
         ))}
       </div>
-      {tab === "assignments" ? <AssignmentsView courseUuid={course.uuid || course.id} /> : <AnnouncementsView courseUuid={course.uuid || course.id} />}
+      {tab === "overview" ? <OverviewTab courseUuid={id} go={setTab} /> : null}
+      {tab === "assignments" ? <AssignmentsView courseUuid={id} /> : null}
+      {tab === "grades" ? <GradesTab courseUuid={id} /> : null}
+      {tab === "announcements" ? <AnnouncementsView courseUuid={id} /> : null}
+      {tab === "content" ? <ContentTab courseUuid={id} /> : null}
     </div>
   );
 }

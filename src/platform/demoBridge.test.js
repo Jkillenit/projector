@@ -18,12 +18,12 @@ beforeEach(() => {
 });
 
 describe("demo bridge", () => {
-  it("returns the chosen student's four demo courses", async () => {
+  it("returns the chosen student's demo courses (four classes and one organization)", async () => {
     const bridge = make();
     expect(await bridge.db.courses.getAll()).toEqual([]);
     await pick(bridge, "maya");
     const rows = await bridge.db.courses.getAll();
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(rows.map((r) => r.course_code)).toContain("MATH 126");
   });
 

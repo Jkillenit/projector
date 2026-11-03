@@ -14,6 +14,17 @@ if (!app.requestSingleInstanceLock()) {
 let mainWindow = null;
 let windowChromeHandlersRegistered = false;
 
+// Text from a syllabus the student picked by hand (PDF or Word). Local only; nothing is fetched.
+ipcMain.handle("projector:extract-file", async (_evt, { name, bytes } = {}) => {
+  const ext = String(name || "").split(".").pop();
+  if (!["pdf", "doc", "docx"].includes(ext.toLowerCase()) || !bytes) return { ok: false, text: "" };
+  try {
+    return { ok: true, text: await extractBufferText(Buffer.from(bytes), ext) };
+  } catch {
+    return { ok: false, text: "" };
+  }
+});
+
 ipcMain.handle("projector:open-external", async (_evt, url) => {
   const value = String(url || "");
   if (!/^https:\/\//i.test(value)) return { ok: false, error: "Only https links can be opened." };
