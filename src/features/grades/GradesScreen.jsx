@@ -16,6 +16,14 @@ async function gradeItemsFor(courseUuid) {
   }
 }
 
+async function overallFor(courseUuid) {
+  try {
+    return JSON.parse((await courseStore.getSetting(`bb.overall.${courseUuid}`)) || "null");
+  } catch {
+    return null;
+  }
+}
+
 function Sparkline({ points }) {
   if (points.length < 2) return <span className="sh-ghub-spark" aria-hidden="true" />;
   const min = Math.min(...points);
@@ -41,12 +49,13 @@ export function GradesScreen({ onOpenCourse }) {
     const id = ++loadIdRef.current;
     const data = await courseStore.loadTodayData();
     const courses = data?.courses || [];
-    const [scales, items] = await Promise.all([
+    const [scales, items, overalls] = await Promise.all([
       Promise.all(courses.map(async (c) => [c.uuid, await courseStore.getGradingScale(c.uuid)])),
       Promise.all(courses.map(async (c) => [c.uuid, await gradeItemsFor(c.uuid)])),
+      Promise.all(courses.map(async (c) => [c.uuid, await overallFor(c.uuid)])),
     ]);
     if (id !== loadIdRef.current) return;
-    setRows(buildGradesView(courses, { now: data?.now, scales: Object.fromEntries(scales), gradeItems: Object.fromEntries(items) }));
+    setRows(buildGradesView(courses, { now: data?.now, scales: Object.fromEntries(scales), gradeItems: Object.fromEntries(items), overalls: Object.fromEntries(overalls) }));
   }, []);
 
   useEffect(() => {
@@ -68,7 +77,7 @@ export function GradesScreen({ onOpenCourse }) {
             <li key={r.courseId} className={`sh-ghub-row${r.atRisk ? " sh-ghub-row--risk" : ""}`}>
               <div className="sh-ghub-main">
                 <div className="sh-ghub-name" title={r.hint}>{r.name}</div>
-                <div className="sh-ghub-next">{r.nextStep || "No grades in yet"}</div>
+                <div className="sh-ghub-next">{r.nextStep || r.basis || "No grades in yet"}</div>
               </div>
               <Sparkline points={r.trend} />
               <div className="sh-ghub-grade">

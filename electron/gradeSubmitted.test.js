@@ -12,5 +12,9 @@ describe("gradeSubmitted", () => {
     expect(gradeSubmitted({ lastAttemptId: "_55_1" })).toBe(true);
     expect(gradeSubmitted({ status: "InProgress", attemptsCount: 0 })).toBe(false);
     expect(gradeSubmitted({ exempt: true })).toBe(false);
+    expect(gradeSubmitted({ status: "Completed" })).toBe(true);
+    expect(gradeSubmitted({ displayGrade: { text: "Needs Grading" } })).toBe(true);
+    expect(gradeSubmitted({ status: "Incomplete" })).toBe(false);
+    expect(gradeSubmitted({ status: "Not Submitted" })).toBe(false);
   });
 });

@@ -55,27 +55,51 @@ function nextStepText(needs, targetLetter) {
   return null;
 }
 
+export const BASIS = {
+  weights: "Syllabus weights",
+  overall: "Blackboard overall grade",
+  points: "Points based, no syllabus weights found",
+};
+
+/**
+ * Grade for a course with no scored syllabus template: Blackboard's own overall column if the gradebook has
+ * one, else points earned over points possible on graded items. Null when nothing is scored.
+ */
+export function fallbackGrade(items, overall) {
+  if (overall && Number.isFinite(overall.score)) {
+    const possible = Number(overall.possible) > 0 ? Number(overall.possible) : 100;
+    return { current: (overall.score / possible) * 100, basis: BASIS.overall };
+  }
+  const graded = (items || []).filter((i) => !i.excluded && i.score != null && Number(i.points_possible) > 0);
+  const possible = graded.reduce((sum, i) => sum + Number(i.points_possible), 0);
+  if (!possible) return null;
+  return { current: (graded.reduce((sum, i) => sum + Number(i.score), 0) / possible) * 100, basis: BASIS.points };
+}
+
 const STATE_RANK = { warn: 0, ok: 1, none: 2 };
 
 /**
  * One row per course, at risk first: { courseId, name, current|null, letter|null, atRisk, trend, nextStep|null }.
  * `scales`: { [courseUuid]: { letter: minPercent } }; `gradeItems`: { [courseUuid]: Blackboard grade items }.
  */
-export function buildGradesView(courses, { scales = {}, gradeItems = {}, now, config = PRIORITY_CONFIG } = {}) {
+export function buildGradesView(courses, { scales = {}, gradeItems = {}, overalls = {}, now, config = PRIORITY_CONFIG } = {}) {
   return (courses || [])
     .map((c) => {
       const needs = neededScores(c, { config, now });
       const scale = scales[c.uuid];
-      const state = courseState(needs);
+      const fallback = needs.current == null ? fallbackGrade(gradeItems[c.uuid], overalls[c.uuid]) : null;
+      const current = needs.current ?? fallback?.current ?? null;
+      const state = fallback ? "ok" : courseState(needs);
       return {
         courseId: c.uuid,
         name: friendlyCourse(c).label,
         hint: friendlyCourse(c).raw,
-        current: needs.current,
-        letter: letterFor(needs.current, scale),
+        current,
+        letter: letterFor(current, scale),
         atRisk: state === "warn",
         trend: gradeTrend(c.components, gradeItems[c.uuid]),
-        nextStep: nextStepText(needs, letterFor(needs.target, scale)),
+        nextStep: fallback ? null : nextStepText(needs, letterFor(needs.target, scale)),
+        basis: current == null ? null : fallback?.basis || BASIS.weights,
         state,
       };
     })

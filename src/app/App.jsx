@@ -44,7 +44,7 @@ function useTheme() {
 }
 
 function Shell({ profile, onProfile, theme, onTheme, mode }) {
-  const { courses, loaded, reloadCourse } = useUserCourses();
+  const { courses, loaded, reloadCourse, reloadAll } = useUserCourses();
   const [view, setView] = useState("home");
   const [courseId, setCourseId] = useState(null);
   const [resourceId, setResourceId] = useState(null);
@@ -85,21 +85,36 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     const offSync = bb.onSyncComplete(async (res) => {
       if (!res?.courseUuid) return;
       await reloadCourse(res.courseUuid);
-      let applied = { status: res.syllabus ? "none" : "missing" };
-      if (res.ok && res.syllabus?.text) applied = await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }));
+      // The course (assignments, grades, announcements) has landed; its syllabus arrives later on onSyllabus.
       window.dispatchEvent(
         new CustomEvent("studyhub-bb-synced", {
-          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, syllabusStatus: applied.status, weights: applied.count ?? 0, mapped: applied.mapped ?? 0 },
+          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: res.ok, phase: "course", syllabusStatus: res.syllabusPending ? "pending" : "none" },
         })
       );
     });
+    const offSyllabus = bb.onSyllabus?.(async (res) => {
+      if (!res?.courseUuid) return;
+      let applied = { status: res.cached ? "cached" : res.syllabus ? "none" : "missing" };
+      if (res.syllabus?.text) applied = await applySyllabusText(res.courseUuid, res.syllabus.text).catch(() => ({ status: "none" }));
+      await reloadCourse(res.courseUuid);
+      window.dispatchEvent(
+        new CustomEvent("studyhub-bb-synced", {
+          detail: { bbCourseId: res.bbCourseId, courseUuid: res.courseUuid, ok: true, phase: "syllabus", syllabusStatus: applied.status, source: res.syllabus?.source || res.source || null, weights: applied.count ?? 0, mapped: applied.mapped ?? 0 },
+        })
+      );
+    });
+    // Old-term courses were removed from the database: re-read the list.
+    const onPruned = () => void reloadAll();
+    window.addEventListener("projector-courses-pruned", onPruned);
     // Disconnect wiped everything mirrored from Blackboard: start over from a clean screen.
     const offGone = bb.onDisconnected?.(() => window.location.reload());
     return () => {
       offSync?.();
+      offSyllabus?.();
       offGone?.();
+      window.removeEventListener("projector-courses-pruned", onPruned);
     };
-  }, [reloadCourse]);
+  }, [reloadCourse, reloadAll]);
 
   const railCourses = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.label, hint: f.raw }; }), [courses]);
   const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;

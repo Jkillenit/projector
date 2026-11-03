@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGradesView, gradeTrend } from "./gradesView.js";
+import { buildGradesView, gradeTrend, fallbackGrade, BASIS } from "./gradesView.js";
 
 const NOW = new Date(2026, 8, 30, 9, 0).toISOString();
 const at = (dayOffset) => new Date(2026, 8, 30 + dayOffset, 23, 59).toISOString();
@@ -123,5 +123,30 @@ describe("gradeTrend", () => {
   it("is empty without graded items", () => {
     expect(gradeTrend(components, [])).toEqual([]);
     expect(gradeTrend(components, undefined)).toEqual([]);
+  });
+});
+
+describe("fallbackGrade", () => {
+  const item = (score, points_possible, extra = {}) => ({ score, points_possible, ...extra });
+
+  it("uses Blackboard's overall grade first", () => {
+    expect(fallbackGrade([item(5, 10)], { score: 88, possible: 100 })).toEqual({ current: 88, basis: BASIS.overall });
+  });
+
+  it("falls back to points earned over points possible, skipping excluded and ungraded", () => {
+    const g = fallbackGrade([item(8, 10), item(18, 20), item(null, 10), item(1, 100, { excluded: true })], null);
+    expect(g.basis).toBe(BASIS.points);
+    expect(g.current).toBeCloseTo((26 / 30) * 100);
+  });
+
+  it("is null when nothing is scored", () => {
+    expect(fallbackGrade([item(null, 10)], null)).toBe(null);
+  });
+});
+
+describe("buildGradesView without a template", () => {
+  it("shows a points based grade for a course with scores but no components", () => {
+    const [row] = buildGradesView([course({ components: [], assignments: [] })], { now: NOW, gradeItems: { c1: [{ score: 9, points_possible: 10 }] } });
+    expect(row).toMatchObject({ current: 90, basis: BASIS.points, atRisk: false });
   });
 });

@@ -1,4 +1,5 @@
 /** Calendar date helpers. Weeks run Monday–Sunday, all in local time. */
+import { isDone } from "../mirror/assignmentState.js";
 import { localDayKey } from "../../lib/dates.js";
 
 export const dayKey = (d) => localDayKey(d);
@@ -45,6 +46,6 @@ export function groupByDay(items) {
 
 /** Left-edge tone: magenta for exams, aqua for anything else due, dimmed when done. */
 export function itemEdge(a) {
-  if (a.completed) return "done";
+  if (isDone(a)) return "done";
   return a.kind === "exam" ? "exam" : "due";
 }

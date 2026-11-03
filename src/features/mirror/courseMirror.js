@@ -1,3 +1,4 @@
+import { isDone } from "./assignmentState.js";
 import { daysFromToday } from "../dashboard/dateLabels.js";
 import { daysUntilExam } from "../../lib/dates.js";
 
@@ -5,7 +6,7 @@ import { daysUntilExam } from "../../lib/dates.js";
 export function mirrorBadges(announcements, assignments, now = new Date()) {
   const unread = (announcements || []).filter((a) => !a.read).length;
   const dueSoon = (assignments || []).filter((a) => {
-    if (a.completed || !a.due_date) return false;
+    if (isDone(a) || !a.due_date) return false;
     const d = daysFromToday(a.due_date, now);
     return d !== null && d >= 0 && d < 7;
   }).length;
@@ -15,7 +16,7 @@ export function mirrorBadges(announcements, assignments, now = new Date()) {
 /** A course's open exams from today on, soonest first: { uuid, title, dueDate, moduleIds, scopeSource }. */
 export function upcomingExams(rows, scopes) {
   return (Array.isArray(rows) ? rows : [])
-    .filter((a) => a.kind === "exam" && !a.completed && (daysUntilExam(a.due_date) ?? -1) >= 0)
+    .filter((a) => a.kind === "exam" && !isDone(a) && (daysUntilExam(a.due_date) ?? -1) >= 0)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
     .map((a) => ({
       uuid: a.uuid,

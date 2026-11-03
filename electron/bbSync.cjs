@@ -165,7 +165,30 @@ async function listEnrollments() {
     `/learn/api/public/v1/users/${encodeURIComponent(userId)}/courses?expand=course&limit=100`,
     300
   );
-  return memberships.map((m) => {
+  const termEnds = new Map();
+  const endOf = async (c) => {
+    const own = c?.availability?.duration?.end;
+    if (own) return own;
+    const termId = c?.termId;
+    if (!termId) return null;
+    if (!termEnds.has(termId)) {
+      termEnds.set(termId, null);
+      try {
+        const term = await getJson(`/learn/api/public/v1/terms/${encodeURIComponent(termId)}`);
+        termEnds.set(termId, term?.availability?.duration?.end || null);
+      } catch {
+        /* terms may be hidden from students */
+      }
+    }
+    return termEnds.get(termId);
+  };
+  const out = [];
+  for (const m of memberships) {
+    const c = m?.course;
+    const noTerm = !/^\d{6}(?!\d)|\.\d{6}$/.test(String(c?.courseId || ""));
+    out.push([m, noTerm ? await endOf(c) : null]);
+  }
+  return out.map(([m, endDate]) => {
     const c = m?.course;
     const role = m?.courseRoleId || "Student";
     const available = c?.availability?.available || "";
@@ -182,6 +205,7 @@ async function listEnrollments() {
       role,
       available,
       enrollmentAvailable: m?.availability?.available || "",
+      endDate,
       reason,
     };
   });
@@ -226,6 +250,7 @@ async function collectContents(bbCourseId) {
         kind,
         handler,
         body: typeof item.body === "string" ? item.body : "",
+        modified: item.modified || item.created || "",
         url: `${BB_ORIGIN}/ultra/courses/${bbCourseId}/outline`,
       });
       if (kind === "folder" || item?.hasChildren) {
@@ -277,7 +302,8 @@ function gradeScore(g) {
 function gradeSubmitted(g) {
   if (!g) return false;
   if (gradeScore(g) != null) return true;
-  if (/needs\s*grading/i.test(String(g.status || g.gradeStatus || ""))) return true;
+  const status = String(g.status || g.gradeStatus || g.displayGrade?.text || "").toLowerCase().replace(/[\s_-]+/g, "");
+  if (["needsgrading", "graded", "complete", "completed", "submitted"].includes(status)) return true;
   return [g.attemptsCount, g.attemptCount, g.pendingAttemptsCount, g.totalAttempts].some((n) => Number(n) > 0) || !!g.lastAttemptId;
 }
 
@@ -317,6 +343,27 @@ async function collectUserGrades(course, userId, columns) {
   return { source: rows.some((r) => gradeScore(r) != null) ? "per-column" : "none", rows };
 }
 
+const ATTEMPT_LOOKBACK_MS = 45 * 24 * 3600 * 1000;
+const MAX_ATTEMPT_LOOKUPS = 20;
+
+/** Blackboard's own overall / total column, when the course has one. */
+function isOverallColumn(c) {
+  const calculated = c?.externalGrade || c?.grading?.type === "Calculated";
+  return !!calculated && /^(overall|total|weighted total|course total|final)( grade)?$/i.test(String(c?.name || "").trim());
+}
+
+/** True when the student has at least one attempt on this column (read only). */
+async function hasAttempt(course, columnId, userId) {
+  try {
+    const res = await getJson(
+      `/learn/api/public/v2/courses/${course}/gradebook/columns/${encodeURIComponent(columnId)}/attempts?userId=${encodeURIComponent(userId)}&limit=1`
+    );
+    return (res?.results || []).length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function collectGradebook(bbCourseId) {
   const course = encodeURIComponent(bbCourseId);
   let columns = [];
@@ -346,6 +393,36 @@ async function collectGradebook(bbCourseId) {
   }
   const gradeByColumn = new Map(userGrades.rows.map((g) => [gradeColumnId(g), g]));
 
+  // The grade row often hides a submission that has no score yet; ask for attempts on recent unscored work.
+  const submittedByAttempt = new Set();
+  try {
+    const userId = await currentUserId();
+    const candidates = visible
+      .filter((c) => c?.grading?.due && gradeScore(gradeByColumn.get(c.id)) == null && !gradeSubmitted(gradeByColumn.get(c.id)))
+      .filter((c) => Date.parse(c.grading.due) > Date.now() - ATTEMPT_LOOKBACK_MS)
+      .slice(0, MAX_ATTEMPT_LOOKUPS);
+    for (const c of candidates) {
+      await sleep(120);
+      if (await hasAttempt(course, c.id, userId)) submittedByAttempt.add(c.id);
+    }
+  } catch {
+    /* attempts are optional */
+  }
+
+  let overall = null;
+  const overallColumn = columns.find(isOverallColumn);
+  if (overallColumn) {
+    try {
+      const g =
+        gradeByColumn.get(overallColumn.id) ||
+        (await getJson(`/learn/api/public/v2/courses/${course}/gradebook/columns/${encodeURIComponent(overallColumn.id)}/users/${encodeURIComponent(await currentUserId())}`));
+      const score = gradeScore(g);
+      if (score != null) overall = { name: overallColumn.name, score, possible: Number(overallColumn.score?.possible) || 100 };
+    } catch {
+      /* no overall column grade */
+    }
+  }
+
   const assignments = visible
     .filter((c) => c?.grading?.due)
     .map((c) => {
@@ -358,7 +435,7 @@ async function collectGradebook(bbCourseId) {
         kind: assignmentKind(name),
         pointsPossible: Number(c.score?.possible) || null,
         score: gradeScore(grade),
-        submitted: gradeSubmitted(grade),
+        submitted: gradeSubmitted(grade) || submittedByAttempt.has(c.id),
         url: `${BB_ORIGIN}/ultra/courses/${bbCourseId}/grades`,
       };
     });
@@ -380,6 +457,7 @@ async function collectGradebook(bbCourseId) {
   return {
     assignments,
     gradeItems,
+    overall,
     gradeSource: userGrades.source,
     scoredCount: gradeItems.filter((g) => g.score != null).length,
   };
@@ -457,9 +535,21 @@ async function findSyllabus(bbCourseId, contents, helpers = {}) {
   return null;
 }
 
-/** One full, read-only sweep of a single course. Each section fails independently. */
-async function syncCourse(bbCourseId, onProgress = () => {}, helpers = {}) {
+/** Items that may hold the syllabus, plus a fingerprint that changes when any of them is edited. */
+function syllabusCandidates(contents) {
+  const items = contents.filter((c) => SYLLABUS_RE.test(c.title));
+  const fingerprint = items.map((c) => [c.id, c.title, c.modified || "", c.body ? c.body.length : 0].join("|")).join(";");
+  return { items, fingerprint };
+}
+
+/**
+ * One read-only sweep of a single course. Full: content tree, announcements, assignments, gradebook
+ * (syllabus is found separately by findSyllabus, so the course lands before the slow part).
+ * Light: announcements, assignments and gradebook only.
+ */
+async function syncCourse(bbCourseId, onProgress = () => {}, { light = false } = {}) {
   if (!/^_\d+_\d+$/.test(String(bbCourseId || ""))) throw new Error("Invalid Blackboard course id");
+  if (light) return checkCourse(bbCourseId, onProgress);
   onProgress({ step: "contents" });
   const contents = await collectContents(bbCourseId);
   await sleep(REQUEST_GAP_MS);
@@ -467,34 +557,31 @@ async function syncCourse(bbCourseId, onProgress = () => {}, helpers = {}) {
   const announcements = await collectAnnouncements(bbCourseId);
   await sleep(REQUEST_GAP_MS);
   onProgress({ step: "grades" });
-  const { assignments, gradeItems, gradeSource, scoredCount } = await collectGradebook(bbCourseId);
-  onProgress({ step: "syllabus" });
-  let syllabus = null;
-  try {
-    syllabus = await findSyllabus(bbCourseId, contents, helpers);
-  } catch {
-    syllabus = null;
-  }
+  const { assignments, gradeItems, overall, gradeSource, scoredCount } = await collectGradebook(bbCourseId);
   return {
     contents: contents.map(({ body: _body, handler: _handler, ...rest }) => rest),
     announcements,
     assignments,
     gradeItems,
+    overall,
     gradeSource,
     scoredCount,
-    syllabus,
+    syllabus: null,
+    candidates: syllabusCandidates(contents),
   };
 }
 
 /** Light background check: announcements and the gradebook only (no content tree, files or syllabus). */
-async function checkCourse(bbCourseId) {
+async function checkCourse(bbCourseId, onProgress = () => {}) {
   if (!/^_\d+_\d+$/.test(String(bbCourseId || ""))) throw new Error("Invalid Blackboard course id");
   /* Uncached: the section collectors swallow errors, so this is what surfaces an expired session (401/403). */
   await firstOk(["/learn/api/v1/users/me", "/learn/api/public/v1/users/me"]);
+  onProgress({ step: "announcements" });
   const announcements = await collectAnnouncements(bbCourseId);
   await sleep(REQUEST_GAP_MS);
-  const { assignments, gradeItems, gradeSource, scoredCount } = await collectGradebook(bbCourseId);
-  return { contents: [], announcements, assignments, gradeItems, gradeSource, scoredCount, syllabus: null };
+  onProgress({ step: "grades" });
+  const { assignments, gradeItems, overall, gradeSource, scoredCount } = await collectGradebook(bbCourseId);
+  return { contents: [], announcements, assignments, gradeItems, overall, gradeSource, scoredCount, syllabus: null, candidates: null };
 }
 
 async function getCourseInfo(bbCourseId) {
@@ -616,6 +703,7 @@ module.exports = {
   sessionWorks,
   syncCourse,
   checkCourse,
+  findSyllabus,
   resetUserCache,
   setPageFetcher,
   getCourseInfo,

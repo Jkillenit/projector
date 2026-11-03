@@ -5,6 +5,8 @@ import { courseStore } from "../../db/courseStore.js";
 const LAST_SYNC_KEY = "bb.lastSync";
 const STEP_LABEL = { contents: "content", announcements: "announcements", grades: "grades", syllabus: "syllabus" };
 const SYLLABUS_LABEL = {
+  pending: "LOOKING FOR THE SYLLABUS…",
+  cached: "SYLLABUS UNCHANGED",
   applied: "SYLLABUS WEIGHTS ADDED",
   kept: "GRADES SORTED INTO YOUR WEIGHTS",
   none: "SYLLABUS FOUND, NO WEIGHTS READ",

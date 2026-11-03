@@ -11,15 +11,42 @@ export function shouldSync({ loggedIn, running, reason, lastTryAt = null, now = 
   return lastTryAt == null || now - lastTryAt >= SYNC_EVERY_MS;
 }
 
-const termOf = (c) => String(c.courseCode || "").match(/^(\d{6})/)?.[1] || null;
+/** Term code from either UA course ID format: "202640-SS.GBA-490-910-..." (prefix) or "41874.202640" (suffix). */
+export function termCode(courseId) {
+  const id = String(courseId || "").trim();
+  return id.match(/^(\d{6})(?!\d)/)?.[1] || id.match(/\.(\d{6})$/)?.[1] || null;
+}
 
 /**
- * Drops only courses from an older term. UA course codes start with the term ("202640-..."), so a
- * code with an older prefix than the latest is old; codes with no prefix (MIS 430 style, XC
- * items) are kept, never guessed away. shortcut: a future term would win over the current one;
- * upgrade if Blackboard lists future terms as available.
+ * When a term code ends. shortcut: the last two digits are mapped to season-end dates by rule of
+ * thumb (10 spring, 20/30 summer, 40 fall), not read from Blackboard; swap in real term dates if
+ * a term ever ends noticeably earlier or later.
  */
-export function currentTermCourses(courses) {
-  const latest = courses.map(termOf).filter(Boolean).sort().pop();
-  return courses.filter((c) => !termOf(c) || termOf(c) === latest);
+export function termEnd(code) {
+  const year = Number(code.slice(0, 4));
+  const tt = Number(code.slice(4));
+  if (tt <= 10) return new Date(year, 5, 1);
+  if (tt <= 30) return new Date(year, 8, 1);
+  return new Date(year + 1, 0, 1);
+}
+
+/**
+ * Whether an enrollment is in a term that hasn't ended (upcoming terms count). Term code first, then
+ * the course or term end date, then plain availability. Nothing is kept without evidence.
+ * @param {{ courseCode?: string, endDate?: string|null, available?: string }} e
+ * @returns {{ keep: boolean, ended: boolean, reason: string }}
+ */
+export function courseTermState(e, now = new Date()) {
+  const code = termCode(e.courseCode);
+  if (code) {
+    const live = termEnd(code) > now;
+    return { keep: live, ended: !live, reason: live ? `term ${code} not ended` : `skipped: term ${code} ended` };
+  }
+  const end = e.endDate ? new Date(e.endDate) : null;
+  if (end && !Number.isNaN(end.getTime())) {
+    const live = end > now;
+    return { keep: live, ended: !live, reason: live ? "course dates not ended" : "skipped: course dates ended" };
+  }
+  if (e.available === "Yes") return { keep: true, ended: false, reason: "no term in ID, available now" };
+  return { keep: false, ended: false, reason: "skipped: no term in ID, no dates, not available" };
 }

@@ -100,6 +100,11 @@ export function useUserCourses() {
     [commit]
   );
 
+  /** Re-read every course from the database (after old-term courses were removed). */
+  const reloadAll = useCallback(async () => {
+    commit((await courseStore.loadAllCourses()).map(ensureUserCourse));
+  }, [commit]);
+
   /** Replace every course with an imported set (JSON restore). */
   const replaceAll = useCallback(
     async (incoming) => {
@@ -114,5 +119,5 @@ export function useUserCourses() {
     [commit]
   );
 
-  return { courses, loaded, getCourse, saveCourse, addCourse, updateCourse, deleteCourse, reloadCourse, replaceAll };
+  return { courses, loaded, getCourse, saveCourse, addCourse, updateCourse, deleteCourse, reloadCourse, reloadAll, replaceAll };
 }

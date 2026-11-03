@@ -63,6 +63,8 @@ contextBridge.exposeInMainWorld("studyHub", {
     /** @returns {() => void} unsubscribe */
     onSyncComplete: (callback) => subscribe("bb:sync-complete", callback),
     /** @returns {() => void} unsubscribe */
+    onSyllabus: (callback) => subscribe("bb:syllabus", callback),
+    /** @returns {() => void} unsubscribe */
     onConnected: (callback) => subscribe("bb:connected", callback),
     /** @returns {() => void} unsubscribe */
     onDisconnected: (callback) => subscribe("bb:disconnected", callback),

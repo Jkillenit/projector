@@ -8,6 +8,11 @@ describe("friendlyCourse", () => {
     expect(f.raw).toContain("202640-MKT-300-001");
   });
 
+  it("reads the SS. section prefix and ignores the suffix-style ID", () => {
+    expect(friendlyCourse({ courseCode: "202640-SS.GBA-490-910-12345", name: "Strategy" }).label).toBe("GBA 490 · Strategy");
+    expect(friendlyCourse({ courseCode: "41874.202640", name: "MIS 430 Systems" }).label).toBe("MIS 430 · Systems");
+  });
+
   it("drops a code the name already starts with", () => {
     expect(friendlyCourse({ courseCode: "202640-GBA-490-002", name: "GBA 490: Strategy" }).label).toBe("GBA 490 · Strategy");
   });

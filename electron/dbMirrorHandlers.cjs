@@ -131,6 +131,12 @@ function applyBbSync(db, courseUuid, payload) {
       counts.grades += 1;
     });
 
+    if (payload?.overall && Number.isFinite(payload.overall.score)) {
+      db.prepare(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+      ).run(`bb.overall.${courseUuid}`, JSON.stringify({ name: String(payload.overall.name || "Overall").slice(0, 100), score: payload.overall.score, possible: payload.overall.possible || 100 }));
+    }
+
     db.prepare("UPDATE courses SET updated_at = datetime('now') WHERE id = ?").run(courseId);
   })();
 

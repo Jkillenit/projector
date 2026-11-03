@@ -1,39 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import { daysFromToday, dueLabel } from "../dashboard/dateLabels.js";
+import { dueLabel } from "../dashboard/dateLabels.js";
+import { groupAssignments, isDone } from "./assignmentState.js";
 import { KindTag } from "../dashboard/KindTag.jsx";
 import { openInBlackboard } from "./openInBlackboard.js";
 import { courseStore } from "../../db/courseStore.js";
 
-function groupAssignments(rows) {
-  const overdue = [];
-  const upcoming = [];
-  const undated = [];
-  const done = [];
-  for (const a of rows) {
-    if (a.completed) done.push(a);
-    else if (!a.due_date) undated.push(a);
-    else if ((daysFromToday(a.due_date) ?? 0) < 0) overdue.push(a);
-    else upcoming.push(a);
-  }
-  done.reverse();
-  return [
-    ["OVERDUE", overdue],
-    ["UPCOMING", upcoming],
-    ["NO DUE DATE", undated],
-    ["COMPLETED", done],
-  ];
-}
-
 function AssignmentRow({ a, onToggle, onDelete }) {
-  const overdue = !a.completed && a.due_date && (daysFromToday(a.due_date) ?? 0) < 0;
+  const done = isDone(a);
+  const overdue = !done && a.due_date && Date.parse(a.due_date) < Date.now();
   const scored = a.score != null && a.points_possible;
   return (
-    <li className={`sh-today-row sh-asg-row${a.completed ? " sh-asg-row--done" : ""}`}>
+    <li className={`sh-today-row sh-asg-row${done ? " sh-asg-row--done" : ""}`}>
       <input
         type="checkbox"
         className="sh-today-check"
-        aria-label={`Mark ${a.title} ${a.completed ? "not done" : "done"}`}
-        checked={!!a.completed}
+        aria-label={`Mark ${a.title} ${done ? "not done" : "done"}`}
+        checked={done}
+        disabled={done && !a.completed}
         onChange={() => onToggle(a)}
       />
       <span className="sh-today-row-main">
@@ -61,6 +44,36 @@ function AssignmentRow({ a, onToggle, onDelete }) {
         </button>
       ) : null}
     </li>
+  );
+}
+
+function AssignmentGroups({ groups, onToggle, onDelete }) {
+  const list = (items) => (
+    <ul className="sh-today-list">
+      {items.map((a) => (
+        <AssignmentRow key={a.uuid} a={a} onToggle={onToggle} onDelete={onDelete} />
+      ))}
+    </ul>
+  );
+  return (
+    <>
+      {[["TO DO", groups.todo], ["MISSING", groups.missing]].map(([label, items]) =>
+        items.length ? (
+          <div key={label} className="sh-mirror-group">
+            <div className="sh-hub-section-label">
+              {label} · {items.length}
+            </div>
+            {list(items)}
+          </div>
+        ) : null
+      )}
+      {groups.done.length ? (
+        <details className="sh-mirror-group">
+          <summary className="sh-hub-section-label">DONE · {groups.done.length}</summary>
+          {list(groups.done)}
+        </details>
+      ) : null}
+    </>
   );
 }
 
@@ -107,20 +120,7 @@ export function AssignmentsView({ courseUuid }) {
       {!rows.length ? (
         <p className="sh-today-empty">No assignments yet. Nothing is due here.</p>
       ) : (
-        groupAssignments(rows).map(([label, items]) =>
-          items.length ? (
-            <div key={label} className="sh-mirror-group">
-              <div className="sh-hub-section-label">
-                {label} · {items.length}
-              </div>
-              <ul className="sh-today-list">
-                {items.map((a) => (
-                  <AssignmentRow key={a.uuid} a={a} onToggle={toggle} onDelete={remove} />
-                ))}
-              </ul>
-            </div>
-          ) : null
-        )
+        <AssignmentGroups groups={groupAssignments(rows)} onToggle={toggle} onDelete={remove} />
       )}
     </div>
   );
