@@ -30,5 +30,13 @@
   {
     "student_id": "devon",
     "course_id": "mgt300"
+  },
+  {
+    "student_id": "maya",
+    "course_id": "bamabound"
+  },
+  {
+    "student_id": "devon",
+    "course_id": "bamabound"
   }
 ]

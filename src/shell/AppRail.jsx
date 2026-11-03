@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { APP_NAME } from "../constants/app.js";
 
 function Icon({ children }) {
@@ -74,17 +73,32 @@ function splitCode(code) {
   return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)];
 }
 
+function CourseButton({ c, active, onOpen }) {
+  const [pre, num] = splitCode(c.code);
+  return (
+    <button
+      type="button"
+      className={`sh-rail-item sh-rail-course${active ? " is-active" : ""}`}
+      aria-current={active ? "page" : undefined}
+      onClick={() => onOpen(c.id)}
+      title={c.title ? `${c.title} (${c.hint})` : c.hint}
+    >
+      <span className="sh-rail-code-pre">{pre}</span>
+      <span className="sh-rail-label sh-rail-code-num">{num}</span>
+    </button>
+  );
+}
+
 const ITEMS = [
   ["home", "today", "Home"],
   ["ask", "ask", "Ask"],
   ["resources", "decks", "Resources"],
   ["clubs", "person", "Clubs"],
   ["calendar", "calendar", "Calendar"],
-  ["grades", "grades", "Grades"],
 ];
 
-/** Left rail: the seven screens plus the student's courses. `view` is the current screen id. */
-export function AppRail({ view, courseId, courses, onNavigate, onOpenCourse, onSearch }) {
+/** Left rail: the six screens plus the student's courses. `view` is the current screen id. */
+export function AppRail({ view, courseId, courses, orgs = [], onNavigate, onOpenCourse, onSearch }) {
   const kbd = typeof navigator !== "undefined" && /Mac|iPhone|iPod|iPad/i.test(navigator.platform || "") ? "⌘ K" : "Ctrl K";
   const onScreen = (id) => courseId == null && view === id;
 
@@ -110,24 +124,13 @@ export function AppRail({ view, courseId, courses, onNavigate, onOpenCourse, onS
           <span className="sh-rail-label">Courses</span>
         </div>
         <div className="sh-rail-group sh-rail-course-list">
-          {courses.map((c) => {
-            const [pre, num] = splitCode(c.code);
-            const active = courseId === c.id;
-            return (
-              <Fragment key={c.id}>
-                <button
-                  type="button"
-                  className={`sh-rail-item sh-rail-course${active ? " is-active" : ""}`}
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => onOpenCourse(c.id)}
-                  title={c.title ? `${c.title} (${c.hint})` : c.code}
-                >
-                  <span className="sh-rail-code-pre">{pre}</span>
-                  <span className="sh-rail-label sh-rail-code-num">{num}</span>
-                </button>
-              </Fragment>
-            );
-          })}
+          {courses.map((c) => <CourseButton key={c.id} c={c} active={courseId === c.id} onOpen={onOpenCourse} />)}
+          {orgs.length ? (
+            <details className="sh-rail-orgs">
+              <summary className="sh-rail-label">Organizations ({orgs.length})</summary>
+              {orgs.map((c) => <CourseButton key={c.id} c={c} active={courseId === c.id} onOpen={onOpenCourse} />)}
+            </details>
+          ) : null}
         </div>
 
         <div className="sh-rail-spacer" />

@@ -8,7 +8,6 @@ import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarView } from "../features/dashboard/CalendarView.jsx";
 import { friendlyCourse } from "../features/dashboard/courseLabel.js";
 import { FrontDoorScreen } from "../features/frontdoor/FrontDoorScreen.jsx";
-import { GradesScreen } from "../features/grades/GradesScreen.jsx";
 import { AskScreen } from "../features/guide/AskScreen.jsx";
 import { applySyllabusText } from "../features/import/syllabusImport.js";
 import { ClubsScreen } from "../features/clubs/ClubsScreen.jsx";
@@ -16,6 +15,7 @@ import { ResourceDetail } from "../features/resources/ResourceDetail.jsx";
 import { ResourcesScreen } from "../features/resources/ResourcesScreen.jsx";
 import { SettingsScreen } from "../features/settings/SettingsScreen.jsx";
 import { WelcomeScreen } from "../features/welcome/WelcomeScreen.jsx";
+import { courseStore } from "../db/courseStore.js";
 import { loadJson, saveJson } from "../lib/storage.js";
 import { useProfile } from "../platform/profile.js";
 import { AppRail } from "../shell/AppRail.jsx";
@@ -29,7 +29,6 @@ const SCREENS = [
   ["resources", "Resources"],
   ["clubs", "Clubs"],
   ["calendar", "Calendar"],
-  ["grades", "Grades"],
   ["settings", "Settings"],
 ];
 
@@ -116,7 +115,17 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
     };
   }, [reloadCourse, reloadAll]);
 
-  const railCourses = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.label, hint: f.raw }; }), [courses]);
+  // Blackboard marks organizations (clubs, "Bama Bound"); the sync saves their ids here.
+  const [orgIds, setOrgIds] = useState([]);
+  useEffect(() => {
+    const load = () => courseStore.getSetting("bb.orgs").then((v) => { try { setOrgIds(JSON.parse(v) || []); } catch { setOrgIds([]); } });
+    void load();
+    window.addEventListener("studyhub-mirror-changed", load);
+    return () => window.removeEventListener("studyhub-mirror-changed", load);
+  }, []);
+  const railItems = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.title, hint: f.raw, org: orgIds.includes(c.bbCourseId) }; }), [courses, orgIds]);
+  const railCourses = useMemo(() => railItems.filter((c) => !c.org), [railItems]);
+  const railOrgs = useMemo(() => railItems.filter((c) => c.org), [railItems]);
   const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;
 
   const paletteItems = useMemo(
@@ -130,18 +139,17 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
 
   let screen;
   if (!loaded) screen = <div className="sh-skeleton-pulse" style={{ height: 200, margin: 24 }} aria-busy="true" />;
-  else if (activeCourse) screen = <CourseScreen course={activeCourse} onBack={() => setCourseId(null)} />;
+  else if (activeCourse) screen = <CourseScreen key={activeCourse.id} course={activeCourse} onBack={() => setCourseId(null)} />;
   else if (view === "home") screen = <FrontDoorScreen profile={profile} mode={mode} onOpenCourse={openCourse} onOpenResource={openResource} onNavigate={go} onAsk={ask} />;
   else if (view === "ask") screen = <AskScreen profile={profile} seed={askSeed} onOpenResource={openResource} onNavigate={go} />;
   else if (view === "resources") screen = resourceId ? <ResourceDetail resourceId={resourceId} onBack={() => setResourceId(null)} /> : <ResourcesScreen onOpenResource={openResource} />;
   else if (view === "clubs") screen = <ClubsScreen profile={profile} onGoSettings={() => go("settings")} />;
   else if (view === "calendar") screen = <div className="fd-screen"><h1 className="fd-title">Calendar</h1><CalendarView userCourses={courses} /></div>;
-  else if (view === "grades") screen = <div className="fd-screen"><GradesScreen onOpenCourse={openCourse} /></div>;
   else screen = <SettingsScreen profile={profile} onProfile={onProfile} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} />;
 
   return (
     <div className="sh-app-root sh-app-shell">
-      <AppRail view={view} courseId={courseId} courses={railCourses} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
+      <AppRail view={view} courseId={courseId} courses={railCourses} orgs={railOrgs} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
       <div className="sh-frame-main">
         <TitleBar />
         <SyncBar />

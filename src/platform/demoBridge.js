@@ -3,6 +3,7 @@ import courses from "../demo/courses.json";
 import enrollments from "../demo/enrollments.json";
 import assignments from "../demo/assignments.json";
 import announcements from "../demo/announcements.json";
+import syllabusText from "../demo/syllabus.txt?raw";
 
 export const DEMO_KEY = "fd.demo";
 export const PROFILE_KEY = "fd.profile";
@@ -44,6 +45,17 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     return courses.filter((c) => ids.has(c.id));
   };
   const courseById = (id) => courses.find((c) => c.id === id) || null;
+
+  // Demo values the real app keeps in settings: Blackboard overall grade, dropped scores, organizations.
+  const seeded = (key) => {
+    const [, kind, id] = key.match(/^(bb.overall|grades.drops).(.+)$/) || [];
+    const c = courseById(id);
+    if (kind === "bb.overall") return c?.overall ? JSON.stringify(c.overall) : null;
+    if (kind === "grades.drops") return c?.drops ? JSON.stringify(c.drops) : null;
+    if (key === "bb.orgs") return JSON.stringify(courses.filter((x) => x.organization).map((x) => x.bb_course_id));
+    return null;
+  };
+  const CONTENT = ["Syllabus", "Course schedule", "Lecture slides", "Study guide"];
 
   const componentsOf = (courseId) =>
     (state.components[courseId] || courseById(courseId)?.grade_components || []).map((c, position) => ({ ...c, position }));
@@ -134,6 +146,8 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     platform: "web",
     mode: "demo",
     openExternal: async (url) => void globalThis.open?.(url, "_blank", "noopener"),
+    /** A browser cannot read PDF or Word files, so the demo answers every upload with a sample syllabus. */
+    extractFile: async () => ({ ok: true, text: syllabusText }),
     app: {
       info: async () => ({ version: "demo", demo: true }),
       /** Forgets every change, including the chosen student (kept in settings), so the next load starts from the welcome. */
@@ -152,7 +166,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
       },
       notes: { save: ok },
       settings: {
-        get: async (key) => state.settings[key] ?? null,
+        get: async (key) => state.settings[key] ?? seeded(key),
         set: async ({ key, value }) => {
           state.settings[key] = value;
           save();
@@ -207,7 +221,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
         },
       },
       bb: {
-        getItems: async () => [],
+        getItems: async (courseUuid) => CONTENT.map((title, i) => ({ bb_id: `${courseUuid}-c${i}`, parent_bb_id: null, title, kind: i === 0 ? "file" : "folder", url: null, position: i })),
         getGradeItems: async (courseUuid) =>
           rowsFor(courseUuid)
             .filter((r) => r.score != null)

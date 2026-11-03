@@ -81,6 +81,7 @@ export function useStaySynced() {
             reason: e.reason !== "kept" ? e.reason : e.term.keep ? `kept: ${e.term.reason}` : e.term.reason,
           })),
         });
+        await courseStore.setSetting("bb.orgs", JSON.stringify(all.filter((e) => e.organization).map((e) => e.bbCourseId)));
         await pruneEnded(all);
 
         const byId = new Map(courses.map((c) => [c.bbCourseId, friendlyCourse(c)]));

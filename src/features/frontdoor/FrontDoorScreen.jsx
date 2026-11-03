@@ -122,7 +122,6 @@ export function FrontDoorScreen({ profile, mode, onOpenCourse, onOpenResource, o
               ) : (
                 <p className="fd-meta">No new grades since your last visit.</p>
               )}
-              <button type="button" className="fd-link" onClick={() => onNavigate("grades")}>See all grades</button>
             </section>
 
             <section className="fd-panel" aria-label="Picked for you">

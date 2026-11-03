@@ -33,7 +33,10 @@
         "weight": 35,
         "category": "exam"
       }
-    ]
+    ],
+    "drops": {
+      "calc2-quiz": 1
+    }
   },
   {
     "id": "eng101",
@@ -80,32 +83,7 @@
     "color": "#d79a3a",
     "target_grade": 80,
     "bb_course_id": "demo-chem101",
-    "grade_components": [
-      {
-        "id": "chem101-hw",
-        "name": "Homework",
-        "weight": 20,
-        "category": "homework"
-      },
-      {
-        "id": "chem101-quiz",
-        "name": "Quizzes",
-        "weight": 20,
-        "category": "quiz"
-      },
-      {
-        "id": "chem101-mid",
-        "name": "Midterm",
-        "weight": 25,
-        "category": "exam"
-      },
-      {
-        "id": "chem101-final",
-        "name": "Final",
-        "weight": 35,
-        "category": "exam"
-      }
-    ]
+    "grade_components": []
   },
   {
     "id": "psy101",
@@ -116,32 +94,11 @@
     "color": "#5fb28a",
     "target_grade": 80,
     "bb_course_id": "demo-psy101",
-    "grade_components": [
-      {
-        "id": "psy101-hw",
-        "name": "Homework",
-        "weight": 20,
-        "category": "homework"
-      },
-      {
-        "id": "psy101-quiz",
-        "name": "Quizzes",
-        "weight": 20,
-        "category": "quiz"
-      },
-      {
-        "id": "psy101-mid",
-        "name": "Midterm",
-        "weight": 25,
-        "category": "exam"
-      },
-      {
-        "id": "psy101-final",
-        "name": "Final",
-        "weight": 35,
-        "category": "exam"
-      }
-    ]
+    "grade_components": [],
+    "overall": {
+      "score": 88.5,
+      "possible": 100
+    }
   },
   {
     "id": "ac310",
@@ -286,5 +243,17 @@
         "category": "exam"
       }
     ]
+  },
+  {
+    "id": "bamabound",
+    "code": "ORG-BAMA-BOUND",
+    "name": "Bama Bound",
+    "term": "",
+    "instructor": "",
+    "color": "#7d8590",
+    "target_grade": 80,
+    "bb_course_id": "demo-bamabound",
+    "organization": true,
+    "grade_components": []
   }
 ]
