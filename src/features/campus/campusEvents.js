@@ -74,6 +74,24 @@ export function mergeEvents(lists, { now = new Date(), days = EVENT_DAYS } = {})
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
 }
 
-/** "Thu, Nov 5, 6:00 PM" */
-export const eventWhen = (iso) =>
-  new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+/** Events (already sorted) in day groups labeled "Today", "Tomorrow", then "Fri, Nov 6". */
+export function groupByDay(events, now = new Date()) {
+  const label = (iso) => {
+    const d = new Date(iso);
+    const days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    if (days <= 0) return "Today"; // events that started earlier and are still on count as today
+    if (days === 1) return "Tomorrow";
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+  const groups = [];
+  for (const e of events) {
+    const name = label(e.start);
+    if (groups.at(-1)?.label !== name) groups.push({ label: name, events: [] });
+    groups.at(-1).events.push(e);
+  }
+  return groups;
+}
+
+/** Just the time, "6:00 PM". */
+export const eventTime = (iso) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+

@@ -3,6 +3,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
 import { useStaySynced } from "../features/blackboard/useStaySynced.js";
 import { CampusScreen } from "../features/campus/CampusScreen.jsx";
+import { EventsScreen } from "../features/campus/EventsScreen.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useOrgIds } from "../features/courses/useOrgIds.js";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
@@ -141,6 +142,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   else if (route.name === "course" && activeCourse) screen = <CourseScreen key={activeCourse.id} course={activeCourse} tab={route.parts[1] || "overview"} item={route.query.item} label={getCourseLabel(activeCourse)} actions={actions} />;
   else if (route.name === "ask") screen = <AskScreen profile={profile} seed={askSeed} actions={actions} />;
   else if (route.name === "campus") screen = <CampusScreen profile={profile} section={route.parts[0]} resourceId={route.parts[0] === "r" ? route.parts[1] : null} actions={actions} />;
+  else if (route.name === "events") screen = <EventsScreen profile={profile} />;
   else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
   else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
   else if (route.name === "dev") screen = <UiGallery />;

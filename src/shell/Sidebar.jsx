@@ -86,6 +86,7 @@ export function Sidebar({ route, courses, onSearch, syncBox }) {
       <div className="sb-section">Campus</div>
       <NavItem href={routeHref("campus")} icon="book" active={on("campus") && route.parts[0] !== "clubs"}>Resources</NavItem>
       <NavItem href={routeHref("campus", ["clubs"])} icon="users" active={on("campus") && route.parts[0] === "clubs"}>Clubs</NavItem>
+      <NavItem href={routeHref("events")} icon="star" active={on("events")}>Events</NavItem>
 
       <div className="sb-spacer" />
       {syncBox}

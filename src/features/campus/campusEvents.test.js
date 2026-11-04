@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromCalendarEvents, fromSourceEvents, mergeEvents } from "./campusEvents.js";
+import { fromCalendarEvents, fromSourceEvents, groupByDay, mergeEvents } from "./campusEvents.js";
 
 const NOW = new Date("2026-11-04T18:00:00Z");
 
@@ -67,5 +67,14 @@ describe("campus events", () => {
     const calendar = [ev("c1", "Open Mic Night", "2026-11-06T23:00:00Z"), ev("c2", "Far Away", "2026-12-30T10:00:00Z")];
     const source = [ev("s1", "open mic night!", "2026-11-06T23:30:00Z"), ev("s2", "Happening Now", "2026-11-04T17:00:00Z", "2026-11-04T19:00:00Z"), ev("s3", "Over", "2026-11-04T10:00:00Z")];
     expect(mergeEvents([calendar, source], { now: NOW }).map((e) => e.id)).toEqual(["s2", "c1"]);
+  });
+
+  it("groups events by local day: Today, Tomorrow, then the date", () => {
+    const now = new Date(2026, 10, 4, 15, 0);
+    const at = (day, hour) => ({ id: `${day}-${hour}`, start: new Date(2026, 10, day, hour).toISOString() });
+    const groups = groupByDay([at(3, 9), at(4, 18), at(5, 10), at(5, 19), at(6, 12)], now);
+    expect(groups.map((g) => g.label)).toEqual(["Today", "Tomorrow", "Fri, Nov 6"]);
+    expect(groups[0].events).toHaveLength(2); // still-running event from yesterday counts as today
+    expect(groups[1].events.map((e) => e.id)).toEqual(["5-10", "5-19"]);
   });
 });
