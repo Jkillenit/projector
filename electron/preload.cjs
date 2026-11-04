@@ -90,6 +90,15 @@ contextBridge.exposeInMainWorld("studyHub", {
     notes: {
       save: (data) => ipcRenderer.invoke("db:notes:save", data),
     },
+    flashcards: {
+      /** `{ courseUuid, uuid, front, back }`; inserts or edits one card. */
+      save: (data) => ipcRenderer.invoke("db:flashcards:save", data),
+      delete: (uuid) => ipcRenderer.invoke("db:flashcards:delete", uuid),
+    },
+    mastery: {
+      /** `{ flashcardUuid, grade, easeFactor, intervalDays, repetitions, nextReview }` from sm2. */
+      update: (data) => ipcRenderer.invoke("db:mastery:update", data),
+    },
     settings: {
       get: (key) => ipcRenderer.invoke("db:settings:get", key),
       set: (data) => ipcRenderer.invoke("db:settings:set", data),

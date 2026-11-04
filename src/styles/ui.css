@@ -976,3 +976,21 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .dev-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .dev-swatch { display: inline-flex; align-items: center; gap: 10px; }
 .dev-icon { display: inline-flex; padding: 8px; border-radius: 8px; border: 1px solid var(--border); color: var(--text-2); }
+
+/* Study tab (src/features/study/StudyTab.jsx) */
+.study { display: flex; flex-direction: column; gap: 16px; }
+.study-head { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.study-form { display: grid; gap: 6px; margin-top: 10px; }
+.study-form textarea { resize: vertical; min-height: 56px; font: inherit; }
+.study-form .ui-chips { margin-top: 6px; }
+.study-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.study-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--divider); }
+.study-list li:first-child { border-top: 0; }
+.study-list li > .study-form { flex: 1 1 100%; }
+.study-list-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 240px; overflow-wrap: anywhere; }
+.study-review { gap: 14px; padding: 24px; }
+.study-review-top { display: flex; align-items: center; justify-content: space-between; }
+.study-side { font-size: 1.2rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.study-rule { border: 0; border-top: 1px solid var(--divider); width: 100%; margin: 0; }
+.study-rate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 599px) { .study-rate { grid-template-columns: repeat(2, 1fr); } }

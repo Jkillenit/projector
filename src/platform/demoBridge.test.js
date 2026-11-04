@@ -25,6 +25,24 @@ describe("demo bridge", () => {
     expect(res.rows.every((c) => c.fictional)).toBe(true);
   });
 
+  it("keeps flashcards per course: starter cards, add, edit, review and delete", async () => {
+    const bridge = make();
+    const cards = async () => (await bridge.db.courses.getFull("calc2")).flashcards;
+    expect((await cards()).length).toBeGreaterThan(0);
+
+    expect(await bridge.db.flashcards.save({ courseUuid: "calc2", uuid: "fc_new", front: "  d/dx sin x ", back: "cos x" })).toEqual({ success: true });
+    expect(await bridge.db.flashcards.save({ courseUuid: "calc2", uuid: "fc_bad", front: "x", back: " " })).toMatchObject({ success: false });
+    await bridge.db.flashcards.save({ courseUuid: "calc2", uuid: "fc_new", front: "d/dx sin x", back: "cos(x)" });
+    await bridge.db.mastery.update({ flashcardUuid: "fc_new", grade: 4, easeFactor: 2.5, intervalDays: 1, repetitions: 1, nextReview: "2026-11-03" });
+
+    const saved = (await cards()).find((c) => c.uuid === "fc_new");
+    expect(saved).toMatchObject({ front: "d/dx sin x", back: "cos(x)", interval_days: 1, next_review: "2026-11-03", last_review: "2026-11-02", last_grade: 4 });
+    expect(JSON.parse(storage.getItem(DEMO_KEY)).cards.calc2.some((c) => c.uuid === "fc_new")).toBe(true);
+
+    await bridge.db.flashcards.delete("fc_new");
+    expect((await cards()).some((c) => c.uuid === "fc_new")).toBe(false);
+  });
+
   it("serves made-up events dated from today, never a live feed", async () => {
     const { ok, source, events } = await make().events.list();
     expect({ ok, source }).toEqual({ ok: true, source: "demo" });

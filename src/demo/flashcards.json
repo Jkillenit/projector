@@ -1,0 +1,16 @@
+{
+  "calc2": [
+    { "id": "demo-fc-calc-1", "front": "Integration by parts formula", "back": "∫u dv = uv − ∫v du" },
+    { "id": "demo-fc-calc-2", "front": "When does a geometric series Σ arⁿ converge?", "back": "When |r| < 1. The sum is a / (1 − r)." },
+    { "id": "demo-fc-calc-3", "front": "p-series Σ 1/nᵖ converges when…", "back": "p > 1" },
+    { "id": "demo-fc-calc-4", "front": "Ratio test: the series converges if…", "back": "lim |aₙ₊₁ / aₙ| < 1" }
+  ],
+  "ac310": [
+    { "id": "demo-fc-ac-1", "front": "The accounting equation", "back": "Assets = Liabilities + Equity" },
+    { "id": "demo-fc-ac-2", "front": "Normal balance of a revenue account", "back": "Credit" }
+  ],
+  "psy101": [
+    { "id": "demo-fc-psy-1", "front": "Classical conditioning was first studied by…", "back": "Ivan Pavlov" },
+    { "id": "demo-fc-psy-2", "front": "Short-term memory holds about how many items?", "back": "About 7, plus or minus 2" }
+  ]
+}

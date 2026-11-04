@@ -405,6 +405,25 @@ export const courseStore = {
     return db?.settings?.set?.({ key, value });
   },
 
+  /** A course's flashcards with their SM-2 fields (easeFactor, intervalDays, repetitions, next_review, lastReview). */
+  async getFlashcards(courseUuid) {
+    return (await this.getCourseWithModules(courseUuid))?.flashcards || [];
+  },
+
+  /** Adds or edits one card. Never rewrites the rest of the course. */
+  async saveFlashcard({ courseUuid, uuid, front, back }) {
+    return (await db?.flashcards?.save?.({ courseUuid, uuid, front, back })) || { success: false };
+  },
+
+  async deleteFlashcard(uuid) {
+    return (await db?.flashcards?.delete?.(uuid)) || { success: false };
+  },
+
+  /** `mastery` is the payload from afterReview() in src/features/study/studyDeck.js. */
+  async saveReview(mastery) {
+    return (await db?.mastery?.update?.(mastery)) || { success: false };
+  },
+
   async setAssignmentCompleted(uuid, completed = true) {
     const res = await db?.assignments?.setCompleted?.({ uuid, completed });
     window.dispatchEvent(new CustomEvent("studyhub-mirror-changed", { detail: { assignmentUuid: uuid } }));
