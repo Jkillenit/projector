@@ -3,16 +3,34 @@ import { TextLink } from "../../components/ui/index.jsx";
 import { routeHref } from "../../shell/useRoute.js";
 import { directionLinks, unproject } from "./campusMap.js";
 import { resourcesAt, whenAt } from "./placeInfo.js";
+import { classWhen, classWhere } from "./classLayer.js";
 
 /*
  * The side panel for one place. Each section gets the same `ctx` and returns null when it has nothing to show.
  * A new map layer (game day, parking, my sessions) adds one section component and one line in SECTIONS.
- * ctx: { place, title, xy, events, range, places }
+ * ctx: { place, title, xy, events, classes, range, places }
  */
 
 function About({ place }) {
   const other = (place?.alt || []).filter(Boolean);
   return other.length ? <p className="t-small t-muted">Also called {other.join(", ")}</p> : null;
+}
+
+function YourClasses({ classes, range }) {
+  if (!classes?.length) return null;
+  return (
+    <section className="map-section" aria-label="Your classes here">
+      <h3 className="t-label t-faint">Your classes here</h3>
+      <ul className="map-events">
+        {classes.map((m) => (
+          <li key={`${m.course}-${m.date}-${m.start}`}>
+            <span className="t-label t-faint">{classWhen(m, range)}</span>
+            <span className="t-heading">{classWhere(m)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function ComingUp({ events, range }) {
@@ -68,7 +86,7 @@ function Directions({ place, xy }) {
   );
 }
 
-const SECTIONS = [About, Directions, ComingUp, ResourcesHere];
+const SECTIONS = [About, Directions, YourClasses, ComingUp, ResourcesHere];
 
 export function PlacePanel(ctx) {
   return (

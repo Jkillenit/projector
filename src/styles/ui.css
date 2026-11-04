@@ -1035,3 +1035,11 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .confirm-send:not([open]) { display: none; }
 .confirm-send::backdrop { background: var(--scrim); }
 .confirm-send-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.map-class-pin { cursor: pointer; }
+.map-class-pin rect { fill: var(--good); stroke: var(--bg); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.map-class-pin text { fill: var(--on-fill); font-weight: 600; pointer-events: none; }
+.map-class-pin.is-on rect, .map-class-pin:focus-visible rect { stroke: var(--text); }
+.map-class-pin:focus { outline: none; }
+.map-section--first { border-top: 0; padding-top: 0; }
+.map-class-link { all: unset; cursor: pointer; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.map-class-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }

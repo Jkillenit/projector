@@ -71,7 +71,7 @@ export function ConnectionsCard({ mode }) {
         ))}
       </ul>
       {mode === "live" && rows.some((r) => r.ready && !r.connected) ? (
-        <p className="t-small t-faint">After you sign in, close the window. Projector checks that you are signed in.</p>
+        <p className="t-small t-faint">Sign in, wait until your schedule shows, then close the window. Projector checks that it can see your classes.</p>
       ) : null}
       {error ? <p className="t-small" role="alert">{error}</p> : null}
     </Card>

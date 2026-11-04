@@ -6,6 +6,7 @@ import announcements from "../demo/announcements.json";
 import organizations from "../demo/organizations.json";
 import demoCards from "../demo/flashcards.json";
 import demoEvents from "../demo/events.json";
+import demoSchedule from "../demo/schedule.json";
 import services from "../../electron/connections/services.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
@@ -183,6 +184,29 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
         return { ok: true };
       },
       onChanged: () => () => {},
+      /** A made-up week for the demo student's courses (src/demo/schedule.json), only once myBama is "connected". */
+      mybamaWeek: async () => {
+        if (!state.connections?.mybama) return { ok: false, notConnected: true };
+        const monday = new Date(now());
+        monday.setHours(12, 0, 0, 0);
+        monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+        const dayOf = (weekday) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + weekday - 1);
+          return localDayKey(d);
+        };
+        const mine = myCourses().map((c) => ({ c, s: demoSchedule[c.id] })).filter((x) => x.s);
+        return {
+          ok: true,
+          weekStart: dayOf(1),
+          meetings: mine
+            .filter((x) => !x.s.online)
+            .flatMap(({ c, s }) => s.days.map((day) => ({ course: c.code, title: c.name, date: dayOf(day), start: s.start, end: s.end, building: s.building, room: s.room })))
+            .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)),
+          noMeetingTime: mine.filter((x) => x.s.online).map(({ c, s }) => ({ course: c.code, title: c.name, note: s.note })),
+          fetchedAt: now().getTime(),
+        };
+      },
     },
     /** Made-up events, already in the shape src/features/campus/campusEvents.js builds. Dates are days from today. */
     events: {

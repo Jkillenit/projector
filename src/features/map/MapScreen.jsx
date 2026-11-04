@@ -6,6 +6,9 @@ import { useCampusEvents } from "../campus/useCampusEvents.js";
 import campus from "./campus.json";
 import { findBuilding, placeParts, project } from "./campusMap.js";
 import { PlacePanel } from "./PlacePanel.jsx";
+import { MyClasses } from "./MyClasses.jsx";
+import { classPins, classesInRange } from "./classLayer.js";
+import { useMyClasses } from "./useMyClasses.js";
 
 const PLACES = [...campus.buildings, ...campus.areas];
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
@@ -57,6 +60,11 @@ export function MapScreen({ query, placeId }) {
     }
     return { pins: [...bySpot.values()], unpinned: missing };
   }, [events, range]);
+
+  // Classes from myBama, as their own layer: today's, or the rest of this week's.
+  const week = useMyClasses();
+  const classesNow = useMemo(() => classesInRange(week.meetings, range), [week.meetings, range]);
+  const { pins: classSpots, unplaced } = useMemo(() => classPins(classesNow, PLACES), [classesNow]);
 
   const focus = (place) => {
     if (!place) return;
@@ -115,15 +123,17 @@ export function MapScreen({ query, placeId }) {
 
   const results = search.trim() ? fuzzyFilter(PLACES, search, (p) => [p.name, ...(p.alt || [])].join(" ")).slice(0, 6) : [];
   const pin = pins.find((p) => p.key === picked) || null;
-  const place = pin?.place || PLACES.find((p) => p.id === picked) || null;
-  const placeEvents = pin?.events || pins.find((p) => p.place?.id === picked)?.events || [];
+  const classPin = classSpots.find((p) => p.key === picked) || null;
+  const place = pin?.place || classPin?.place || PLACES.find((p) => p.id === picked) || null;
+  const placeEvents = pin?.events || (place ? pins.find((p) => p.place?.id === place.id)?.events : null) || [];
+  const placeClasses = (place && classSpots.find((p) => p.place.id === place.id)?.classes) || [];
   const r = view.w / 110; // pin radius that stays the same size on screen
 
   return (
     <div className="page map-page">
       <header className="page-head">
         <h1 className="t-display">Map</h1>
-        <p className="page-sub">Campus buildings with events where they happen. Class spots come next, from your syllabi.</p>
+        <p className="page-sub">Your classes and campus events, where they happen.</p>
       </header>
 
       <div className="map-tools">
@@ -172,6 +182,22 @@ export function MapScreen({ query, placeId }) {
                 <title>{b.name}</title>
               </path>
             ))}
+            {classSpots.map((p) => (
+              // Up and left of the building's center, so a class and an event in one building do not cover each other.
+              <g
+                key={p.key}
+                className={`map-class-pin${picked === p.key ? " is-on" : ""}`}
+                transform={`translate(${p.xy[0] - r * 1.3} ${p.xy[1] - r * 1.3})`}
+                role="button"
+                tabIndex={0}
+                aria-label={`Your ${p.classes.length === 1 ? "class" : `${p.classes.length} classes`} in ${p.place.name}`}
+                onClick={tap(() => setPicked(p.key))}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setPicked(p.key)}
+              >
+                <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={r * 0.45} />
+                <text y={r * 0.35} fontSize={r * 1.05} textAnchor="middle">{p.classes.length}</text>
+              </g>
+            ))}
             {pins.map((p) => (
               <g
                 key={p.key}
@@ -201,11 +227,12 @@ export function MapScreen({ query, placeId }) {
 
         <Card className="map-side" aria-live="polite">
           {place || pin ? (
-            <PlacePanel place={place} title={place?.name || pin.events[0].where} xy={pin?.xy} events={placeEvents} range={range} places={PLACES} />
+            <PlacePanel place={place} title={place?.name || pin.events[0].where} xy={pin?.xy} events={placeEvents} classes={placeClasses} range={range} places={PLACES} />
           ) : (
             <>
+              <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => setPicked(key)} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
-              <p className="t-small t-muted">Tap a pin or a building. Drag to move, scroll or use + and − to zoom.</p>
+              <p className="t-small t-muted">Tap a pin or a building. Squares are your classes, circles are events. Drag to move, scroll or use + and − to zoom.</p>
               {unpinned ? (
                 <p className="t-small t-faint">
                   {unpinned} more {unpinned === 1 ? "is" : "are"} online or at a place we could not find. <TextLink href={routeHref("events")} arrow>See all events</TextLink>

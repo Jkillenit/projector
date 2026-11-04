@@ -13,28 +13,56 @@ const { getDb } = require("../database.cjs");
 const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
 const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
 const { failPage } = require("./failPage.cjs");
+const { fromWeekAtAGlance, mondayOf, weekUrl, ymdOf } = require("./mybamaWeek.cjs");
 
 const STATUS_KEY = "connections.status";
 const PROBE = process.env.PROJECTOR_PROBE === "1";
 const windows = new Map();
 const probeFile = (id) => path.join(app.getPath("userData"), `probe-${id}.json`);
 
-function readStatus() {
+function readJson(key, fallback) {
   try {
-    return JSON.parse(getDb().prepare("SELECT value FROM settings WHERE key = ?").get(STATUS_KEY)?.value || "{}");
+    return JSON.parse(getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || "null") ?? fallback;
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-function writeStatus(status) {
+function writeJson(key, value) {
   getDb()
     .prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')")
-    .run(STATUS_KEY, JSON.stringify(status));
+    .run(key, JSON.stringify(value));
 }
 
-// shortcut: "connected" means the service set a cookie for its host; swap for a real "am I signed in" check once the probe shows one.
-async function hasSession(service) {
+const readStatus = () => readJson(STATUS_KEY, {});
+const writeStatus = (status) => writeJson(STATUS_KEY, status);
+// Everything saved from a connection lives under "conn.<id>." so Disconnect can delete all of it.
+const savedKey = (id, name) => `conn.${id}.${name}`;
+const SCHEDULE_FRESH_MS = 6 * 60 * 60 * 1000;
+
+/** This week's myBama schedule, read with the student's own signed-in session. GET only. */
+async function fetchMybamaWeek(date = new Date()) {
+  try {
+    const res = await session.fromPartition(partitionOf("mybama")).fetch(weekUrl(date), {
+      method: "GET",
+      headers: { accept: "application/json", "x-requested-with": "XMLHttpRequest" },
+    });
+    // Signed out, Banner sends the UA sign-in page (HTML) instead of the schedule.
+    if (!res.ok || !/json/i.test(res.headers.get("content-type") || "")) return { ok: false, signedOut: true };
+    const week = fromWeekAtAGlance(await res.json(), ymdOf(mondayOf(date)));
+    return week ? { ok: true, ...week } : { ok: false, signedOut: true };
+  } catch {
+    return { ok: false, offline: true };
+  }
+}
+
+/** Signed in for real: myBama answers with a schedule. Other services fall back to "has a cookie" until they are built. */
+async function isSignedIn(service) {
+  if (service.id === "mybama") {
+    const week = await fetchMybamaWeek();
+    if (week.ok) writeJson(savedKey("mybama", "schedule"), { ...week, fetchedAt: Date.now() });
+    return week.ok;
+  }
   const cookies = await session.fromPartition(partitionOf(service.id)).cookies.get({ domain: service.cookieHost });
   return cookies.length > 0;
 }
@@ -136,7 +164,7 @@ function registerConnectionHandlers(getMainWindow) {
     win.on("closed", async () => {
       windows.delete(id);
       const status = readStatus();
-      if (await hasSession(service)) status[id] = { at: new Date().toISOString() };
+      if (await isSignedIn(service)) status[id] = { at: new Date().toISOString() };
       else delete status[id];
       writeStatus(status);
       changed();
@@ -158,11 +186,29 @@ function registerConnectionHandlers(getMainWindow) {
     await s.clearStorageData();
     await s.clearCache();
     fs.rmSync(probeFile(id), { force: true });
+    getDb().prepare("DELETE FROM settings WHERE key LIKE ?").run(`${savedKey(id, "")}%`);
     const status = readStatus();
     delete status[id];
     writeStatus(status);
     changed();
     return { ok: true };
+  });
+
+  // This week's classes from myBama: saved for 6 hours so the map works offline. GET only (rule 5).
+  ipcMain.handle("connections:mybama:week", async (event, { refresh = false } = {}) => {
+    if (!fromMain(event)) return { ok: false };
+    if (!readStatus().mybama) return { ok: false, notConnected: true };
+    const key = savedKey("mybama", "schedule");
+    const saved = readJson(key, null);
+    const thisWeek = ymdOf(mondayOf());
+    if (!refresh && saved?.weekStart === thisWeek && Date.now() - saved.fetchedAt < SCHEDULE_FRESH_MS) return { ok: true, ...saved };
+    const week = await fetchMybamaWeek();
+    if (week.ok) {
+      writeJson(key, { ...week, fetchedAt: Date.now() });
+      return { ok: true, ...week, fetchedAt: Date.now() };
+    }
+    // Signed out or offline: the last saved week still helps, marked stale.
+    return saved?.weekStart === thisWeek ? { ok: true, ...saved, stale: true, signedOut: !!week.signedOut } : week;
   });
 }
 

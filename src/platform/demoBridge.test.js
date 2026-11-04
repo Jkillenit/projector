@@ -29,6 +29,18 @@ describe("demo bridge", () => {
     expect((await bridge.connections.list()).find((r) => r.id === "mybama").connected).toBe(false);
   });
 
+  it("gives a made-up myBama week only after connecting, for the student's own courses", async () => {
+    const bridge = make();
+    await pick(bridge, "maya");
+    expect(await bridge.connections.mybamaWeek()).toEqual({ ok: false, notConnected: true });
+    await bridge.connections.connect("mybama");
+    const week = await bridge.connections.mybamaWeek();
+    const codes = (await bridge.db.courses.getAll()).map((c) => c.course_code);
+    expect(week.weekStart).toBe("2026-11-02");
+    expect(week.meetings.length).toBeGreaterThan(0);
+    expect(week.meetings.every((m) => codes.includes(m.course) && m.date >= "2026-11-02" && m.date <= "2026-11-06" && m.building)).toBe(true);
+  });
+
   it("serves the made-up clubs, never The SOURCE", async () => {
     const res = await make().clubs.list();
     expect(res).toMatchObject({ ok: true, source: "demo" });

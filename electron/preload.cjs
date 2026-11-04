@@ -61,6 +61,8 @@ contextBridge.exposeInMainWorld("studyHub", {
     connect: (id) => ipcRenderer.invoke("connections:connect", id),
     disconnect: (id) => ipcRenderer.invoke("connections:disconnect", id),
     onChanged: (callback) => subscribe("connections:changed", callback),
+    /** This week's classes from myBama (GET only): `{ ok, weekStart, meetings, noMeetingTime, stale?, signedOut?, notConnected? }`. */
+    mybamaWeek: (opts) => ipcRenderer.invoke("connections:mybama:week", opts),
   },
   blackboard: {
     /** Connect: opens the sign-in window (closes itself once signed in), or just syncs if already connected. */
