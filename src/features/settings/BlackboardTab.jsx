@@ -40,7 +40,7 @@ export function BlackboardTab() {
       </div>
       <p className="t-small t-muted">
         {desktop
-          ? "Read only. You sign in on Blackboard's own page. Projector never stores your password, and your data stays on this computer."
+          ? "Read only. You sign in once with your UA account, and that also connects myBama for your class schedule. Projector never stores your password, and your data stays on this computer."
           : "Blackboard connects in the desktop app."}
       </p>
       <div className="ui-chips">

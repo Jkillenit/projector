@@ -110,7 +110,55 @@ function startProbe(win, id) {
   return log;
 }
 
-function registerConnectionHandlers(getMainWindow) {
+const ON_UA_LOGIN = /(^|\.)myapps\.ua\.edu$|(^|\.)okta\.com$/i;
+const hostOf = (url) => {
+  try {
+    return new URL(String(url || "")).hostname;
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * A UA service through the existing UA sign-in, with no window: a hidden window opens its start page, which hands
+ * off to UA's sign-in and back on its own. UA's hand-off runs a script, so a plain request cannot do it.
+ * True once `isSignedIn` passes. Stops early if UA's sign-in page wants a password, or after `timeoutMs`.
+ */
+function connectQuietly(service, timeoutMs = 25000) {
+  return new Promise((resolve) => {
+    const win = new BrowserWindow({ show: false, webPreferences: { partition: partitionOf(service.id), nodeIntegration: false, contextIsolation: true, sandbox: true } });
+    win.webContents.setAudioMuted(true);
+    win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    let finished = false;
+    let onLoginSince = null;
+    const finish = (ok) => {
+      if (finished) return;
+      finished = true;
+      clearInterval(watch);
+      if (!win.isDestroyed()) win.destroy();
+      resolve(ok);
+    };
+    const landed = async (_e, url) => {
+      if (String(url).startsWith(service.startUrl) && (await isSignedIn(service))) finish(true);
+    };
+    win.webContents.on("did-navigate", landed);
+    win.webContents.on("did-navigate-in-page", landed);
+    const started = Date.now();
+    const watch = setInterval(() => {
+      if (win.isDestroyed()) return finish(false);
+      const onLogin = ON_UA_LOGIN.test(hostOf(win.webContents.getURL()));
+      onLoginSince = onLogin ? onLoginSince ?? Date.now() : null;
+      if ((onLoginSince && Date.now() - onLoginSince > 5000) || Date.now() - started > timeoutMs) finish(false);
+    }, 1000);
+    win.loadURL(service.startUrl).catch(() => {});
+  });
+}
+
+/**
+ * `ua.connectBlackboard` / `ua.disconnectBlackboard` come from electron/blackboardWindow.cjs (passed in by main.cjs),
+ * so one UA sign-in connects, and one Disconnect turns off, Blackboard and myBama together.
+ */
+function registerConnectionHandlers(getMainWindow, ua = {}) {
   const fromMain = (event) => {
     const win = getMainWindow();
     return !!win && !win.isDestroyed() && event?.sender === win.webContents;
@@ -145,9 +193,10 @@ function registerConnectionHandlers(getMainWindow) {
       open.focus();
       return { ok: true };
     }
-    // Already signed in to UA (for Blackboard, say): no window at all.
-    if (service.ua && (await isSignedIn(service))) {
+    // Already signed in to UA (for Blackboard, say): no window at all, and Blackboard comes along.
+    if (service.ua && ((await isSignedIn(service)) || (await connectQuietly(service)))) {
       setConnected(id, true);
+      void ua.connectBlackboard?.();
       return { ok: true, already: true };
     }
     const win = new BrowserWindow({
@@ -194,12 +243,17 @@ function registerConnectionHandlers(getMainWindow) {
       done = true;
       setConnected(id, true);
       win.close();
+      // The one UA sign-in just made also opens Blackboard, with no second password.
+      if (service.ua) void ua.connectBlackboard?.();
     };
     win.webContents.on("did-navigate", landed);
     win.webContents.on("did-navigate-in-page", landed);
     win.on("closed", async () => {
       windows.delete(id);
-      if (!done) setConnected(id, await isSignedIn(service));
+      if (done) return;
+      const ok = await isSignedIn(service);
+      setConnected(id, ok);
+      if (ok && service.ua) void ua.connectBlackboard?.();
     });
     await go(service.startUrl);
     return { ok: true };
@@ -214,11 +268,12 @@ function registerConnectionHandlers(getMainWindow) {
       open.destroy();
     }
     windows.delete(id);
-    const s = session.fromPartition(partitionOf(id));
-    if (service.ua) {
-      // The UA sign-in is shared with Blackboard: clear only this service's sites, so Blackboard stays signed in.
-      for (const origin of service.origins || []) await s.clearStorageData({ origin });
+    if (service.ua && ua.disconnectBlackboard) {
+      // One UA account: signing out turns off Blackboard and myBama together. Blackboard's Disconnect wipes the shared
+      // sign-in and its data, then calls forgetUa() below for the UA connections.
+      await ua.disconnectBlackboard();
     } else {
+      const s = session.fromPartition(partitionOf(id));
       await s.clearStorageData();
       await s.clearCache();
     }
@@ -244,7 +299,21 @@ function registerConnectionHandlers(getMainWindow) {
     return saved?.weekStart === thisWeek ? { ok: true, ...saved, stale: true, signedOut: !!week.signedOut } : week;
   });
 
+  let catchingUp = false;
   return {
+    /** Blackboard just connected (from any button): the same UA sign-in turns on myBama, with no window. */
+    async afterBlackboard() {
+      if (catchingUp) return;
+      catchingUp = true;
+      try {
+        for (const s of SERVICES.filter((x) => x.ua && x.ready)) {
+          if (readStatus()[s.id]) continue;
+          if ((await isSignedIn(s)) || (await connectQuietly(s))) setConnected(s.id, true);
+        }
+      } finally {
+        catchingUp = false;
+      }
+    },
     /** Blackboard's Disconnect wipes the shared UA sign-in, so every UA connection is off too, with its saved data. */
     forgetUa() {
       for (const s of SERVICES.filter((x) => x.ua)) {
