@@ -47,6 +47,10 @@ contextBridge.exposeInMainWorld("studyHub", {
       openFolder: () => ipcRenderer.invoke("app:backup:openFolder"),
     },
   },
+  /** The SOURCE public club list, read signed out: `{ ok, source: "the-source", rows, at, stale?, error? }`. */
+  clubs: {
+    list: () => ipcRenderer.invoke("source:clubs"),
+  },
   blackboard: {
     /** Connect: opens the sign-in window (closes itself once signed in), or just syncs if already connected. */
     open: () => ipcRenderer.invoke("bb:open"),

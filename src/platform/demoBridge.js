@@ -3,6 +3,7 @@ import courses from "../demo/courses.json";
 import enrollments from "../demo/enrollments.json";
 import assignments from "../demo/assignments.json";
 import announcements from "../demo/announcements.json";
+import organizations from "../demo/organizations.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 
 export const DEMO_KEY = "fd.demo";
@@ -148,6 +149,10 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     openExternal: async (url) => void globalThis.open?.(url, "_blank", "noopener"),
     /** A browser cannot read PDF or Word files, so the demo answers every upload with a sample syllabus. */
     extractFile: async () => ({ ok: true, text: syllabusText }),
+    /** The made-up clubs. Live mode reads The SOURCE instead (electron/sourceClubs.cjs). */
+    clubs: {
+      list: async () => ({ ok: true, source: "demo", rows: organizations }),
+    },
     app: {
       info: async () => ({ version: "demo", demo: true }),
       /** Forgets every change, including the chosen student (kept in settings), so the next load starts from the welcome. */

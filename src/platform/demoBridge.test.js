@@ -18,6 +18,13 @@ beforeEach(() => {
 });
 
 describe("demo bridge", () => {
+  it("serves the made-up clubs, never The SOURCE", async () => {
+    const res = await make().clubs.list();
+    expect(res).toMatchObject({ ok: true, source: "demo" });
+    expect(res.rows.length).toBeGreaterThan(0);
+    expect(res.rows.every((c) => c.fictional)).toBe(true);
+  });
+
   it("returns the chosen student's demo courses (four classes and one organization)", async () => {
     const bridge = make();
     expect(await bridge.db.courses.getAll()).toEqual([]);
