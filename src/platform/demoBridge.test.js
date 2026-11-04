@@ -43,6 +43,12 @@ describe("demo bridge", () => {
     expect((await cards()).some((c) => c.uuid === "fc_new")).toBe(false);
   });
 
+  it("serves made-up events dated from today, never a live feed", async () => {
+    const { ok, source, events } = await make().events.list();
+    expect({ ok, source }).toEqual({ ok: true, source: "demo" });
+    expect(events.every((e) => e.title.includes("(demo)") && Date.parse(e.start) > NOW.getTime() && Date.parse(e.end) > Date.parse(e.start))).toBe(true);
+  });
+
   it("returns the chosen student's demo courses (four classes and one organization)", async () => {
     const bridge = make();
     expect(await bridge.db.courses.getAll()).toEqual([]);

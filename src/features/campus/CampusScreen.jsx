@@ -91,9 +91,10 @@ function Clubs({ profile, sectionRef }) {
   );
 }
 
+
 /**
  * Every campus resource with fuzzy search and filters, a detail panel (a sheet on narrow screens),
- * then clubs. `section` "clubs" scrolls to clubs; `resourceId` opens one resource.
+ * then clubs. `section` "clubs" scrolls to clubs; `resourceId` opens one resource. Events have their own screen.
  */
 export function CampusScreen({ profile, section, resourceId, actions }) {
   const [query, setQuery] = useState("");

@@ -5,6 +5,7 @@ import assignments from "../demo/assignments.json";
 import announcements from "../demo/announcements.json";
 import organizations from "../demo/organizations.json";
 import demoCards from "../demo/flashcards.json";
+import demoEvents from "../demo/events.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
 
@@ -160,9 +161,28 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     openExternal: async (url) => void globalThis.open?.(url, "_blank", "noopener"),
     /** A browser cannot read PDF or Word files, so the demo answers every upload with a sample syllabus. */
     extractFile: async () => ({ ok: true, text: syllabusText }),
-    /** The made-up clubs. Live mode reads The SOURCE instead (electron/sourceClubs.cjs). */
+    /** The made-up clubs. Live mode reads The SOURCE instead (electron/publicFeeds.cjs). */
     clubs: {
       list: async () => ({ ok: true, source: "demo", rows: organizations }),
+    },
+    /** Made-up events, already in the shape src/features/campus/campusEvents.js builds. Dates are days from today. */
+    events: {
+      list: async () => ({
+        ok: true,
+        source: "demo",
+        events: demoEvents.map((e) => ({
+          id: e.id,
+          title: e.title,
+          start: iso(e.starts_in_days, e.hour, e.minute),
+          end: iso(e.starts_in_days, e.hour + e.hours, e.minute),
+          where: e.where,
+          online: !!e.online,
+          host: e.host,
+          url: null,
+          source: "demo",
+          text: `${e.title} ${e.host} ${e.tags.join(" ")}`,
+        })),
+      }),
     },
     app: {
       info: async () => ({ version: "demo", demo: true }),
