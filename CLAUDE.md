@@ -43,3 +43,4 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
 | `src/features/resources/` | Requirements lead |
 | `src/features/guide/` | Process and safety lead |
 | `src/features/clubs/` | Users and change lead |
+| `src/features/campus/` | Shared screen: Resources part is the requirements lead, Clubs part is the users and change lead. List it under "Shared files touched" in the PR |
