@@ -65,6 +65,7 @@ export function EventsScreen({ profile }) {
                   {e.match.length ? <Pill tone="good">Matches your interest in {e.match.join(" and ")}</Pill> : null}
                 </div>
                 {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "See it on UA's calendar" : "See it on The SOURCE"}</TextLink> : null}
+                {!e.online && e.where ? <TextLink href={routeHref("map", [], { q: e.where })} arrow>On the map</TextLink> : null}
               </Card>
             ))}
           </div>

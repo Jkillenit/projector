@@ -28,6 +28,7 @@ const calendarRow = {
   localist_url: "https://calendar.ua.edu/event/wellbama-health-screening-4322",
   departments: [{ name: "Wellness and Work-Life" }],
   filters: { event_target_audience: [{ name: "Students" }, { name: "Faculty & Staff" }], event_topic: [{ name: "Health & Wellness" }] },
+  geo: { latitude: "33.211057", longitude: "-87.54923" },
   event_instances: [{ event_instance: { start: "2026-11-05T07:30:00-06:00", end: "2026-11-05T13:00:00-06:00" } }],
 };
 
@@ -41,8 +42,8 @@ describe("campus events", () => {
 
   it("reads UA's calendar, joins building and room, and marks virtual events online", () => {
     const [e] = fromCalendarEvents([calendarRow], NOW);
-    expect(e).toMatchObject({ title: "WellBAMA Health Screening", where: "Bruno Business Library, 1st Floor Lobby", online: false, host: "Wellness and Work-Life", source: "calendar" });
-    expect(fromCalendarEvents([{ ...calendarRow, experience: "virtual" }], NOW)[0]).toMatchObject({ where: "Online", online: true });
+    expect(e).toMatchObject({ title: "WellBAMA Health Screening", where: "Bruno Business Library, 1st Floor Lobby", online: false, host: "Wellness and Work-Life", source: "calendar", geo: { lat: 33.211057, lon: -87.54923 } });
+    expect(fromCalendarEvents([{ ...calendarRow, experience: "virtual" }], NOW)[0]).toMatchObject({ where: "Online", online: true, geo: null });
   });
 
   it("leaves out staff-only, private, unpublished and finished calendar events", () => {
