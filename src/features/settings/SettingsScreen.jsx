@@ -7,6 +7,7 @@ import { INTEREST_OPTIONS } from "../../platform/profile.js";
 import { BlackboardSyncPanel } from "../blackboard/BlackboardSyncPanel.jsx";
 import { SyncBar } from "../blackboard/SyncBar.jsx";
 import { BlackboardTab } from "./BlackboardTab.jsx";
+import { ConnectionsCard } from "./ConnectionsCard.jsx";
 
 const YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
 
@@ -63,6 +64,8 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
           <input type="checkbox" checked={reduced} onChange={(e) => setMotionPref(e.target.checked)} />
         </label>
       </Card>
+
+      <ConnectionsCard mode={mode} />
 
       {mode === "live" ? (
         <>

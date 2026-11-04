@@ -18,6 +18,17 @@ beforeEach(() => {
 });
 
 describe("demo bridge", () => {
+  it("pretends to connect services: off by default, only ready ones connect, disconnect clears", async () => {
+    const bridge = make();
+    const rows = await bridge.connections.list();
+    expect(rows.every((r) => !r.connected)).toBe(true);
+    expect(await bridge.connections.connect("tickets")).toMatchObject({ ok: false });
+    expect(await bridge.connections.connect("mybama")).toEqual({ ok: true });
+    expect((await bridge.connections.list()).find((r) => r.id === "mybama").connected).toBe(true);
+    await bridge.connections.disconnect("mybama");
+    expect((await bridge.connections.list()).find((r) => r.id === "mybama").connected).toBe(false);
+  });
+
   it("serves the made-up clubs, never The SOURCE", async () => {
     const res = await make().clubs.list();
     expect(res).toMatchObject({ ok: true, source: "demo" });

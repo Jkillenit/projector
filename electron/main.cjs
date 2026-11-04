@@ -7,6 +7,7 @@ const { registerBlackboardHandlers } = require("./blackboardWindow.cjs");
 const { registerMaintenanceHandlers } = require("./maintenance.cjs");
 const { extractBufferText } = require("./extractText.cjs");
 const { registerSourceHandlers } = require("./publicFeeds.cjs");
+const { registerConnectionHandlers } = require("./connections/connectionWindow.cjs");
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -115,6 +116,7 @@ app.whenReady().then(() => {
   registerMirrorHandlers();
   registerMaintenanceHandlers(() => mainWindow);
   registerSourceHandlers(ipcMain);
+  registerConnectionHandlers(() => mainWindow);
   createWindow();
   registerBlackboardHandlers(() => mainWindow, { extractBufferText });
   app.on("activate", () => {
