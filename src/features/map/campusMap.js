@@ -15,6 +15,22 @@ export function project(lat, lon) {
   return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
 }
 
+/** The reverse of project: [x, y] meters → { lat, lon }, to 6 decimals (about 10 cm). */
+export function unproject([x, y]) {
+  const r = (n) => Math.round(n * 1e6) / 1e6;
+  return { lat: r(ORIGIN.lat - y / M_PER_DEG_LAT), lon: r(ORIGIN.lon + x / M_PER_DEG_LON) };
+}
+
+/** Links that open the student's own map app at a place. Only the destination goes in the link, nothing about the student. */
+export function directionLinks({ lat, lon }, name = "") {
+  const ll = `${lat},${lon}`;
+  return [
+    { id: "waze", label: "Waze", url: `https://waze.com/ul?ll=${ll}&navigate=yes` },
+    { id: "google", label: "Google Maps", url: `https://www.google.com/maps/dir/?api=1&destination=${ll}` },
+    { id: "apple", label: "Apple Maps", url: `https://maps.apple.com/?daddr=${ll}${name ? `&q=${encodeURIComponent(name)}` : ""}` },
+  ];
+}
+
 /** Douglas-Peucker: drops points closer than `tolerance` meters to the line, so outlines stay small. */
 export function simplify(points, tolerance = 1) {
   if (points.length < 3) return points;

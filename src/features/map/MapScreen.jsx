@@ -5,7 +5,7 @@ import { routeHref } from "../../shell/useRoute.js";
 import { eventTime } from "../campus/campusEvents.js";
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import campus from "./campus.json";
-import { findBuilding, placeParts, project } from "./campusMap.js";
+import { directionLinks, findBuilding, placeParts, project, unproject } from "./campusMap.js";
 
 const PLACES = [...campus.buildings, ...campus.areas];
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
@@ -198,6 +198,12 @@ export function MapScreen({ query }) {
           {place || pin ? (
             <>
               <h2 className="t-title">{place?.name || pin.events[0].where}</h2>
+              <div className="ui-chips" aria-label="Directions">
+                <span className="t-small t-muted">Directions:</span>
+                {directionLinks(unproject(pin?.xy || place.c), place?.name || "").map((l) => (
+                  <TextLink key={l.id} href={l.url} external>{l.label}</TextLink>
+                ))}
+              </div>
               {placeEvents.length ? (
                 <ul className="map-events">
                   {placeEvents.map((e) => (
