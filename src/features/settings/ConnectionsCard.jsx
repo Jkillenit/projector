@@ -22,17 +22,25 @@ export function ConnectionsCard({ mode }) {
   const connect = async (row) => {
     setBusy(row.id);
     setError("");
-    const res = await api.connect(row.id);
-    if (!res?.ok) setError(res?.error || "Could not open the sign-in window.");
-    await load();
-    setBusy(null);
+    try {
+      const res = await api.connect(row.id);
+      if (!res?.ok) setError(res?.error || "Could not open the sign-in window.");
+    } catch {
+      setError("Could not open the sign-in window. Try again.");
+    } finally {
+      await load();
+      setBusy(null);
+    }
   };
   const disconnect = async (row) => {
     if (!window.confirm(`Disconnect ${row.name}? This signs you out there and deletes everything Projector saved from it.`)) return;
     setBusy(row.id);
-    await api.disconnect(row.id);
-    await load();
-    setBusy(null);
+    try {
+      await api.disconnect(row.id);
+    } finally {
+      await load();
+      setBusy(null);
+    }
   };
 
   if (!api) return null;

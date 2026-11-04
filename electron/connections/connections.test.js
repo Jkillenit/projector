@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
 const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
+const { failPage } = require("./failPage.cjs");
 
 describe("connection services", () => {
   it("knows each service, and only myBama is ready", () => {
@@ -25,6 +26,18 @@ describe("connection services", () => {
     expect(allowedHost(mybama, "http://mybama.ua.edu/")).toBe(false);
     expect(allowedHost(mybama, "https://evil-ua.edu.example.com/")).toBe(false);
     expect(allowedHost(mybama, "https://notua.edu/")).toBe(false);
+  });
+});
+
+describe("the page shown when a load fails", () => {
+  it("names the site and links to try again, with the address escaped", () => {
+    const page = failPage("https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance#!/");
+    expect(page).toContain("Could not reach bannerssb.ua.edu");
+    expect(page).toContain('href="https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance#!/"');
+    const evil = failPage('https://x.ua.edu/"><script>alert(1)</script>');
+    expect(evil).not.toContain("<script>");
+    expect(evil).toContain("&quot;&gt;&lt;script&gt;");
+    expect(failPage("not a url")).toContain("Could not reach the site");
   });
 });
 

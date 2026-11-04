@@ -12,6 +12,7 @@ const path = require("path");
 const { getDb } = require("../database.cjs");
 const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
 const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
+const { failPage } = require("./failPage.cjs");
 
 const STATUS_KEY = "connections.status";
 const PROBE = process.env.PROJECTOR_PROBE === "1";
@@ -50,7 +51,7 @@ function startProbe(win, id) {
   const dbg = win.webContents.debugger;
   try {
     dbg.attach("1.3");
-    void dbg.sendCommand("Network.enable");
+    dbg.sendCommand("Network.enable").catch(() => {}); // the window can close before this answers
   } catch {
     return log;
   }
@@ -114,11 +115,18 @@ function registerConnectionHandlers(getMainWindow) {
       if (log) log.blocked.push(safePath(url));
       if (/^https:\/\//i.test(url)) void shell.openExternal(url);
     };
+    // A load that fails or is replaced by a sign-in redirect rejects; did-fail-load below shows the student what happened.
+    const go = (url) => win.loadURL(url).catch(() => {});
     // The window stays on the service's own sign-in sites. Anything else opens in the browser.
     win.webContents.setWindowOpenHandler(({ url }) => {
-      if (allowedHost(service, url)) void win.loadURL(url);
+      if (allowedHost(service, url)) void go(url);
       else outside(url);
       return { action: "deny" };
+    });
+    win.webContents.on("did-fail-load", (_e, code, _desc, url, isMainFrame) => {
+      // -3 is "aborted": a redirect or a newer load took over, which is normal during sign-in.
+      if (!isMainFrame || code === -3 || String(url).startsWith("data:") || win.isDestroyed()) return;
+      void go(`data:text/html;charset=utf-8,${encodeURIComponent(failPage(url))}`);
     });
     win.webContents.on("will-navigate", (e, url) => {
       if (allowedHost(service, url)) return;
@@ -133,7 +141,7 @@ function registerConnectionHandlers(getMainWindow) {
       writeStatus(status);
       changed();
     });
-    await win.loadURL(service.startUrl);
+    await go(service.startUrl);
     return { ok: true };
   });
 
