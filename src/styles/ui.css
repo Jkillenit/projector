@@ -1023,3 +1023,5 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .map-events li { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-top: 1px solid var(--divider); }
 .map-events li:first-child { border-top: 0; padding-top: 0; }
+.map-section { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.map-section.ui-chips { flex-direction: row; align-items: center; }

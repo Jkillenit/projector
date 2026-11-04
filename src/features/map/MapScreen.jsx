@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Chip, Icon, TextLink } from "../../components/ui/index.jsx";
 import { fuzzyFilter } from "../../lib/fuzzy.js";
 import { routeHref } from "../../shell/useRoute.js";
-import { eventTime } from "../campus/campusEvents.js";
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import campus from "./campus.json";
-import { directionLinks, findBuilding, placeParts, project, unproject } from "./campusMap.js";
+import { findBuilding, placeParts, project } from "./campusMap.js";
+import { PlacePanel } from "./PlacePanel.jsx";
 
 const PLACES = [...campus.buildings, ...campus.areas];
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
@@ -29,7 +29,7 @@ function spotOf(e) {
 }
 
 /** Our own campus map: OpenStreetMap buildings, with today's (or this week's) events pinned where they happen. */
-export function MapScreen({ query }) {
+export function MapScreen({ query, placeId }) {
   const [view, setView] = useState(START);
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
@@ -71,6 +71,11 @@ export function MapScreen({ query }) {
     if (found) focus(found);
     else setSearch(placeParts(query)[0] || query); // show what we looked for, so the student can pick
   }, [query]);
+
+  // #/map?place=w123 opens one place by its id.
+  useEffect(() => {
+    if (placeId) focus(PLACES.find((p) => p.id === placeId));
+  }, [placeId]);
 
   // Wheel zoom needs a non-passive listener to stop the page from scrolling.
   useEffect(() => {
@@ -196,29 +201,7 @@ export function MapScreen({ query }) {
 
         <Card className="map-side" aria-live="polite">
           {place || pin ? (
-            <>
-              <h2 className="t-title">{place?.name || pin.events[0].where}</h2>
-              <div className="ui-chips" aria-label="Directions">
-                <span className="t-small t-muted">Directions:</span>
-                {directionLinks(unproject(pin?.xy || place.c), place?.name || "").map((l) => (
-                  <TextLink key={l.id} href={l.url} external>{l.label}</TextLink>
-                ))}
-              </div>
-              {placeEvents.length ? (
-                <ul className="map-events">
-                  {placeEvents.map((e) => (
-                    <li key={e.id}>
-                      <span className="t-label t-faint">{range === "today" ? eventTime(e.start) : new Date(e.start).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}</span>
-                      <span className="t-heading">{e.title}</span>
-                      <span className="t-small t-muted">{[e.where, e.host].filter(Boolean).join(" · ")}</span>
-                      {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "UA's calendar" : "The SOURCE"}</TextLink> : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="t-small t-muted">No events here {range === "today" ? "today" : "this week"}.</p>
-              )}
-            </>
+            <PlacePanel place={place} title={place?.name || pin.events[0].where} xy={pin?.xy} events={placeEvents} range={range} places={PLACES} />
           ) : (
             <>
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
