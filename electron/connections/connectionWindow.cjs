@@ -132,6 +132,9 @@ function registerConnectionHandlers(getMainWindow) {
     getDb().prepare("DELETE FROM settings WHERE key LIKE ?").run(`${savedKey(id, "")}%`);
   };
 
+  // UA connections used their own store before they shared Blackboard's; clear any sign-in left in the old one.
+  for (const s of SERVICES.filter((x) => x.ua)) void session.fromPartition(`persist:conn-${s.id}`).clearStorageData().catch(() => {});
+
   ipcMain.handle("connections:list", (event) => (fromMain(event) ? list() : []));
 
   ipcMain.handle("connections:connect", async (event, id) => {
