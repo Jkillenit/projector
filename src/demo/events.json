@@ -1,0 +1,7 @@
+[
+  { "id": "demo-ev-1", "title": "Hack Night (demo)", "host": "Midnight Coders (demo)", "where": "Shelby Hall 1093", "starts_in_days": 1, "hour": 18, "minute": 0, "hours": 2, "tags": ["coding", "gaming"] },
+  { "id": "demo-ev-2", "title": "Resume Review Drop In (demo)", "host": "Career Center (demo)", "where": "Ferguson Center", "starts_in_days": 2, "hour": 13, "minute": 0, "hours": 2, "tags": ["career"] },
+  { "id": "demo-ev-3", "title": "Garden Workday (demo)", "host": "Quad Gardeners (demo)", "where": "The Quad", "starts_in_days": 3, "hour": 9, "minute": 30, "hours": 2, "tags": ["volunteering", "outdoors"] },
+  { "id": "demo-ev-4", "title": "Study Skills Webinar (demo)", "host": "Center for Academic Success (demo)", "where": "Online", "online": true, "starts_in_days": 4, "hour": 15, "minute": 0, "hours": 1, "tags": ["study"] },
+  { "id": "demo-ev-5", "title": "Open Mic (demo)", "host": "Sketch and Sip (demo)", "where": "Ferguson Center Plaza", "starts_in_days": 6, "hour": 19, "minute": 0, "hours": 2, "tags": ["music", "writing", "art"] }
+]
