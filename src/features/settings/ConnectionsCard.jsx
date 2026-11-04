@@ -33,7 +33,10 @@ export function ConnectionsCard({ mode }) {
     }
   };
   const disconnect = async (row) => {
-    if (!window.confirm(`Disconnect ${row.name}? This signs you out there and deletes everything Projector saved from it.`)) return;
+    const message = row.ua
+      ? `Disconnect ${row.name}? Projector stops reading it and deletes what it saved. You stay signed in to UA for Blackboard.`
+      : `Disconnect ${row.name}? This signs you out there and deletes everything Projector saved from it.`;
+    if (!window.confirm(message)) return;
     setBusy(row.id);
     try {
       await api.disconnect(row.id);
@@ -61,6 +64,7 @@ export function ConnectionsCard({ mode }) {
               </span>
               <span className="t-small t-muted">Reads: {row.reads}</span>
               <span className="t-small t-muted">Sends: {row.sends}</span>
+              {row.ua ? <span className="t-small t-faint">Uses your UA sign-in, the same one as Blackboard. Sign in once for both.</span> : null}
             </div>
             {row.connected ? (
               <Button size="sm" variant="quiet" disabled={busy === row.id} onClick={() => disconnect(row)}>Disconnect</Button>
@@ -71,7 +75,7 @@ export function ConnectionsCard({ mode }) {
         ))}
       </ul>
       {mode === "live" && rows.some((r) => r.ready && !r.connected) ? (
-        <p className="t-small t-faint">Sign in, wait until your schedule shows, then close the window. Projector checks that it can see your classes.</p>
+        <p className="t-small t-faint">If you are already signed in to Blackboard, myBama connects right away. If not, sign in with UA and the window closes by itself once your schedule shows.</p>
       ) : null}
       {error ? <p className="t-small" role="alert">{error}</p> : null}
     </Card>

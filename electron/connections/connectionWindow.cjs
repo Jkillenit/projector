@@ -69,7 +69,7 @@ async function isSignedIn(service) {
 
 function list() {
   const status = readStatus();
-  return SERVICES.map(({ id, name, reads, sends, ready }) => ({ id, name, reads, sends, ready, connected: !!status[id], connectedAt: status[id]?.at || null }));
+  return SERVICES.map(({ id, name, reads, sends, ready, ua }) => ({ id, name, reads, sends, ready, ua: !!ua, connected: !!status[id], connectedAt: status[id]?.at || null }));
 }
 
 function startProbe(win, id) {
@@ -120,6 +120,18 @@ function registerConnectionHandlers(getMainWindow) {
     if (win && !win.isDestroyed()) win.webContents.send("connections:changed", list());
   };
 
+  const setConnected = (id, yes) => {
+    const status = readStatus();
+    if (yes) status[id] = { at: new Date().toISOString() };
+    else delete status[id];
+    writeStatus(status);
+    changed();
+  };
+  const forgetSaved = (id) => {
+    fs.rmSync(probeFile(id), { force: true });
+    getDb().prepare("DELETE FROM settings WHERE key LIKE ?").run(`${savedKey(id, "")}%`);
+  };
+
   ipcMain.handle("connections:list", (event) => (fromMain(event) ? list() : []));
 
   ipcMain.handle("connections:connect", async (event, id) => {
@@ -129,6 +141,11 @@ function registerConnectionHandlers(getMainWindow) {
     if (open && !open.isDestroyed()) {
       open.focus();
       return { ok: true };
+    }
+    // Already signed in to UA (for Blackboard, say): no window at all.
+    if (service.ua && (await isSignedIn(service))) {
+      setConnected(id, true);
+      return { ok: true, already: true };
     }
     const win = new BrowserWindow({
       width: 1100,
@@ -161,13 +178,25 @@ function registerConnectionHandlers(getMainWindow) {
       e.preventDefault();
       outside(url);
     });
+    // Once sign-in lands back on the start page (Week at a Glance), check it works and close the window by itself.
+    // Event-driven, not a timer: a background request to Banner mid sign-in could upset UA's login.
+    let done = false;
+    let checking = false;
+    const landed = async (_e, url) => {
+      if (done || checking || !String(url).startsWith(service.startUrl)) return;
+      checking = true;
+      const ok = await isSignedIn(service);
+      checking = false;
+      if (!ok || done || win.isDestroyed()) return;
+      done = true;
+      setConnected(id, true);
+      win.close();
+    };
+    win.webContents.on("did-navigate", landed);
+    win.webContents.on("did-navigate-in-page", landed);
     win.on("closed", async () => {
       windows.delete(id);
-      const status = readStatus();
-      if (await isSignedIn(service)) status[id] = { at: new Date().toISOString() };
-      else delete status[id];
-      writeStatus(status);
-      changed();
+      if (!done) setConnected(id, await isSignedIn(service));
     });
     await go(service.startUrl);
     return { ok: true };
@@ -183,14 +212,15 @@ function registerConnectionHandlers(getMainWindow) {
     }
     windows.delete(id);
     const s = session.fromPartition(partitionOf(id));
-    await s.clearStorageData();
-    await s.clearCache();
-    fs.rmSync(probeFile(id), { force: true });
-    getDb().prepare("DELETE FROM settings WHERE key LIKE ?").run(`${savedKey(id, "")}%`);
-    const status = readStatus();
-    delete status[id];
-    writeStatus(status);
-    changed();
+    if (service.ua) {
+      // The UA sign-in is shared with Blackboard: clear only this service's sites, so Blackboard stays signed in.
+      for (const origin of service.origins || []) await s.clearStorageData({ origin });
+    } else {
+      await s.clearStorageData();
+      await s.clearCache();
+    }
+    forgetSaved(id);
+    setConnected(id, false);
     return { ok: true };
   });
 
@@ -210,6 +240,16 @@ function registerConnectionHandlers(getMainWindow) {
     // Signed out or offline: the last saved week still helps, marked stale.
     return saved?.weekStart === thisWeek ? { ok: true, ...saved, stale: true, signedOut: !!week.signedOut } : week;
   });
+
+  return {
+    /** Blackboard's Disconnect wipes the shared UA sign-in, so every UA connection is off too, with its saved data. */
+    forgetUa() {
+      for (const s of SERVICES.filter((x) => x.ua)) {
+        forgetSaved(s.id);
+        setConnected(s.id, false);
+      }
+    },
+  };
 }
 
 module.exports = { registerConnectionHandlers };

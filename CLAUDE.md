@@ -26,6 +26,7 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
      - Disconnect signs out and deletes everything saved from that service.
      - Check the service's terms first. If they ban automated access, use their official API or partner program, or do not build it.
      - Each connection lives in its own file in `electron/connections/`, and only the tech lead changes those files. Blackboard stays GET only (rule 2).
+     - UA connections (like myBama) share Blackboard's UA sign-in (`persist:blackboard`), so a student signs in to UA once. Disconnecting one of them clears only its own sites. Disconnecting Blackboard turns every UA connection off. Outside services each get their own sign-in store.
 6. Tests, demos and screenshots use Demo mode only.
 7. Never write code that drafts or completes coursework.
 8. No new npm package without team agreement in the PR.

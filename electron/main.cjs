@@ -116,9 +116,10 @@ app.whenReady().then(() => {
   registerMirrorHandlers();
   registerMaintenanceHandlers(() => mainWindow);
   registerSourceHandlers(ipcMain);
-  registerConnectionHandlers(() => mainWindow);
+  const connections = registerConnectionHandlers(() => mainWindow);
   createWindow();
-  registerBlackboardHandlers(() => mainWindow, { extractBufferText });
+  // Blackboard and myBama share one UA sign-in, so disconnecting Blackboard turns myBama off too.
+  registerBlackboardHandlers(() => mainWindow, { extractBufferText, onDisconnect: () => connections.forgetUa() });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

@@ -12,7 +12,10 @@ const HOSTS = {
 
 const SERVICES = LIST.map((s) => ({ ...s, hosts: HOSTS[s.id] || [] }));
 const byId = (id) => SERVICES.find((s) => s.id === id) || null;
-const partitionOf = (id) => `persist:conn-${id}`;
+// UA systems (`"ua": true`) share Blackboard's cookie store, so one UA (Okta) sign-in covers Blackboard and myBama.
+// Must match BB_PARTITION in electron/bbSync.cjs (tested). Outside services each get their own store.
+const UA_PARTITION = "persist:blackboard";
+const partitionOf = (id) => (byId(id)?.ua ? UA_PARTITION : `persist:conn-${id}`);
 
 /** True when `url` is https and on one of the service's sign-in hosts. */
 function allowedHost(service, url) {
@@ -24,4 +27,4 @@ function allowedHost(service, url) {
   }
 }
 
-module.exports = { SERVICES, byId, partitionOf, allowedHost };
+module.exports = { SERVICES, byId, partitionOf, allowedHost, UA_PARTITION };

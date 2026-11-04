@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
-const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
+const { SERVICES, byId, partitionOf, allowedHost, UA_PARTITION } = require("./services.cjs");
 const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
 const { failPage } = require("./failPage.cjs");
 
@@ -14,9 +15,13 @@ describe("connection services", () => {
     expect(byId("nope")).toBeNull();
   });
 
-  it("gives each service its own cookie store", () => {
-    expect(partitionOf("mybama")).toBe("persist:conn-mybama");
-    expect(new Set(SERVICES.map((s) => partitionOf(s.id))).size).toBe(SERVICES.length);
+  it("shares one UA sign-in between Blackboard and myBama, and gives outside services their own store", () => {
+    const bbSync = readFileSync(new URL("../bbSync.cjs", import.meta.url), "utf8");
+    expect(bbSync).toContain(`const BB_PARTITION = "${UA_PARTITION}";`);
+    expect(partitionOf("mybama")).toBe(UA_PARTITION);
+    const outside = SERVICES.filter((s) => !s.ua).map((s) => partitionOf(s.id));
+    expect(new Set(outside).size).toBe(outside.length);
+    expect(outside).not.toContain(UA_PARTITION);
   });
 
   it("keeps the myBama window on UA and its sign-in pages, https only", () => {

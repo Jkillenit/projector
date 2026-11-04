@@ -148,7 +148,7 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
 
   const ok = async () => ({ success: true });
   const connectionList = () =>
-    services.map(({ id, name, reads, sends, ready }) => ({ id, name, reads, sends, ready, connected: !!state.connections?.[id], connectedAt: state.connections?.[id]?.at || null }));
+    services.map(({ id, name, reads, sends, ready, ua }) => ({ id, name, reads, sends, ready, ua: !!ua, connected: !!state.connections?.[id], connectedAt: state.connections?.[id]?.at || null }));
 
   // Cards per course, in the row shape db:courses:getFull returns. Seeded from src/demo/flashcards.json on first use.
   const cardsOf = (courseId) => {

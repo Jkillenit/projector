@@ -1,5 +1,5 @@
 [
-  { "id": "mybama", "name": "myBama", "startUrl": "https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance", "cookieHost": "bannerssb.ua.edu", "reads": "Your class schedule: days, times, building and room.", "sends": "Nothing.", "ready": true },
+  { "id": "mybama", "name": "myBama", "ua": true, "startUrl": "https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance", "origins": ["https://bannerssb.ua.edu", "https://mybama.ua.edu"], "reads": "Your class schedule: days, times, building and room.", "sends": "Nothing.", "ready": true },
   { "id": "tutoring", "name": "Tutoring booking", "reads": "Open tutoring sessions.", "sends": "A booking, only when you tap Book.", "ready": false },
   { "id": "tickets", "name": "Student tickets", "reads": "Your game tickets.", "sends": "A ticket request, only when you tap Request.", "ready": false },
   { "id": "waze", "name": "Waze", "reads": "Traffic near campus.", "sends": "Only a destination, when you tap Directions.", "ready": false },
