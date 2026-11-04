@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
-import organizations from "../../demo/organizations.json";
+import { SOURCE_DIRECTORY_URL } from "../clubs/sourceClubs.js";
+import { useClubs } from "../clubs/useClubs.js";
 import { Button, Card, Chip, Icon, Pill, StepList, TextLink } from "../../components/ui/index.jsx";
 import { fuzzyFilter } from "../../lib/fuzzy.js";
 import { toStudent } from "../../platform/profile.js";
@@ -42,30 +43,50 @@ function Detail({ r, onAsk, onClose }) {
   );
 }
 
+const SHOW_CLUBS = 12; // The SOURCE lists 700+ clubs; show the best matches, link to the rest
+
 function Clubs({ profile, sectionRef }) {
   const student = useMemo(() => toStudent(profile), [profile]);
-  const ranked = useMemo(() => rankClubs(organizations, student), [student]);
+  const { status, clubs, source, stale } = useClubs();
+  const ranked = useMemo(() => rankClubs(clubs, student).slice(0, SHOW_CLUBS), [clubs, student]);
+  const fromSource = source === "the-source";
   return (
     <section id="clubs" ref={sectionRef} className="campus-clubs" aria-labelledby="clubs-h">
       <div className="campus-clubs-head">
         <h2 id="clubs-h" className="t-title">Clubs that fit you</h2>
-        <span className="t-small t-faint">Matched to your interests and your free time</span>
+        <span className="t-small t-faint">{fromSource ? `Matched to your interests from The SOURCE${stale ? ". Showing the last list we got" : ""}` : "Matched to your interests and your free time"}</span>
         <TextLink href={routeHref("settings")} arrow className="card-foot-end">Edit interests</TextLink>
       </div>
+      {status === "loading" ? <p className="t-small t-muted">Getting clubs…</p> : null}
+      {status === "error" ? (
+        <p className="t-small t-muted">
+          Could not reach The SOURCE right now. Try again later, or <TextLink href={SOURCE_DIRECTORY_URL} external>browse clubs on The SOURCE</TextLink>.
+        </p>
+      ) : null}
       <div className="campus-club-grid">
-        {ranked.map(({ club, shared, fits }) => (
-          <Card key={club.id} className="campus-club">
-            <h3 className="t-heading">{club.name}</h3>
-            <p className="t-small t-muted">{shared.length ? `Matches your interest in ${shared.join(" and ")}. Meets ${meetingText(club)}.` : `${club.description} Meets ${meetingText(club)}.`}</p>
-            <div className="ui-chips">
-              {/* TODO(data): compare with the class schedule once it is synced; free times stand in for now. */}
-              {fits ? <Pill tone="good">Meets when you are free</Pill> : <Pill tone="warn">Outside your free time</Pill>}
-              {club.interests[0] ? <Pill tone="neutral">{club.interests[0]}</Pill> : null}
-            </div>
-            <TextLink href={routeHref("campus", ["r", "the-source"])} arrow>How to join</TextLink>
-          </Card>
-        ))}
+        {ranked.map(({ club, shared, fits }) => {
+          const when = club.meets ? ` Meets ${meetingText(club)}.` : "";
+          return (
+            <Card key={club.id} className="campus-club">
+              <h3 className="t-heading">{club.name}</h3>
+              <p className="t-small t-muted">{shared.length ? `Matches your interest in ${shared.join(" and ")}.${when}` : `${club.description}${when}`}</p>
+              <div className="ui-chips">
+                {/* TODO(data): compare with the class schedule once it is synced; free times stand in for now. */}
+                {club.meets ? fits ? <Pill tone="good">Meets when you are free</Pill> : <Pill tone="warn">Outside your free time</Pill> : null}
+                {club.interests[0] || club.categories?.[0] ? <Pill tone="neutral">{club.interests[0] || club.categories[0]}</Pill> : null}
+              </div>
+              {club.url ? (
+                <TextLink href={club.url} external>See it on The SOURCE</TextLink>
+              ) : (
+                <TextLink href={routeHref("campus", ["r", "the-source"])} arrow>How to join</TextLink>
+              )}
+            </Card>
+          );
+        })}
       </div>
+      {fromSource && clubs.length > SHOW_CLUBS ? (
+        <TextLink href={SOURCE_DIRECTORY_URL} external>See all {clubs.length} clubs on The SOURCE</TextLink>
+      ) : null}
     </section>
   );
 }
