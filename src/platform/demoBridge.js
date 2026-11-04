@@ -4,13 +4,15 @@ import enrollments from "../demo/enrollments.json";
 import assignments from "../demo/assignments.json";
 import announcements from "../demo/announcements.json";
 import organizations from "../demo/organizations.json";
+import demoCards from "../demo/flashcards.json";
 import syllabusText from "../demo/syllabus.txt?raw";
+import { localDayKey } from "../lib/dates.js";
 
 export const DEMO_KEY = "fd.demo";
 export const PROFILE_KEY = "fd.profile";
 const DAY = 86400000;
 
-const emptyState = () => ({ completed: {}, read: {}, settings: {}, targets: {}, scores: {}, scales: {}, components: {} });
+const emptyState = () => ({ completed: {}, read: {}, settings: {}, targets: {}, scores: {}, scales: {}, components: {}, cards: {} });
 
 /**
  * Builds the object that stands in for window.studyHub in a plain browser. Same method names and row
@@ -143,6 +145,15 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
 
   const ok = async () => ({ success: true });
 
+  // Cards per course, in the row shape db:courses:getFull returns. Seeded from src/demo/flashcards.json on first use.
+  const cardsOf = (courseId) => {
+    if (!state.cards[courseId]) {
+      state.cards[courseId] = (demoCards[courseId] || []).map((c) => ({ uuid: c.id, front: c.front, back: c.back, source: "manual", module_uuid: null, created_at: ago(30) }));
+    }
+    return state.cards[courseId];
+  };
+  const findCard = (uuid) => courses.map((c) => cardsOf(c.id).find((card) => card.uuid === uuid)).find(Boolean) || null;
+
   return {
     platform: "web",
     mode: "demo",
@@ -165,11 +176,38 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
       courses: {
         getAll: async () => myCourses().map(courseRow),
         get: async (uuid) => (courseById(uuid) ? courseRow(courseById(uuid)) : undefined),
-        getFull: async (uuid) => (courseById(uuid) ? { course: courseRow(courseById(uuid)), modules: [], flashcards: [], glossary: [] } : null),
+        getFull: async (uuid) => (courseById(uuid) ? { course: courseRow(courseById(uuid)), modules: [], flashcards: cardsOf(uuid).map((c) => ({ ...c })), glossary: [] } : null),
         saveFull: ok,
         delete: ok,
       },
       notes: { save: ok },
+      flashcards: {
+        save: async ({ courseUuid, uuid, front, back } = {}) => {
+          const f = String(front || "").trim();
+          const b = String(back || "").trim();
+          if (!courseById(courseUuid) || !uuid || !f || !b) return { success: false, error: "A card needs a front and a back." };
+          const list = cardsOf(courseUuid);
+          const card = list.find((c) => c.uuid === uuid);
+          if (card) Object.assign(card, { front: f, back: b });
+          else list.push({ uuid, front: f, back: b, source: "manual", module_uuid: null, created_at: now().toISOString() });
+          save();
+          return { success: true };
+        },
+        delete: async (uuid) => {
+          for (const c of courses) state.cards[c.id] = cardsOf(c.id).filter((card) => card.uuid !== uuid);
+          save();
+          return { success: true };
+        },
+      },
+      mastery: {
+        update: async ({ flashcardUuid, grade, easeFactor, intervalDays, repetitions, nextReview } = {}) => {
+          const card = findCard(flashcardUuid);
+          if (!card) return { success: false, error: "Flashcard not found" };
+          Object.assign(card, { ease_factor: easeFactor, interval_days: intervalDays, repetitions, next_review: nextReview, last_review: localDayKey(now()), last_grade: grade });
+          save();
+          return { success: true };
+        },
+      },
       settings: {
         get: async (key) => state.settings[key] ?? seeded(key),
         set: async ({ key, value }) => {

@@ -396,6 +396,26 @@ function registerDbHandlers() {
     return { success: true };
   });
 
+  // One card at a time, so adding a card never rewrites the rest of the course (saveFull prunes and rewrites).
+  ipcMain.handle("db:flashcards:save", (_, { courseUuid, uuid, front, back } = {}) => {
+    const course = db.prepare("SELECT id FROM courses WHERE uuid = ?").get(courseUuid);
+    const f = String(front || "").trim();
+    const b = String(back || "").trim();
+    if (!course || !uuid || !f || !b) return { success: false, error: "A card needs a front and a back." };
+    db.prepare(`
+      INSERT INTO flashcards (uuid, course_id, front, back, source) VALUES (?, ?, ?, ?, 'manual')
+      ON CONFLICT(uuid) DO UPDATE SET front = excluded.front, back = excluded.back
+      WHERE flashcards.course_id = excluded.course_id
+    `).run(uuid, course.id, f, b);
+    return { success: true };
+  });
+
+  // Mastery and review history go with the card (ON DELETE CASCADE).
+  ipcMain.handle("db:flashcards:delete", (_, uuid) => {
+    db.prepare("DELETE FROM flashcards WHERE uuid = ?").run(String(uuid || ""));
+    return { success: true };
+  });
+
   ipcMain.handle(
     "db:mastery:update",
     (_, { flashcardUuid, grade, easeFactor, intervalDays, repetitions, nextReview, sessionId }) => {

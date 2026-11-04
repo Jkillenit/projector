@@ -3,6 +3,7 @@ import { BLACKBOARD_URL } from "../../constants/app.js";
 import { useCourseStyle } from "../../shell/CourseColors.jsx";
 import { routeHref } from "../../shell/useRoute.js";
 import { GradesTab } from "../grades/GradesTab.jsx";
+import { StudyTab } from "../study/StudyTab.jsx";
 import { AnnouncementsView } from "../mirror/AnnouncementsView.jsx";
 import { AssignmentsView } from "../mirror/AssignmentsView.jsx";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
@@ -13,6 +14,7 @@ const TABS = [
   ["overview", "Overview"],
   ["assignments", "Assignments"],
   ["grades", "Grades"],
+  ["study", "Study"],
   ["announcements", "Announcements"],
   ["content", "Content"],
 ];
@@ -57,6 +59,7 @@ export function CourseScreen({ course, tab = "overview", item, label, actions })
         {active === "overview" ? <OverviewTab courseUuid={id} courseId={course.id} code={label} actions={actions} /> : null}
         {active === "assignments" ? <AssignmentsView courseUuid={id} code={label} highlight={item} /> : null}
         {active === "grades" ? <GradesTab courseUuid={id} /> : null}
+        {active === "study" ? <StudyTab courseUuid={id} /> : null}
         {active === "announcements" ? <AnnouncementsView courseUuid={id} /> : null}
         {active === "content" ? <ContentTab courseUuid={id} /> : null}
       </div>
