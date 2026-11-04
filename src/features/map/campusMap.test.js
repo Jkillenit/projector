@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { ORIGIN, findBuilding, placeParts, project, simplify, toPath } from "./campusMap.js";
+import { ORIGIN, directionLinks, findBuilding, placeParts, project, simplify, toPath, unproject } from "./campusMap.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const nameOf = (where) => findBuilding(where, places)?.name ?? null;
@@ -11,6 +11,22 @@ describe("campus map math", () => {
     const [x, y] = project(ORIGIN.lat + 0.001, ORIGIN.lon + 0.001);
     expect(y).toBeCloseTo(-110.6, 0);
     expect(x).toBeCloseTo(93.2, 0);
+  });
+
+  it("turns map points back into latitude and longitude", () => {
+    const here = { lat: 33.211057, lon: -87.54923 };
+    const back = unproject(project(here.lat, here.lon));
+    expect(back.lat).toBeCloseTo(here.lat, 5);
+    expect(back.lon).toBeCloseTo(here.lon, 5);
+  });
+
+  it("builds direction links that carry only the destination", () => {
+    const links = directionLinks({ lat: 33.2141, lon: -87.5458 }, "Bidgood Hall");
+    expect(links.map((l) => l.id)).toEqual(["waze", "google", "apple"]);
+    expect(links[0].url).toBe("https://waze.com/ul?ll=33.2141,-87.5458&navigate=yes");
+    expect(links[1].url).toBe("https://www.google.com/maps/dir/?api=1&destination=33.2141,-87.5458");
+    expect(links[2].url).toBe("https://maps.apple.com/?daddr=33.2141,-87.5458&q=Bidgood%20Hall");
+    expect(links.every((l) => l.url.startsWith("https://"))).toBe(true);
   });
 
   it("simplifies outlines, closed ones too, and writes SVG paths", () => {
