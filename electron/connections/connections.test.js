@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
-const { safePath, shapeOf } = require("./probeShape.cjs");
+const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
 
 describe("connection services", () => {
   it("knows each service, and only myBama is ready", () => {
@@ -40,5 +40,28 @@ describe("probe keeps no student data", () => {
     const shape = shapeOf(body);
     expect(shape).toEqual({ student: { name: "string", id: "number" }, meetings: ["2 items", { building: "string", room: "string", days: ["2 items", "string"] }] });
     expect(JSON.stringify(shape)).not.toMatch(/Jane|12345678|BIDG|116/);
+  });
+
+  it("shows only the format of schedule fields, and never of names or ids", () => {
+    const body = {
+      courseInformationHeader: { name: "Jane Doe", bannerId: "A12345678" },
+      classList: [{ classStartTime: "0900", classEndTime: "9:50 AM", classBuilding: "Bidgood Hall", classRoomCode: "116", startEndMonth: 10, classCrn: "45678" }],
+    };
+    const shape = shapeOf(body);
+    expect(shape.courseInformationHeader).toEqual({ name: "string", bannerId: "string" });
+    expect(shape.classList[1]).toEqual({
+      classStartTime: 'string like "9999"',
+      classEndTime: 'string like "9:99 AA"',
+      classBuilding: 'string like "Aaaaaaa Aaaa"',
+      classRoomCode: 'string like "999"',
+      startEndMonth: "number 10",
+      classCrn: "string",
+    });
+    expect(JSON.stringify(shape)).not.toMatch(/Jane|A12345678|Bidgood|45678/);
+  });
+
+  it("lists query parameter names, never values", () => {
+    expect(queryKeys("https://x.ua.edu/a?startDate=11%2F02%2F2026&termCode=202640")).toEqual(["startDate", "termCode"]);
+    expect(queryKeys("nope")).toEqual([]);
   });
 });

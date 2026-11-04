@@ -11,7 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const { getDb } = require("../database.cjs");
 const { SERVICES, byId, partitionOf, allowedHost } = require("./services.cjs");
-const { safePath, shapeOf } = require("./probeShape.cjs");
+const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
 
 const STATUS_KEY = "connections.status";
 const PROBE = process.env.PROJECTOR_PROBE === "1";
@@ -54,12 +54,17 @@ function startProbe(win, id) {
   } catch {
     return log;
   }
+  const requests = new Map();
   dbg.on("message", async (_e, method, params) => {
-    if (method === "Network.responseReceived" && /json/i.test(params.response?.mimeType || "")) {
-      pending.set(params.requestId, { path: safePath(params.response.url), status: params.response.status });
+    if (method === "Network.requestWillBeSent") {
+      // The verb and the query parameter *names* only; values and bodies are never kept.
+      requests.set(params.requestId, { method: params.request?.method, query: queryKeys(params.request?.url) });
+    } else if (method === "Network.responseReceived" && /json/i.test(params.response?.mimeType || "")) {
+      pending.set(params.requestId, { ...requests.get(params.requestId), path: safePath(params.response.url), status: params.response.status });
     } else if (method === "Network.loadingFinished" && pending.has(params.requestId)) {
       const meta = pending.get(params.requestId);
       pending.delete(params.requestId);
+      requests.delete(params.requestId);
       try {
         const { body, base64Encoded } = await dbg.sendCommand("Network.getResponseBody", { requestId: params.requestId });
         log.json.push({ ...meta, shape: shapeOf(JSON.parse(base64Encoded ? Buffer.from(body, "base64").toString("utf8") : body)) });
