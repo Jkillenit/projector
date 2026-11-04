@@ -36,7 +36,7 @@ export function fromCalendarEvents(rows, now = new Date()) {
     if (staffOnly(audiences)) return [];
     const next = (r.event_instances || []).map((i) => i.event_instance).find((i) => i?.start && Date.parse(i.end || i.start) >= now.getTime());
     if (!next) return [];
-    const online = r.experience === "virtual";
+    const online = r.experience === "virtual" || ONLINE.test(r.location_name || r.location || ""); // some list "in person" but say Online
     const place = [r.location_name, r.room_number].map((s) => String(s || "").trim()).filter(Boolean).join(", ");
     const topics = (r.filters?.event_topic || []).map((t) => t.name);
     return [{
@@ -49,6 +49,8 @@ export function fromCalendarEvents(rows, now = new Date()) {
       host: r.departments?.[0]?.name || "",
       url: /^https:\/\//i.test(r.localist_url || "") ? r.localist_url : null,
       source: "calendar",
+      // UA's calendar gives the venue's coordinates, which pin more exactly than matching the building name.
+      geo: !online && r.geo?.latitude && r.geo?.longitude ? { lat: Number(r.geo.latitude), lon: Number(r.geo.longitude) } : null,
       text: [r.title, ...topics, ...(r.tags || []), ...(r.keywords || [])].join(" "),
     }];
   });

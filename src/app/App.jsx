@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
 import { useStaySynced } from "../features/blackboard/useStaySynced.js";
@@ -24,6 +24,9 @@ import { Drawer, TopBar } from "../shell/TopBar.jsx";
 import { Sidebar, SyncBox } from "../shell/Sidebar.jsx";
 import { useRoute } from "../shell/useRoute.js";
 import { useUpcoming } from "../shell/useUpcoming.js";
+
+// The map carries the campus outlines (about 300 KB), so it loads only when opened.
+const MapScreen = lazy(() => import("../features/map/MapScreen.jsx").then((m) => ({ default: m.MapScreen })));
 
 const THEME_KEY = "fd.theme";
 
@@ -143,6 +146,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   else if (route.name === "ask") screen = <AskScreen profile={profile} seed={askSeed} actions={actions} />;
   else if (route.name === "campus") screen = <CampusScreen profile={profile} section={route.parts[0]} resourceId={route.parts[0] === "r" ? route.parts[1] : null} actions={actions} />;
   else if (route.name === "events") screen = <EventsScreen profile={profile} />;
+  else if (route.name === "map") screen = <Suspense fallback={<div className="page" aria-busy="true" />}><MapScreen query={route.query.q} /></Suspense>;
   else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
   else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
   else if (route.name === "dev") screen = <UiGallery />;
