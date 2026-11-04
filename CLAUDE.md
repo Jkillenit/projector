@@ -17,7 +17,7 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
 2. Blackboard code lives only in `electron/bbSync.cjs` and `electron/blackboardWindow.cjs`. It is **GET only**. Never add a request that posts, submits, uploads or changes anything on Blackboard. Only the tech lead changes these files.
 3. Never log or print Blackboard cookies, tokens, or a student's grades.
 4. Grades and course data never leave the student's computer. They are never sent to the AI guide and never sent to any shared server.
-5. No logins, scraping or network calls to Okta, myBama or any other UA system. No LLM calls. One exception: the desktop app may read The SOURCE's **public** club list, signed out and **GET only**, from `electron/sourceClubs.cjs` alone. It never sends cookies, a login, or anything about the student. Only the tech lead changes that file.
+5. No logins, scraping or network calls to Okta, myBama or any other UA system. No LLM calls. One exception: the desktop app may read **public** feeds, signed out and **GET only**, from `electron/publicFeeds.cjs` alone: The SOURCE's club list and events, and UA's calendar (`calendar.ua.edu`). It never sends cookies, a login, or anything about the student. Only the tech lead changes that file.
 6. Tests, demos and screenshots use Demo mode only.
 7. Never write code that drafts or completes coursework.
 8. No new npm package without team agreement in the PR.

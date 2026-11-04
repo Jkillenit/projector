@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
-import { SOURCE_DIRECTORY_URL } from "../clubs/sourceClubs.js";
+import { SOURCE_DIRECTORY_URL, interestsOf } from "../clubs/sourceClubs.js";
+import { CALENDAR_URL, eventWhen } from "./campusEvents.js";
+import { useCampusEvents } from "./useCampusEvents.js";
 import { useClubs } from "../clubs/useClubs.js";
 import { Button, Card, Chip, Icon, Pill, StepList, TextLink } from "../../components/ui/index.jsx";
 import { fuzzyFilter } from "../../lib/fuzzy.js";
@@ -91,9 +93,46 @@ function Clubs({ profile, sectionRef }) {
   );
 }
 
+const SHOW_EVENTS = 8;
+
+function Events({ profile, sectionRef }) {
+  const mine = useMemo(() => toStudent(profile)?.interests || [], [profile]);
+  const { status, events, stale, down } = useCampusEvents();
+  return (
+    <section id="events" ref={sectionRef} className="campus-clubs" aria-labelledby="events-h">
+      <div className="campus-clubs-head">
+        <h2 id="events-h" className="t-title">Coming up on campus</h2>
+        <span className="t-small t-faint">Next two weeks, from The SOURCE and UA's calendar{stale ? ". Showing the last list we got" : ""}</span>
+        <TextLink href={CALENDAR_URL} external className="card-foot-end">Full calendar</TextLink>
+      </div>
+      {status === "loading" ? <p className="t-small t-muted">Getting events…</p> : null}
+      {status === "error" ? <p className="t-small t-muted">Could not get events right now. Try again later.</p> : null}
+      {status === "ready" && down.length ? <p className="t-small t-faint">{down.join(" and ")} did not answer, so some events may be missing.</p> : null}
+      {status === "ready" && !events.length ? <p className="t-small t-muted">No events in the next two weeks.</p> : null}
+      <div className="campus-club-grid">
+        {events.slice(0, SHOW_EVENTS).map((e) => {
+          const match = interestsOf(e.text).filter((i) => mine.includes(i));
+          return (
+            <Card key={e.id} className="campus-club">
+              <span className="t-label t-faint">{eventWhen(e.start)}</span>
+              <h3 className="t-heading">{e.title}</h3>
+              <p className="t-small t-muted">{[e.where, e.host].filter(Boolean).join(" · ")}</p>
+              <div className="ui-chips">
+                {e.online ? <Pill tone="neutral">Online</Pill> : null}
+                {match.length ? <Pill tone="good">Matches your interest in {match.join(" and ")}</Pill> : null}
+              </div>
+              {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "See it on UA's calendar" : "See it on The SOURCE"}</TextLink> : null}
+            </Card>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /**
  * Every campus resource with fuzzy search and filters, a detail panel (a sheet on narrow screens),
- * then clubs. `section` "clubs" scrolls to clubs; `resourceId` opens one resource.
+ * then clubs and events. `section` "clubs" or "events" scrolls there; `resourceId` opens one resource.
  */
 export function CampusScreen({ profile, section, resourceId, actions }) {
   const [query, setQuery] = useState("");
@@ -101,6 +140,7 @@ export function CampusScreen({ profile, section, resourceId, actions }) {
   const [picked, setPicked] = useState(resourceId || null);
   const [sheet, setSheet] = useState(!!resourceId);
   const clubsRef = useRef(null);
+  const eventsRef = useRef(null);
 
   useEffect(() => {
     if (resourceId) {
@@ -110,6 +150,7 @@ export function CampusScreen({ profile, section, resourceId, actions }) {
   }, [resourceId]);
   useEffect(() => {
     if (section === "clubs") clubsRef.current?.scrollIntoView({ block: "start" });
+    if (section === "events") eventsRef.current?.scrollIntoView({ block: "start" });
   }, [section]);
 
   const filters = useMemo(() => CATEGORIES.filter(([id]) => id === "all" || resources.some((r) => filterOf(r) === id)), []);
@@ -175,6 +216,7 @@ export function CampusScreen({ profile, section, resourceId, actions }) {
       </div>
 
       <Clubs profile={profile} sectionRef={clubsRef} />
+      <Events profile={profile} sectionRef={eventsRef} />
     </div>
   );
 }

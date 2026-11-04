@@ -1,4 +1,4 @@
-/** Rows from The SOURCE's public club list (electron/sourceClubs.cjs) → the club shape rankClubs uses. */
+/** Rows from The SOURCE's public club list (electron/publicFeeds.cjs) → the club shape rankClubs uses. */
 
 export const SOURCE_ORG_URL = "https://ua.campuslabs.com/engage/organization/";
 export const SOURCE_DIRECTORY_URL = "https://ua.campuslabs.com/engage/organizations";

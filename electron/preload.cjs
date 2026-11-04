@@ -51,6 +51,10 @@ contextBridge.exposeInMainWorld("studyHub", {
   clubs: {
     list: () => ipcRenderer.invoke("source:clubs"),
   },
+  /** Next 14 days from The SOURCE and UA's calendar, signed out: `{ ok, source: "live", sourceRows, calendarRows, stale, down }`. */
+  events: {
+    list: () => ipcRenderer.invoke("campus:events"),
+  },
   blackboard: {
     /** Connect: opens the sign-in window (closes itself once signed in), or just syncs if already connected. */
     open: () => ipcRenderer.invoke("bb:open"),

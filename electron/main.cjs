@@ -6,7 +6,7 @@ const { registerMirrorHandlers } = require("./dbMirrorHandlers.cjs");
 const { registerBlackboardHandlers } = require("./blackboardWindow.cjs");
 const { registerMaintenanceHandlers } = require("./maintenance.cjs");
 const { extractBufferText } = require("./extractText.cjs");
-const { registerSourceHandlers } = require("./sourceClubs.cjs");
+const { registerSourceHandlers } = require("./publicFeeds.cjs");
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
