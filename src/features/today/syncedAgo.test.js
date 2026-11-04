@@ -9,12 +9,12 @@ describe("syncedAgo", () => {
     expect(syncedAgo("garbage", now)).toBeNull();
   });
   it("reads SQLite UTC timestamps", () => {
-    expect(syncedAgo("2026-10-01 17:58:00", now)).toBe("Synced 2m ago");
+    expect(syncedAgo("2026-10-01 17:58:00", now)).toBe("Synced 2 min ago");
     expect(syncedAgo("2026-10-01 17:59:50", now)).toBe("Synced just now");
-    expect(syncedAgo("2026-10-01 15:00:00", now)).toBe("Synced 3h ago");
-    expect(syncedAgo("2026-09-28 18:00:00", now)).toBe("Synced 3d ago");
+    expect(syncedAgo("2026-10-01 15:00:00", now)).toBe("Synced 3 hr ago");
+    expect(syncedAgo("2026-09-28 18:00:00", now)).toBe("Synced 3 days ago");
   });
   it("accepts ISO strings", () => {
-    expect(syncedAgo("2026-10-01T17:50:00Z", now)).toBe("Synced 10m ago");
+    expect(syncedAgo("2026-10-01T17:50:00Z", now)).toBe("Synced 10 min ago");
   });
 });

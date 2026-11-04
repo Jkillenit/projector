@@ -2,16 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { friendlyCourse } from "../dashboard/courseLabel.js";
 import { relativeTime } from "../dashboard/dateLabels.js";
 import { courseStore } from "../../db/courseStore.js";
+import { Button, TextLink } from "../../components/ui/index.jsx";
 
 const LAST_SYNC_KEY = "bb.lastSync";
 const STEP_LABEL = { contents: "content", announcements: "announcements", grades: "grades", syllabus: "syllabus" };
 const SYLLABUS_LABEL = {
-  pending: "LOOKING FOR THE SYLLABUS…",
-  cached: "SYLLABUS UNCHANGED",
-  applied: "SYLLABUS WEIGHTS ADDED",
-  kept: "GRADES SORTED INTO YOUR WEIGHTS",
-  none: "SYLLABUS FOUND, NO WEIGHTS READ",
-  missing: "NO SYLLABUS FOUND",
+  pending: "Looking for the syllabus…",
+  cached: "Syllabus unchanged",
+  applied: "Syllabus weights added",
+  kept: "Grades sorted into your weights",
+  none: "Syllabus found, no weights read",
+  missing: "No syllabus found",
 };
 
 function errorText(error) {
@@ -127,25 +128,23 @@ export function BlackboardSyncPanel({ userCourses, onSynced }) {
   };
 
   return (
-    <div className="sh-bb-sync">
-      <div className="sh-bb-sync-head">
-        <span className="sh-hub-section-label">Sync courses</span>
-        <div className="sh-bb-sync-actions">
+    <div className="stack">
+      <div className="card-head">
+        <h2 className="t-heading">Sync courses</h2>
+        <div className="ui-chips">
           {visible.length > 1 ? (
-            <button type="button" className="sh-btn-ghost sh-bb-sync-btn" disabled={busy} onClick={() => run(visible)}>
-              SYNC ALL
-            </button>
+            <Button variant="outline-sm" size="sm" disabled={busy} onClick={() => run(visible)}>Sync all</Button>
           ) : null}
-          <button type="button" className="sh-btn-ghost sh-bb-sync-btn" disabled={loading || busy} onClick={loadCourses}>
-            {loading ? "LOADING…" : bbCourses ? "REFRESH" : "LOAD MY COURSES"}
-          </button>
+          <Button variant="outline-sm" size="sm" disabled={loading || busy} onClick={loadCourses}>
+            {loading ? "Loading…" : bbCourses ? "Refresh" : "Load my courses"}
+          </Button>
         </div>
       </div>
 
-      {error ? <p className="sh-bb-sync-error">{error}</p> : null}
+      {error ? <p className="t-small set-error" role="status">{error}</p> : null}
 
       {visible.length ? (
-        <ul className="sh-bb-sync-list">
+        <ul className="set-list">
           {visible.map((c) => {
             const linked = isLinked(c.bbCourseId);
             const res = results[c.bbCourseId];
@@ -154,29 +153,23 @@ export function BlackboardSyncPanel({ userCourses, onSynced }) {
             if (active) status = `Syncing ${STEP_LABEL[progress.step] || ""}…`;
             else if (res?.ok && res.counts) {
               const { contents, announcements, assignments, grades, scored = 0 } = res.counts;
-              status = `✓ ${contents} items · ${announcements} ann · ${assignments} due · ${scored}/${grades} grades scored`;
+              status = `${contents} items · ${announcements} announcements · ${assignments} due · ${scored} of ${grades} grades scored`;
               if (grades && !scored) status += res.gradeSource === "none" ? " (scores not readable)" : "";
-            } else if (res && !res.ok) status = `✕ ${errorText(res.error)}`;
+            } else if (res && !res.ok) status = errorText(res.error);
             const syl = !active && res?.ok ? syllabusStatus[c.bbCourseId] : null;
             return (
-              <li key={c.bbCourseId} className="sh-bb-sync-row">
-                <div className="sh-bb-sync-row-text">
-                  <div className="sh-bb-sync-name" title={friendlyCourse(c).raw}>{friendlyCourse(c).label}</div>
-                  <div className={`sh-bb-sync-status${res && !res.ok ? " sh-bb-sync-status--error" : ""}`}>
-                    {status}
-                  </div>
+              <li key={c.bbCourseId} className="set-row">
+                <span className="set-row-main">
+                  <span className="set-row-name" title={friendlyCourse(c).raw}>{friendlyCourse(c).label}</span>
+                  <span className={`t-small ${res && !res.ok ? "set-error" : "t-faint"}`}>{status}</span>
                   {syl ? (
-                    <div className={`sh-bb-sync-status${syl === "applied" || syl === "kept" ? " sh-bb-sync-status--ok" : ""}`}>
+                    <span className="t-small t-faint">
                       {SYLLABUS_LABEL[syl]}
-                      {syl === "missing" || syl === "none"
-                        ? " · OPEN THE SYLLABUS IN THE BLACKBOARD WINDOW AND SYNC AGAIN"
-                        : ""}
-                    </div>
+                      {syl === "missing" || syl === "none" ? ". Open the syllabus in the Blackboard window and sync again." : ""}
+                    </span>
                   ) : null}
-                </div>
-                <button type="button" className="sh-btn-ghost sh-bb-sync-btn" disabled={busy} onClick={() => run([c])}>
-                  {linked ? "SYNC" : "ADD + SYNC"}
-                </button>
+                </span>
+                <Button variant="outline-sm" size="sm" disabled={busy} onClick={() => run([c])}>{linked ? "Sync" : "Add and sync"}</Button>
               </li>
             );
           })}
@@ -184,9 +177,9 @@ export function BlackboardSyncPanel({ userCourses, onSynced }) {
       ) : null}
 
       {bbCourses && (hiddenCount > 0 || showAll) ? (
-        <button type="button" className="sh-bb-sync-toggle" onClick={() => setShowAll((v) => !v)}>
-          {showAll ? `SHOW ${thisYear}+ COURSES ONLY` : `SHOW ${hiddenCount} OLDER / NON-TERM COURSES`}
-        </button>
+        <TextLink onClick={() => setShowAll((v) => !v)}>
+          {showAll ? `Show ${thisYear} courses only` : `Show ${hiddenCount} older or non-term courses`}
+        </TextLink>
       ) : null}
     </div>
   );

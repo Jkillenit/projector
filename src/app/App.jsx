@@ -1,84 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import resources from "../demo/resources.json";
 import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
 import { TitleBar } from "../components/TitleBar.jsx";
-import { SyncBar } from "../features/blackboard/SyncBar.jsx";
+import { useStaySynced } from "../features/blackboard/useStaySynced.js";
+import { CampusScreen } from "../features/campus/CampusScreen.jsx";
 import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useOrgIds } from "../features/courses/useOrgIds.js";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
-import { CalendarView } from "../features/dashboard/CalendarView.jsx";
-import { friendlyCourse } from "../features/dashboard/courseLabel.js";
+import { CalendarScreen } from "../features/dashboard/CalendarView.jsx";
+import { friendlyCourse, getCourseLabel } from "../features/dashboard/courseLabel.js";
+import { isShell } from "../features/dashboard/courseColor.js";
+import { UiGallery } from "../features/dev/UiGallery.jsx";
 import { FrontDoorScreen } from "../features/frontdoor/FrontDoorScreen.jsx";
 import { AskScreen } from "../features/guide/AskScreen.jsx";
 import { applySyllabusText } from "../features/import/syllabusImport.js";
-import { ClubsScreen } from "../features/clubs/ClubsScreen.jsx";
-import { ResourceDetail } from "../features/resources/ResourceDetail.jsx";
-import { ResourcesScreen } from "../features/resources/ResourcesScreen.jsx";
 import { SettingsScreen } from "../features/settings/SettingsScreen.jsx";
 import { WelcomeScreen } from "../features/welcome/WelcomeScreen.jsx";
 import { loadJson, saveJson } from "../lib/storage.js";
 import { useProfile } from "../platform/profile.js";
-import { AppRail } from "../shell/AppRail.jsx";
 import { CommandPalette } from "../shell/CommandPalette.jsx";
 import { CourseColorProvider } from "../shell/CourseColors.jsx";
-import { ShellProvider } from "../shell/ShellContext.jsx";
+import { Drawer, TopBar } from "../shell/TopBar.jsx";
+import { Sidebar, SyncBox } from "../shell/Sidebar.jsx";
+import { useRoute } from "../shell/useRoute.js";
+import { useUpcoming } from "../shell/useUpcoming.js";
 
 const THEME_KEY = "fd.theme";
-const SCREENS = [
-  ["home", "Home"],
-  ["ask", "Ask"],
-  ["resources", "Resources"],
-  ["clubs", "Clubs"],
-  ["calendar", "Calendar"],
-  ["settings", "Settings"],
-];
 
+/** "dark" (default), "light" or "system" (follows the OS). */
 function useTheme() {
   const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "dark"));
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.bsTheme = theme;
     saveJson(THEME_KEY, theme);
+    const mq = window.matchMedia?.("(prefers-color-scheme: light)");
+    const apply = () => {
+      const resolved = theme === "system" ? (mq?.matches ? "light" : "dark") : theme;
+      document.documentElement.dataset.theme = resolved;
+    };
+    apply();
+    if (theme !== "system") return undefined;
+    mq?.addEventListener?.("change", apply);
+    return () => mq?.removeEventListener?.("change", apply);
   }, [theme]);
   return [theme, setTheme];
 }
 
-function Shell({ profile, onProfile, theme, onTheme, mode }) {
-  const { courses, loaded, reloadCourse, reloadAll } = useUserCourses();
-  const [view, setView] = useState("home");
-  const [courseId, setCourseId] = useState(null);
-  const [resourceId, setResourceId] = useState(null);
-  const [askSeed, setAskSeed] = useState("");
-  const [paletteOpen, setPaletteOpen] = useState(false);
-
-  const go = useCallback((next) => {
-    setView(next);
-    setCourseId(null);
-    setResourceId(null);
-  }, []);
-  const openCourse = useCallback((id) => setCourseId(id), []);
-  const openResource = useCallback((id) => {
-    setView("resources");
-    setCourseId(null);
-    setResourceId(id);
-  }, []);
-  const ask = useCallback((text) => {
-    setAskSeed(text);
-    go("ask");
-  }, [go]);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setPaletteOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  // Live mode: a finished Blackboard sync reloads that course and reads the syllabus weights.
+/** Live mode: a finished Blackboard sync reloads that course and reads the syllabus weights. */
+function useSyncEvents(reloadCourse, reloadAll) {
   useEffect(() => {
     const bb = window.studyHub?.blackboard;
     if (!bb?.onSyncComplete) return undefined;
@@ -115,50 +82,94 @@ function Shell({ profile, onProfile, theme, onTheme, mode }) {
       window.removeEventListener("projector-courses-pruned", onPruned);
     };
   }, [reloadCourse, reloadAll]);
+}
+
+function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
+  const { courses, loaded, reloadCourse, reloadAll } = useUserCourses();
+  const [route, navigate] = useRoute();
+  const [askSeed, setAskSeed] = useState(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Grades start hidden every session; the choice is kept in memory only.
+  const [gradesShown, setGradesShown] = useState(false);
+  const sync = useStaySynced();
+  const expired = mode === "live" && sync.available && sync.checked && !sync.loggedIn && !sync.running;
+  const signIn = useCallback(() => window.studyHub?.blackboard?.open?.(), []);
+  useSyncEvents(reloadCourse, reloadAll);
+
+  const ask = useCallback((text, { prefill = false } = {}) => {
+    setAskSeed({ text, prefill, at: Date.now() });
+    navigate("ask");
+  }, [navigate]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [route]);
 
   // Blackboard marks organizations (clubs, "Bama Bound"); the sync saves their ids.
   const orgIds = useOrgIds();
-  const railItems = useMemo(() => courses.map((c) => { const f = friendlyCourse(c); return { id: c.id, code: f.code || f.label, title: f.title, hint: f.raw, org: orgIds.includes(c.bbCourseId) }; }), [courses, orgIds]);
-  const railCourses = useMemo(() => railItems.filter((c) => !c.org), [railItems]);
-  const railOrgs = useMemo(() => railItems.filter((c) => c.org), [railItems]);
-  const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;
+  const upcoming = useUpcoming();
+  const sideCourses = useMemo(() => {
+    const items = courses.map((c) => ({ id: c.id, label: getCourseLabel(c), hint: friendlyCourse(c).raw, gray: orgIds.includes(c.bbCourseId) || isShell(c.name), count: upcoming.counts[c.id] || 0, key: c.bbCourseId || c.id }));
+    return [...items.filter((c) => !c.gray), ...items.filter((c) => c.gray)];
+  }, [courses, orgIds, upcoming.counts]);
 
-  const paletteItems = useMemo(
-    () => [
-      ...SCREENS.map(([id, label]) => ({ key: `go-${id}`, group: "screens", icon: "›", primary: label, sub: "Screen", run: () => go(id) })),
-      ...courses.map((c) => ({ key: `course-${c.id}`, group: "courses", icon: "◎", primary: friendlyCourse(c).label, sub: "Course", run: () => openCourse(c.id) })),
-      ...resources.map((r) => ({ key: `res-${r.id}`, group: "resources", icon: "§", primary: r.name, sub: `Resource · ${r.tags.slice(0, 4).join(", ")}`, run: () => openResource(r.id) })),
-    ],
-    [courses, go, openCourse, openResource]
+  const courseId = route.name === "course" ? route.parts[0] : null;
+  const activeCourse = courseId ? courses.find((c) => c.id === courseId || c.uuid === courseId) : null;
+  const actions = useMemo(
+    () => ({
+      navigate,
+      ask,
+      openCourse: (id, tab = "overview", item) => navigate("course", [id, tab], { item }),
+      openResource: (id) => navigate("campus", ["r", id]),
+    }),
+    [navigate, ask]
   );
 
   let screen;
-  if (!loaded) screen = <div className="sh-skeleton-pulse" style={{ height: 200, margin: 24 }} aria-busy="true" />;
-  else if (activeCourse) screen = <CourseScreen key={activeCourse.id} course={activeCourse} onBack={() => setCourseId(null)} />;
-  else if (view === "home") screen = <FrontDoorScreen profile={profile} mode={mode} onOpenCourse={openCourse} onOpenResource={openResource} onNavigate={go} onAsk={ask} />;
-  else if (view === "ask") screen = <AskScreen profile={profile} seed={askSeed} onOpenResource={openResource} onNavigate={go} />;
-  else if (view === "resources") screen = resourceId ? <ResourceDetail resourceId={resourceId} onBack={() => setResourceId(null)} /> : <ResourcesScreen onOpenResource={openResource} />;
-  else if (view === "clubs") screen = <ClubsScreen profile={profile} onGoSettings={() => go("settings")} />;
-  else if (view === "calendar") screen = <div className="fd-screen"><h1 className="fd-title">Calendar</h1><CalendarView userCourses={courses} /></div>;
-  else screen = <SettingsScreen profile={profile} onProfile={onProfile} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} />;
+  if (!loaded) screen = <div className="page" aria-busy="true" />;
+  else if (route.name === "course" && activeCourse) screen = <CourseScreen key={activeCourse.id} course={activeCourse} tab={route.parts[1] || "overview"} item={route.query.item} label={getCourseLabel(activeCourse)} actions={actions} />;
+  else if (route.name === "ask") screen = <AskScreen profile={profile} seed={askSeed} actions={actions} />;
+  else if (route.name === "campus") screen = <CampusScreen profile={profile} section={route.parts[0]} resourceId={route.parts[0] === "r" ? route.parts[1] : null} actions={actions} />;
+  else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
+  else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
+  else if (route.name === "dev") screen = <UiGallery />;
+  else screen = <FrontDoorScreen profile={profile} mode={mode} expired={expired} onSignIn={signIn} gradesShown={gradesShown} onGradesShown={setGradesShown} actions={actions} />;
 
-  const colorIds = useMemo(() => railItems.map((c) => c.id), [railItems]);
-  const colorLast = useMemo(() => railOrgs.map((c) => c.id), [railOrgs]);
+  const paletteActions = [
+    { key: "a-grades", label: gradesShown ? "Hide grades" : "Show grades", run: () => setGradesShown((v) => !v) },
+    ...(mode === "live" ? [{ key: "a-signin", label: "Sign in again", run: signIn }] : []),
+    { key: "a-theme", label: "Switch theme", run: () => onTheme(theme === "light" ? "dark" : "light") },
+    { key: "a-settings", label: "Open settings", run: () => navigate("settings") },
+  ];
+  const syncBox = <SyncBox mode={mode} studentName={profile.name} sync={sync} expired={expired} onSettings={() => navigate("settings")} />;
+  const sidebar = <Sidebar route={route} courses={sideCourses} onSearch={() => setPaletteOpen(true)} syncBox={syncBox} />;
 
   return (
-    <CourseColorProvider ids={colorIds} last={colorLast}>
-      <div className="sh-app-root sh-app-shell">
-        <AppRail view={view} courseId={courseId} courses={railCourses} orgs={railOrgs} onNavigate={go} onOpenCourse={openCourse} onSearch={() => setPaletteOpen(true)} />
-        <div className="sh-frame-main">
+    <CourseColorProvider courses={sideCourses}>
+      <div className="app">
+        <div className="app-side">{sidebar}</div>
+        <div className="app-main">
           <TitleBar />
-          <SyncBar />
-          <main className="fd-main">
-            <ErrorBoundary resetKey={`${view}-${courseId}-${resourceId}`} onReset={() => go("home")}>
-              {screen}
+          <TopBar onSearch={() => setPaletteOpen(true)} onMenu={() => setDrawerOpen(true)} />
+          <main className="app-scroll" id="main">
+            <ErrorBoundary resetKey={window.location.hash} onReset={() => navigate("home")}>
+              <div key={`${route.name}/${route.parts.join("/")}`} className="ui-fade">{screen}</div>
             </ErrorBoundary>
           </main>
         </div>
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={paletteItems} />
+        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</Drawer>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} courses={sideCourses} upcoming={upcoming.rows} profile={profile} paletteActions={paletteActions} actions={actions} />
       </div>
     </CourseColorProvider>
   );
@@ -171,9 +182,5 @@ export function App() {
 
   if (!loaded) return null;
   if (mode === "demo" && !profile.studentId) return <WelcomeScreen onPick={chooseDemoStudent} />;
-  return (
-    <ShellProvider>
-      <Shell key={profile.studentId || "live"} profile={profile} onProfile={update} theme={theme} onTheme={setTheme} mode={mode} />
-    </ShellProvider>
-  );
+  return <Shell key={profile.studentId || "live"} profile={profile} onProfile={update} onPickStudent={chooseDemoStudent} theme={theme} onTheme={setTheme} mode={mode} />;
 }

@@ -25,3 +25,21 @@ export function friendlyCourse(course) {
   const title = stripped && stripped !== id ? stripped : asCode(name) ? "" : name;
   return { code, title, label: [code, title].filter(Boolean).join(" · ") || id, raw: [id, name].filter(Boolean).join(" · ") };
 }
+
+/** "The University of Alabama AI Experience (Fall 2026)" → "UA AI Experience". */
+const cleanTitle = (s) =>
+  String(s || "")
+    .replace(/\(.*?\)/g, " ")
+    .replace(/\b(?:the )?university of alabama\b/gi, "UA")
+    .replace(/\b(?:fall|spring|summer|winter)\b\s*\d{0,4}/gi, " ")
+    .replace(/^\d{4,6}[-_ ]+/, "")
+    .replace(/\b20\d\d\b/g, " ")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** The short sidebar name: the code ("GBA 490") when there is one, else a cleaned short title. */
+export function getCourseLabel(course) {
+  const f = friendlyCourse(course);
+  return f.code || cleanTitle(f.title || f.label) || f.label;
+}

@@ -1,86 +1,36 @@
 import { useCallback, useEffect, useState } from "react";
-import { plainDue } from "../../lib/dates.js";
-import { groupAssignments, isDone } from "./assignmentState.js";
-import { KindTag } from "../dashboard/KindTag.jsx";
-import { openInBlackboard } from "./openInBlackboard.js";
+import { Card, Icon, Skeleton } from "../../components/ui/index.jsx";
+import { TaskLine } from "../../components/TaskLine.jsx";
 import { courseStore } from "../../db/courseStore.js";
+import { groupAssignments } from "./assignmentState.js";
+import { openInBlackboard } from "./openInBlackboard.js";
 
-function AssignmentRow({ a, onToggle, onDelete }) {
-  const done = isDone(a);
-  const overdue = !done && a.due_date && Date.parse(a.due_date) < Date.now();
-  const scored = a.score != null && a.points_possible;
+function Group({ label, items, open: startOpen, code, highlight, onToggle }) {
   return (
-    <li className={`sh-today-row sh-asg-row${done ? " sh-asg-row--done" : ""}`}>
-      <input
-        type="checkbox"
-        className="sh-today-check"
-        aria-label={`Mark ${a.title} ${done ? "not done" : "done"}`}
-        checked={done}
-        disabled={done && !a.completed}
-        onChange={() => onToggle(a)}
-      />
-      <span className="sh-today-row-main">
-        <span className="sh-today-row-title">
-          <KindTag kind={a.kind} />
-          {a.title}
-        </span>
-        <span className="sh-today-row-sub">
-          {[a.source === "manual" ? "Added by you" : "", a.points_possible ? `${a.points_possible} pts` : "", scored ? `Scored ${a.score}/${a.points_possible}` : ""].filter(Boolean).join(" · ")}
-        </span>
-      </span>
-      <span className={`sh-today-when${overdue ? " sh-today-when--overdue" : ""}`}>
-        {a.due_date ? plainDue(a.due_date) : "—"}
-      </span>
-      {a.url ? (
-        <button type="button" className="sh-asg-action" onClick={() => openInBlackboard(a.url)} title="Open in Blackboard">
-          Open
-        </button>
-      ) : null}
-      {a.source === "manual" ? (
-        <button type="button" className="sh-asg-action sh-asg-action--danger" onClick={() => onDelete(a)} title="Delete">
-          ✕
-        </button>
-      ) : null}
-    </li>
-  );
-}
-
-function AssignmentGroups({ groups, onToggle, onDelete }) {
-  const list = (items) => (
-    <ul className="sh-today-list">
-      {items.map((a) => (
-        <AssignmentRow key={a.uuid} a={a} onToggle={onToggle} onDelete={onDelete} />
-      ))}
-    </ul>
-  );
-  return (
-    <>
-      {[["To do", groups.todo], ["Missing", groups.missing]].map(([label, items]) =>
-        items.length ? (
-          <div key={label} className="sh-mirror-group">
-            <div className="sh-hub-section-label">
-              {label} · {items.length}
-            </div>
-            {list(items)}
-          </div>
-        ) : null
+    <details className="asg-group" open={startOpen || items.some((a) => a.uuid === highlight)}>
+      <summary className="asg-summary">
+        <Icon name="chevron-right" size={16} className="asg-caret" />
+        <span className="t-heading">{label}</span>
+        <span className="num t-faint">{items.length}</span>
+      </summary>
+      {items.length ? (
+        <div className="rows-tight">
+          {items.map((a) => <TaskLine key={a.uuid} a={a} code={code} highlight={a.uuid === highlight} onToggle={onToggle} onOpen={(x) => openInBlackboard(x.url)} external />)}
+        </div>
+      ) : (
+        <p className="t-small t-muted asg-empty">Nothing here.</p>
       )}
-      {groups.done.length ? (
-        <details className="sh-mirror-group">
-          <summary className="sh-hub-section-label">Done · {groups.done.length}</summary>
-          {list(groups.done)}
-        </details>
-      ) : null}
-    </>
+    </details>
   );
 }
 
-export function AssignmentsView({ courseUuid }) {
+/** To do, Missing and Done, each with a count and collapsible. Rows open in Blackboard; the box marks done. */
+export function AssignmentsView({ courseUuid, code, highlight }) {
   const [rows, setRows] = useState(null);
 
   const load = useCallback(async () => {
     const res = await courseStore.getAssignments(courseUuid);
-    setRows(Array.isArray(res) ? res : []);
+    setRows((Array.isArray(res) ? res : []).map((r) => ({ ...r, course_uuid: courseUuid })));
   }, [courseUuid]);
 
   useEffect(() => {
@@ -96,27 +46,19 @@ export function AssignmentsView({ courseUuid }) {
     };
   }, [courseUuid, load]);
 
-  const notify = () => window.dispatchEvent(new CustomEvent("studyhub-mirror-changed", { detail: { courseUuid } }));
-
   const toggle = async (a) => {
     await courseStore.setAssignmentCompleted(a.uuid, !a.completed);
   };
 
-  const remove = async (a) => {
-    if (!window.confirm(`Delete "${a.title}"?`)) return;
-    await courseStore.deleteAssignment(a.uuid);
-    notify();
-  };
-
-  if (rows === null) return <div className="sh-skeleton-pulse" style={{ height: 200 }} />;
+  if (rows === null) return <Card><Skeleton height={56} /><Skeleton height={56} /><Skeleton height={56} /></Card>;
+  if (!rows.length) return <Card><p className="t-muted">No assignments yet. They show up after the next sync.</p></Card>;
+  const groups = groupAssignments(rows);
 
   return (
-    <div className="fd-panel sh-mirror-view">
-      {!rows.length ? (
-        <p className="sh-today-empty">No assignments yet. Nothing is due here.</p>
-      ) : (
-        <AssignmentGroups groups={groupAssignments(rows)} onToggle={toggle} onDelete={remove} />
-      )}
-    </div>
+    <Card className="asg">
+      <Group label="To do" items={groups.todo} open code={code} highlight={highlight} onToggle={toggle} />
+      <Group label="Missing" items={groups.missing} open code={code} highlight={highlight} onToggle={toggle} />
+      <Group label="Done" items={groups.done} code={code} highlight={highlight} onToggle={toggle} />
+    </Card>
   );
 }

@@ -48,7 +48,7 @@ async function pruneEnded(enrollments) {
  */
 export function useStaySynced() {
   const bb = window.studyHub?.blackboard;
-  const [state, setState] = useState({ loggedIn: false, running: false, progress: null, lastSyncAt: null, error: "", report: [], now: Date.now(), toast: "", enrollments: [], timing: null });
+  const [state, setState] = useState({ loggedIn: false, checked: false, running: false, progress: null, lastSyncAt: null, error: "", report: [], now: Date.now(), toast: "", enrollments: [], timing: null });
   const runningRef = useRef(false);
   const lastTryRef = useRef(null);
   const wasLoggedInRef = useRef(null);
@@ -168,7 +168,7 @@ export function useStaySynced() {
       const loggedIn = !!status?.loggedIn;
       const was = wasLoggedInRef.current;
       wasLoggedInRef.current = loggedIn;
-      patch({ loggedIn, now: Date.now() });
+      patch({ loggedIn, checked: true, now: Date.now() });
       await run(was === null ? "start" : loggedIn && !was ? "login" : "tick", loggedIn);
     };
     void check();

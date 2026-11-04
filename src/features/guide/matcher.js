@@ -22,6 +22,9 @@ export const CRISIS_PATTERNS = [
   /\bdon'?t want to (live|be alive|be here)\b/,
   /\b(hurt|harm|kill) (my ?self|someone|somebody|other people|others)\b/,
   /\bcut(ting)? my ?self\b/,
+  // Added in the UI redesign (stronger, not weaker; safety lead to review): plain "I'm not okay".
+  /\b(i'?m|i am|im) not (okay|ok)\b/,
+  /\bcan'?t (go on|do this anymore|take it anymore)\b/,
 ];
 
 /** Each group names the one office that owns the topic. */

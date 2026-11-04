@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeCourseGrade } from "./courseGrade.js";
+import { categoryStanding, computeCourseGrade } from "./courseGrade.js";
 import { BASIS } from "./gradesView.js";
 
 const NOW = new Date(2026, 8, 30, 9, 0).toISOString();
@@ -51,5 +51,32 @@ describe("computeCourseGrade", () => {
     const g = computeCourseGrade({ snapshot, now: NOW });
     expect(g.current).toBeNull();
     expect(g.basis).toBeNull();
+  });
+});
+
+describe("categoryStanding", () => {
+  const rows = [
+    { uuid: "e", name: "Essays", weight: 0.35, score: 87.8, items: [{ possible: 100 }, { possible: 130 }] },
+    { uuid: "q", name: "Quizzes", weight: 0.3, score: 78.75, items: [1, 2, 3, 4].map(() => ({ possible: 20 })) },
+  ];
+  const open = [
+    { uuid: "e3", title: "Essay 3", componentUuid: "e", pointsPossible: 120 },
+    { uuid: "q5", title: "Quiz 5", componentUuid: "q", pointsPossible: 20 },
+    { uuid: "q6", title: "Quiz 6", componentUuid: "q", pointsPossible: 20 },
+  ];
+
+  it("scales weights to 100 and reads how much is graded by points", () => {
+    const { cats, remaining } = categoryStanding({ rows, open });
+    expect(cats[0].weight).toBeCloseTo(53.85, 1);
+    expect(cats[0].done / cats[0].weight).toBeCloseTo(230 / 350);
+    expect(cats[1].gradedText).toBe("4 of 6");
+    expect(remaining[0].title).toBe("Essay 3");
+  });
+
+  it("falls back to points when there are no weights", () => {
+    const out = categoryStanding({ graded: [{ score: 45, points_possible: 50 }], open: [{ uuid: "x", title: "Final", pointsPossible: 50 }] });
+    expect(out.pointsBased).toBe(true);
+    expect(out.st.current).toBeCloseTo(90);
+    expect(out.st.doneW).toBe(50);
   });
 });

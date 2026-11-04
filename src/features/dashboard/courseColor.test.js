@@ -1,23 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { PALETTE_SIZE, colorIndexes, courseColor } from "./courseColor.js";
+import { GRAY_SLOT, assignColors, getCourseColor, isShell } from "./courseColor.js";
 
-describe("colorIndexes", () => {
-  it("gives every course its own color and keeps it when the list order changes", () => {
-    const a = colorIndexes(["mkt300", "ac310", "fi302"]);
-    const b = colorIndexes(["fi302", "mkt300", "ac310"]);
-    expect(a).toEqual(b);
-    expect(new Set(Object.values(a)).size).toBe(3);
+describe("assignColors", () => {
+  it("gives courses the palette in list order and skips gray", () => {
+    expect(assignColors(["a", "b", "c", "d", "e"])).toEqual({ a: 1, b: 2, c: 3, d: 4, e: 6 });
   });
 
-  it("puts organizations after the classes and wraps past the palette", () => {
-    const ids = Array.from({ length: PALETTE_SIZE + 1 }, (_, i) => `c${i}`);
-    const idx = colorIndexes([...ids, "org"], ["org"]);
-    expect(idx.org).toBe((ids.length % PALETTE_SIZE) + 1);
-    expect(idx.c0).toBe(idx[`c${PALETTE_SIZE}`]);
+  it("keeps a saved color when the list order changes", () => {
+    const first = assignColors(["a", "b"]);
+    expect(assignColors(["c", "b", "a"], first)).toEqual({ a: 1, b: 2, c: 3 });
   });
 
-  it("falls back to grey for an unknown course", () => {
-    expect(courseColor({ a: 3 }, "a")).toBe("var(--course-3)");
-    expect(courseColor({ a: 3 }, "zzz")).toBe("var(--fd-text-3)");
+  it("puts shells on gray and wraps past the palette", () => {
+    const keys = ["a", "b", "c", "d", "e", "f"];
+    const out = assignColors([...keys, "orient"], {}, ["orient"]);
+    expect(out.orient).toBe(GRAY_SLOT);
+    expect(out.f).toBe(1);
+  });
+
+  it("knows orientation shells", () => {
+    expect(isShell("Bama Bound Orientation")).toBe(true);
+    expect(isShell("Marketing Principles")).toBe(false);
+  });
+
+  it("hands back CSS variables with a gray fallback", () => {
+    expect(getCourseColor(3).dot).toBe("var(--c3-dot)");
+    expect(getCourseColor(undefined).wash).toBe("var(--c5-wash)");
   });
 });

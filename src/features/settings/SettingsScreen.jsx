@@ -1,13 +1,16 @@
 import { useState } from "react";
+import students from "../../demo/students.json";
+import { Button, Card, Chip, Segmented, TextLink } from "../../components/ui/index.jsx";
 import { BLACKBOARD_URL } from "../../constants/app.js";
 import { setMotionPref, useReducedMotion } from "../../shell/motion.js";
 import { INTEREST_OPTIONS } from "../../platform/profile.js";
 import { BlackboardSyncPanel } from "../blackboard/BlackboardSyncPanel.jsx";
+import { SyncBar } from "../blackboard/SyncBar.jsx";
 import { BlackboardTab } from "./BlackboardTab.jsx";
 
 const YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
 
-export function SettingsScreen({ profile, onProfile, theme, onTheme, userCourses, mode }) {
+export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onTheme, userCourses, mode, sync }) {
   const reduced = useReducedMotion();
   const [confirm, setConfirm] = useState(false);
 
@@ -20,67 +23,73 @@ export function SettingsScreen({ profile, onProfile, theme, onTheme, userCourses
   };
 
   return (
-    <div className="fd-screen">
-      <h1 className="fd-title">Settings</h1>
+    <div className="page set-page">
+      <header className="page-head">
+        <h1 className="t-display">Settings</h1>
+      </header>
 
-      <section className="fd-panel">
-        <h2 className="fd-h2">About you</h2>
-        <label className="fd-field">
+      <Card aria-labelledby="set-you">
+        <h2 id="set-you" className="t-heading">About you</h2>
+        <label className="set-field">
           <span>Name</span>
-          <input className="fd-input" value={profile.name} onChange={(e) => onProfile({ name: e.target.value })} />
+          <input className="ui-input" value={profile.name} onChange={(e) => onProfile({ name: e.target.value })} />
         </label>
-        <label className="fd-field">
+        <label className="set-field">
           <span>Class year</span>
-          <select className="fd-input" value={profile.classYear} onChange={(e) => onProfile({ classYear: e.target.value })}>
-            {YEARS.map((y) => (
-              <option key={y}>{y}</option>
-            ))}
+          <select className="ui-input" value={profile.classYear} onChange={(e) => onProfile({ classYear: e.target.value })}>
+            {YEARS.map((y) => <option key={y}>{y}</option>)}
           </select>
         </label>
-        <div className="fd-field">
+        <div className="set-field">
           <span>Interests</span>
-          <div className="fd-chip-row">
+          <div className="ui-chips">
             {INTEREST_OPTIONS.map((name) => (
-              <button key={name} type="button" className={`fd-chip${profile.interests.includes(name) ? " is-on" : ""}`} aria-pressed={profile.interests.includes(name)} onClick={() => toggleInterest(name)}>
-                {name}
-              </button>
+              <Chip key={name} filter pressed={profile.interests.includes(name)} onClick={() => toggleInterest(name)}>{name}</Chip>
             ))}
           </div>
         </div>
-      </section>
+      </Card>
 
-      <section className="fd-panel">
-        <h2 className="fd-h2">Look</h2>
-        <label className="fd-switch-row">
-          <span>Light theme</span>
-          <input type="checkbox" className="sh-switch" checked={theme === "light"} onChange={(e) => onTheme(e.target.checked ? "light" : "dark")} />
-        </label>
-        <label className="fd-switch-row">
+      <Card aria-labelledby="set-look">
+        <h2 id="set-look" className="t-heading">Look</h2>
+        <div className="set-field">
+          <span>Theme</span>
+          <div className="set-seg">
+            <Segmented label="Theme" options={[["dark", "Dark"], ["light", "Light"], ["system", "System"]]} value={theme} onChange={onTheme} />
+          </div>
+        </div>
+        <label className="set-switch">
           <span>Reduce motion</span>
-          <input type="checkbox" className="sh-switch" checked={reduced} onChange={(e) => setMotionPref(e.target.checked)} />
+          <input type="checkbox" checked={reduced} onChange={(e) => setMotionPref(e.target.checked)} />
         </label>
-      </section>
+      </Card>
 
       {mode === "live" ? (
         <>
           <BlackboardTab />
-          <section className="fd-panel">
-            <BlackboardSyncPanel userCourses={userCourses} onSynced={() => {}} />
-          </section>
+          <Card><SyncBar sync={sync} /><BlackboardSyncPanel userCourses={userCourses} onSynced={() => {}} /></Card>
         </>
       ) : (
-        <section className="fd-panel">
-          <h2 className="fd-h2">Demo data</h2>
-          <p className="fd-meta">Everything here is made up. Real Blackboard is at <a href={BLACKBOARD_URL} target="_blank" rel="noopener noreferrer">{BLACKBOARD_URL}</a>. Resetting puts the demo back the way it started.</p>
+        <Card aria-labelledby="set-demo">
+          <h2 id="set-demo" className="t-heading">Demo</h2>
+          <div className="set-field">
+            <span>Demo student</span>
+            <div className="set-seg">
+              <Segmented label="Demo student" options={students.map((s) => [s.id, s.name])} value={profile.studentId} onChange={onPickStudent} />
+            </div>
+          </div>
+          <p className="t-small t-muted">
+            Everything here is made up. Real Blackboard is at <TextLink href={BLACKBOARD_URL} external>{BLACKBOARD_URL.replace("https://", "")}</TextLink>. Resetting puts the demo back the way it started.
+          </p>
           {confirm ? (
-            <div className="fd-welcome-actions">
-              <button type="button" className="fd-btn fd-btn--small" onClick={reset}>Yes, reset the demo</button>
-              <button type="button" className="fd-link" onClick={() => setConfirm(false)}>Cancel</button>
+            <div className="ui-chips">
+              <Button variant="outline-sm" size="sm" onClick={reset}>Yes, reset the demo</Button>
+              <Button variant="quiet" size="sm" onClick={() => setConfirm(false)}>Cancel</Button>
             </div>
           ) : (
-            <button type="button" className="fd-btn fd-btn--small" onClick={() => setConfirm(true)}>Reset demo data</button>
+            <div><Button variant="outline-sm" size="sm" onClick={() => setConfirm(true)}>Reset demo data</Button></div>
           )}
-        </section>
+        </Card>
       )}
     </div>
   );

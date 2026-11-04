@@ -5,8 +5,9 @@ export function syncedAgo(at, now = new Date()) {
   if (Number.isNaN(t)) return null;
   const m = Math.max(0, Math.round((now - t) / 60000));
   if (m < 1) return "Synced just now";
-  if (m < 60) return `Synced ${m}m ago`;
+  if (m < 60) return `Synced ${m} min ago`;
   const h = Math.round(m / 60);
-  if (h < 24) return `Synced ${h}h ago`;
-  return `Synced ${Math.round(h / 24)}d ago`;
+  if (h < 24) return `Synced ${h} hr ago`;
+  const d = Math.round(h / 24);
+  return `Synced ${d} day${d === 1 ? "" : "s"} ago`;
 }

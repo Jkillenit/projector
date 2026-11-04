@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { Button, Card, Skeleton, TextLink } from "../../components/ui/index.jsx";
 import { plainDate } from "../../lib/dates.js";
 import { courseStore } from "../../db/courseStore.js";
 
+const plain = (html) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+/** Announcement cards: title, date, body clamped to 3 lines with Read more. Opening one marks it read. */
 export function AnnouncementsView({ courseUuid }) {
   const [rows, setRows] = useState(null);
   const [openId, setOpenId] = useState(null);
@@ -20,60 +24,52 @@ export function AnnouncementsView({ courseUuid }) {
     return () => window.removeEventListener("studyhub-bb-synced", onSynced);
   }, [courseUuid, load]);
 
+  const notify = () => window.dispatchEvent(new CustomEvent("studyhub-mirror-changed", { detail: { courseUuid } }));
   const markRead = async (a) => {
     await courseStore.markAnnouncementRead(a.uuid);
     setRows((list) => list.map((x) => (x.uuid === a.uuid ? { ...x, read: 1 } : x)));
-    window.dispatchEvent(new CustomEvent("studyhub-mirror-changed", { detail: { courseUuid } }));
+    notify();
   };
-
   const markAllRead = async () => {
     for (const a of rows.filter((x) => !x.read)) await courseStore.markAnnouncementRead(a.uuid);
     setRows((list) => list.map((x) => ({ ...x, read: 1 })));
-    window.dispatchEvent(new CustomEvent("studyhub-mirror-changed", { detail: { courseUuid } }));
+    notify();
   };
 
-  if (rows === null) return <div className="sh-skeleton-pulse" style={{ height: 200 }} />;
+  if (rows === null) return <Card><Skeleton height={20} width="40%" radius={8} /><Skeleton height={60} /></Card>;
+  if (!rows.length) return <Card><p className="t-muted">No announcements yet. They show up after the next sync.</p></Card>;
   const unread = rows.filter((a) => !a.read).length;
 
   return (
-    <div className="fd-panel sh-mirror-view">
-      <div className="sh-mirror-head">
-        <h2 className="fd-h2">Announcements{unread ? ` · ${unread} unread` : ""}</h2>
-        {unread ? (
-          <button type="button" className="fd-btn-quiet" onClick={markAllRead}>
-            Mark all read
-          </button>
-        ) : null}
-      </div>
-      {!rows.length ? (
-        <p className="sh-today-empty">No announcements yet. Sync this course from Blackboard to pull them in.</p>
-      ) : (
-        <ul className="sh-today-list">
-          {rows.map((a) => {
-            const open = openId === a.uuid;
-            return (
-              <li key={a.uuid} className="sh-ann-item">
-                <button
-                  type="button"
-                  className="sh-today-row sh-today-row--button"
-                  aria-expanded={open}
-                  onClick={() => {
-                    setOpenId(open ? null : a.uuid);
-                    if (!a.read) void markRead(a);
-                  }}
-                >
-                  <span className={`sh-today-dot${a.read ? "" : " sh-today-dot--unread"}`} />
-                  <span className="sh-today-row-main">
-                    <span className="sh-today-row-title">{a.title}</span>
-                    <span className="sh-today-row-sub">{plainDate(a.posted_at || a.created_at)}</span>
-                  </span>
-                </button>
-                {open ? <p className="sh-today-ann-body sh-ann-body-full">{a.body || "No text."}</p> : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <div className="stack">
+      {unread ? (
+        <div className="card-head">
+          <span className="t-small t-muted">{unread} unread</span>
+          <Button variant="outline-sm" size="sm" onClick={markAllRead}>Mark all read</Button>
+        </div>
+      ) : null}
+      {rows.map((a) => {
+        const open = openId === a.uuid;
+        return (
+          <Card key={a.uuid} as="article" className="ann">
+            <div className="ann-head">
+              <h2 className="ann-title">{a.title}</h2>
+              {a.read ? null : <span className="ann-unread" aria-label="Unread" />}
+              <span className="ann-date num">{plainDate(a.posted_at || a.created_at)}</span>
+            </div>
+            <p className={`ann-body${open ? "" : " clamp-3"}`}>{plain(a.body) || "No text."}</p>
+            <TextLink
+              aria-expanded={open}
+              onClick={() => {
+                setOpenId(open ? null : a.uuid);
+                if (!a.read) void markRead(a);
+              }}
+            >
+              {open ? "Show less" : "Read more"}
+            </TextLink>
+          </Card>
+        );
+      })}
     </div>
   );
 }

@@ -122,7 +122,10 @@
       "chemistry",
       "stats",
       "failing",
-      "homework"
+      "homework",
+      "behind",
+      "exam",
+      "test"
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
@@ -164,7 +167,11 @@
       "grades",
       "workshop",
       "time management",
-      "academic"
+      "academic",
+      "behind",
+      "exam",
+      "test",
+      "studying"
     ],
     "hours": "TODO verify",
     "location": "TODO verify",

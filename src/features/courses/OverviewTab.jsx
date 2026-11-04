@@ -1,70 +1,81 @@
 import { useEffect, useMemo, useState } from "react";
+import { Card, Skeleton, TextLink } from "../../components/ui/index.jsx";
+import { TaskLine } from "../../components/TaskLine.jsx";
 import { courseStore } from "../../db/courseStore.js";
-import { plainDate, plainDue } from "../../lib/dates.js";
+import { plainDate } from "../../lib/dates.js";
+import { routeHref } from "../../shell/useRoute.js";
 import { groupAssignments } from "../mirror/assignmentState.js";
-import { computeCourseGrade } from "../grades/courseGrade.js";
-import { useCourseGrade } from "../grades/useCourseGrade.js";
-import { formatPct } from "../today/priority.js";
 
-/** Current grade, next due, missing count and the 3 latest announcements. `go(tab)` jumps to a tab. */
-export function OverviewTab({ courseUuid, go }) {
-  const { data } = useCourseGrade(courseUuid);
+const plain = (html) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+/** Next 3 due items, the latest announcement and quick links to the other tabs. */
+export function OverviewTab({ courseUuid, courseId, code }) {
   const [rows, setRows] = useState(null);
   const [news, setNews] = useState([]);
   useEffect(() => {
     let alive = true;
     const load = async () => {
       const [a, n] = await Promise.all([courseStore.getAssignments(courseUuid), courseStore.getAnnouncements(courseUuid)]);
-      if (alive) { setRows(Array.isArray(a) ? a : []); setNews((Array.isArray(n) ? n : []).slice(0, 3)); }
+      if (alive) {
+        setRows((Array.isArray(a) ? a : []).map((r) => ({ ...r, course_uuid: courseUuid })));
+        setNews(Array.isArray(n) ? n : []);
+      }
     };
     void load();
     const events = ["studyhub-mirror-changed", "studyhub-bb-synced"];
     events.forEach((e) => window.addEventListener(e, load));
-    return () => { alive = false; events.forEach((e) => window.removeEventListener(e, load)); };
+    return () => {
+      alive = false;
+      events.forEach((e) => window.removeEventListener(e, load));
+    };
   }, [courseUuid]);
 
-  const g = useMemo(() => (data ? computeCourseGrade(data) : null), [data]);
   const groups = useMemo(() => groupAssignments(rows || []), [rows]);
-  if (!g || !rows) return <div className="sh-skeleton-pulse" style={{ height: 200 }} />;
-  const next = groups.todo[0];
+  if (!rows) return <Card><Skeleton height={56} /><Skeleton height={56} /></Card>;
+  const latest = news[0];
+  const href = (tab, query) => routeHref("course", [courseId, tab], query);
 
   return (
-    <div className="fd-gr">
-      <div className="fd-ov-stats">
-        <button type="button" className="fd-panel fd-ov-stat" onClick={() => go("grades")}>
-          <span className="fd-meta">Current grade</span>
-          <span className="fd-gr-big fd-num">{g.current == null ? "—" : `${formatPct(g.current)}%`}{g.letter ? <span className="fd-gr-letter">{g.letter}</span> : null}</span>
-          <span className="fd-meta">{g.basis || "No grades in yet"}</span>
-        </button>
-        <button type="button" className="fd-panel fd-ov-stat" onClick={() => go("assignments")}>
-          <span className="fd-meta">Next due</span>
-          <strong className="fd-ov-next">{next ? next.title : "Nothing due"}</strong>
-          <span className="fd-meta">{next?.due_date ? plainDue(next.due_date) : "You are clear"}</span>
-        </button>
-        <button type="button" className="fd-panel fd-ov-stat" onClick={() => go("assignments")}>
-          <span className="fd-meta">Missing</span>
-          <span className={`fd-gr-big fd-num${groups.missing.length ? " fd-tone-danger" : ""}`}>{groups.missing.length}</span>
-          <span className="fd-meta">{groups.missing.length === 1 ? "item past due" : "items past due"}</span>
-        </button>
+    <div className="split">
+      <div className="split-main">
+        <Card aria-labelledby="ov-next">
+          <div className="card-head">
+            <h2 id="ov-next" className="t-heading">Next up</h2>
+            <TextLink href={href("assignments")} arrow>All assignments</TextLink>
+          </div>
+          {groups.todo.length ? (
+            <div className="rows-tight">
+              {groups.todo.slice(0, 3).map((a) => <TaskLine key={a.uuid} a={a} code={code} href={href("assignments", { item: a.uuid })} />)}
+            </div>
+          ) : (
+            <p className="t-muted">Nothing due. You are clear.</p>
+          )}
+          {groups.missing.length ? <TextLink href={href("assignments")} arrow>{groups.missing.length} missing</TextLink> : null}
+        </Card>
       </div>
-      <section className="fd-panel" aria-label="Latest announcements">
-        <h2 className="fd-h2">Latest announcements</h2>
-        {news.length ? (
-          <ul className="fd-rows">
-            {news.map((a) => (
-              <li key={a.uuid}>
-                <span className="fd-row-main">
-                  <strong>{a.title}</strong>
-                  <span className="fd-meta">{plainDate(a.posted_at || a.created_at)}{a.read ? "" : " · New"}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="fd-meta">No announcements yet.</p>
-        )}
-        <button type="button" className="fd-link" onClick={() => go("announcements")}>See all announcements</button>
-      </section>
+      <div className="split-side">
+        <Card aria-labelledby="ov-news">
+          <div className="card-head">
+            <h2 id="ov-news" className="t-heading">Latest announcement</h2>
+            <TextLink href={href("announcements")} arrow>All</TextLink>
+          </div>
+          {latest ? (
+            <div className="ann-preview">
+              <span className="ann-title">{latest.title}</span>
+              <span className="ann-date num">{plainDate(latest.posted_at || latest.created_at)}</span>
+              <p className="clamp-3 t-small">{plain(latest.body) || "No text."}</p>
+            </div>
+          ) : (
+            <p className="t-muted">No announcements yet.</p>
+          )}
+        </Card>
+        <Card aria-label="Quick links">
+          <div className="quick-links">
+            <TextLink href={href("grades")} arrow>Grades and what you need</TextLink>
+            <TextLink href={href("content")} arrow>Course content</TextLink>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
