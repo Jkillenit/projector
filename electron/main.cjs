@@ -3,10 +3,11 @@ const path = require("path");
 
 const { registerDbHandlers } = require("./dbHandlers.cjs");
 const { registerMirrorHandlers } = require("./dbMirrorHandlers.cjs");
-const { registerBlackboardHandlers } = require("./blackboardWindow.cjs");
+const { registerBlackboardHandlers, connectBlackboard, disconnectBlackboard } = require("./blackboardWindow.cjs");
 const { registerMaintenanceHandlers } = require("./maintenance.cjs");
 const { extractBufferText } = require("./extractText.cjs");
 const { registerSourceHandlers } = require("./publicFeeds.cjs");
+const { registerConnectionHandlers } = require("./connections/connectionWindow.cjs");
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -115,8 +116,10 @@ app.whenReady().then(() => {
   registerMirrorHandlers();
   registerMaintenanceHandlers(() => mainWindow);
   registerSourceHandlers(ipcMain);
+  const connections = registerConnectionHandlers(() => mainWindow, { connectBlackboard, disconnectBlackboard });
   createWindow();
-  registerBlackboardHandlers(() => mainWindow, { extractBufferText });
+  // One UA sign-in for Blackboard and myBama: connecting either turns on both, and disconnecting either turns off both.
+  registerBlackboardHandlers(() => mainWindow, { extractBufferText, onConnect: () => void connections.afterBlackboard(), onDisconnect: () => connections.forgetUa() });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

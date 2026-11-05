@@ -1025,3 +1025,21 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-events li:first-child { border-top: 0; padding-top: 0; }
 .map-section { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--divider); }
 .map-section.ui-chips { flex-direction: row; align-items: center; }
+
+/* Settings, Connections, and the confirm-before-sending dialog (src/features/connections/) */
+.conn-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.conn-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--divider); }
+.conn-list li:first-child { border-top: 0; }
+.conn-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.confirm-send { max-width: min(92vw, 440px); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.confirm-send:not([open]) { display: none; }
+.confirm-send::backdrop { background: var(--scrim); }
+.confirm-send-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.map-class-pin { cursor: pointer; }
+.map-class-pin rect { fill: var(--good); stroke: var(--bg); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.map-class-pin text { fill: var(--on-fill); font-weight: 600; pointer-events: none; }
+.map-class-pin.is-on rect, .map-class-pin:focus-visible rect { stroke: var(--text); }
+.map-class-pin:focus { outline: none; }
+.map-section--first { border-top: 0; padding-top: 0; }
+.map-class-link { all: unset; cursor: pointer; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.map-class-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }

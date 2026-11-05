@@ -1,0 +1,7 @@
+[
+  { "id": "mybama", "name": "UA account (myBama and Blackboard)", "ua": true, "startUrl": "https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance", "origins": ["https://bannerssb.ua.edu", "https://mybama.ua.edu"], "reads": "Your class schedule from myBama (days, times, building, room) and your courses from Blackboard.", "sends": "Nothing.", "ready": true },
+  { "id": "tutoring", "name": "Tutoring booking", "reads": "Open tutoring sessions.", "sends": "A booking, only when you tap Book.", "ready": false },
+  { "id": "tickets", "name": "Student tickets", "reads": "Your game tickets.", "sends": "A ticket request, only when you tap Request.", "ready": false },
+  { "id": "waze", "name": "Waze", "reads": "Traffic near campus.", "sends": "Only a destination, when you tap Directions.", "ready": false },
+  { "id": "whatsthemove", "name": "What's the Move", "reads": "Deals near campus.", "sends": "Nothing.", "ready": false }
+]

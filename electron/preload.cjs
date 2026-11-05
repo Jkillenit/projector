@@ -55,6 +55,15 @@ contextBridge.exposeInMainWorld("studyHub", {
   events: {
     list: () => ipcRenderer.invoke("campus:events"),
   },
+  /** Opt-in services with the student's own login (rule 5): `[{ id, name, reads, sends, ready, connected, connectedAt }]`. */
+  connections: {
+    list: () => ipcRenderer.invoke("connections:list"),
+    connect: (id) => ipcRenderer.invoke("connections:connect", id),
+    disconnect: (id) => ipcRenderer.invoke("connections:disconnect", id),
+    onChanged: (callback) => subscribe("connections:changed", callback),
+    /** This week's classes from myBama (GET only): `{ ok, weekStart, meetings, noMeetingTime, stale?, signedOut?, notConnected? }`. */
+    mybamaWeek: (opts) => ipcRenderer.invoke("connections:mybama:week", opts),
+  },
   blackboard: {
     /** Connect: opens the sign-in window (closes itself once signed in), or just syncs if already connected. */
     open: () => ipcRenderer.invoke("bb:open"),

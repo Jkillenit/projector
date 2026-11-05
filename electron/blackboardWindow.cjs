@@ -23,10 +23,19 @@ let bbWindow = null;
 const syllabusPopups = new Set();
 let getMainWindow = () => null;
 let onDisconnect = () => {};
+let onConnect = () => {};
 let extractBufferText = null;
 
 const BB_TEMP_DIR = path.join(app.getPath("temp"), "projector-bb");
 const BB_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const hostOf = (url) => {
+  try {
+    return new URL(String(url || "")).hostname;
+  } catch {
+    return "";
+  }
+};
 
 function isBlackboardUrl(url) {
   try {
@@ -360,13 +369,44 @@ function watchForLogin() {
     clearInterval(loginWatch);
     closeBlackboardWindow();
     sendToMain("bb:connected", {});
+    onConnect();
   }, 2000);
 }
 
-/** Connect Blackboard: no window when already connected, otherwise the sign-in window until it works. */
+/**
+ * Blackboard through the student's existing UA sign-in (shared with myBama, see CLAUDE.md rule 5): a hidden window
+ * opens Blackboard, which hands off to UA's sign-in and back without asking again. True once users/me works.
+ * GET only, like the rest of this file. Gives up after `timeoutMs`; then the visible window is the fallback.
+ */
+async function connectBlackboardQuietly(timeoutMs = 25000) {
+  if (await sessionWorks()) return true;
+  const win = new BrowserWindow({ show: false, width: 1200, height: 900, webPreferences: HIDDEN_PREFS });
+  win.webContents.setAudioMuted(true);
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  try {
+    win.loadURL(`${BB_URL}/ultra/course`).catch(() => {});
+    const until = Date.now() + timeoutMs;
+    let onLoginSince = null;
+    while (Date.now() < until && !win.isDestroyed()) {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (await sessionWorks()) return true;
+      // Sitting on UA's sign-in page means it wants a password: stop and let the student sign in for real.
+      const onLogin = /(^|\.)myapps\.ua\.edu$|(^|\.)okta\.com$/i.test(hostOf(win.webContents.getURL()));
+      onLoginSince = onLogin ? onLoginSince ?? Date.now() : null;
+      if (onLoginSince && Date.now() - onLoginSince > 5000) return false;
+    }
+    return false;
+  } finally {
+    if (!win.isDestroyed()) win.destroy();
+  }
+}
+
+/** Connect Blackboard: no window when already connected (or the UA sign-in carries over), otherwise the sign-in window. */
 async function connectBlackboard() {
-  if (await sessionWorks()) {
-    sendToMain("bb:connected", { already: true });
+  const already = await sessionWorks();
+  if (already || (await connectBlackboardQuietly())) {
+    sendToMain("bb:connected", { already });
+    onConnect();
     return { success: true, opened: false };
   }
   await openBlackboardWindow();
@@ -396,6 +436,7 @@ async function disconnectBlackboard() {
 function registerBlackboardHandlers(mainWindowGetter, options = {}) {
   getMainWindow = typeof mainWindowGetter === "function" ? mainWindowGetter : () => mainWindowGetter;
   if (typeof options.onDisconnect === "function") onDisconnect = options.onDisconnect;
+  if (typeof options.onConnect === "function") onConnect = options.onConnect;
   if (typeof options.extractBufferText === "function") extractBufferText = options.extractBufferText;
 
   setPageFetcher(async (pathname) => {
@@ -561,6 +602,8 @@ function registerBlackboardHandlers(mainWindowGetter, options = {}) {
 
 module.exports = {
   registerBlackboardHandlers,
+  connectBlackboard,
+  disconnectBlackboard,
   parseCourseFromUrl,
 };
 

@@ -6,6 +6,8 @@ import announcements from "../demo/announcements.json";
 import organizations from "../demo/organizations.json";
 import demoCards from "../demo/flashcards.json";
 import demoEvents from "../demo/events.json";
+import demoSchedule from "../demo/schedule.json";
+import services from "../../electron/connections/services.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
 
@@ -13,7 +15,7 @@ export const DEMO_KEY = "fd.demo";
 export const PROFILE_KEY = "fd.profile";
 const DAY = 86400000;
 
-const emptyState = () => ({ completed: {}, read: {}, settings: {}, targets: {}, scores: {}, scales: {}, components: {}, cards: {} });
+const emptyState = () => ({ completed: {}, read: {}, settings: {}, targets: {}, scores: {}, scales: {}, components: {}, cards: {}, connections: {} });
 
 /**
  * Builds the object that stands in for window.studyHub in a plain browser. Same method names and row
@@ -145,6 +147,8 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
       .sort((a, b) => b.posted_at.localeCompare(a.posted_at));
 
   const ok = async () => ({ success: true });
+  const connectionList = () =>
+    services.map(({ id, name, reads, sends, ready, ua }) => ({ id, name, reads, sends, ready, ua: !!ua, connected: !!state.connections?.[id], connectedAt: state.connections?.[id]?.at || null }));
 
   // Cards per course, in the row shape db:courses:getFull returns. Seeded from src/demo/flashcards.json on first use.
   const cardsOf = (courseId) => {
@@ -164,6 +168,45 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     /** The made-up clubs. Live mode reads The SOURCE instead (electron/publicFeeds.cjs). */
     clubs: {
       list: async () => ({ ok: true, source: "demo", rows: organizations }),
+    },
+    /** Pretend connections: Connect flips the switch, no window and no network (rule 6). */
+    connections: {
+      list: async () => connectionList(),
+      connect: async (id) => {
+        if (!services.find((s) => s.id === id && s.ready)) return { ok: false, error: "This connection is not available yet." };
+        state.connections[id] = { at: now().toISOString() };
+        save();
+        return { ok: true };
+      },
+      disconnect: async (id) => {
+        delete state.connections[id];
+        save();
+        return { ok: true };
+      },
+      onChanged: () => () => {},
+      /** A made-up week for the demo student's courses (src/demo/schedule.json), only once myBama is "connected". */
+      mybamaWeek: async () => {
+        if (!state.connections?.mybama) return { ok: false, notConnected: true };
+        const monday = new Date(now());
+        monday.setHours(12, 0, 0, 0);
+        monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+        const dayOf = (weekday) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + weekday - 1);
+          return localDayKey(d);
+        };
+        const mine = myCourses().map((c) => ({ c, s: demoSchedule[c.id] })).filter((x) => x.s);
+        return {
+          ok: true,
+          weekStart: dayOf(1),
+          meetings: mine
+            .filter((x) => !x.s.online)
+            .flatMap(({ c, s }) => s.days.map((day) => ({ course: c.code, title: c.name, date: dayOf(day), start: s.start, end: s.end, building: s.building, room: s.room })))
+            .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)),
+          noMeetingTime: mine.filter((x) => x.s.online).map(({ c, s }) => ({ course: c.code, title: c.name, note: s.note })),
+          fetchedAt: now().getTime(),
+        };
+      },
     },
     /** Made-up events, already in the shape src/features/campus/campusEvents.js builds. Dates are days from today. */
     events: {

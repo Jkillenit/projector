@@ -1,0 +1,85 @@
+import { describe, expect, it } from "vitest";
+import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+
+const require = createRequire(import.meta.url);
+const { SERVICES, byId, partitionOf, allowedHost, UA_PARTITION } = require("./services.cjs");
+const { safePath, shapeOf, queryKeys } = require("./probeShape.cjs");
+const { failPage } = require("./failPage.cjs");
+
+describe("connection services", () => {
+  it("knows each service, and only myBama is ready", () => {
+    expect(SERVICES.map((s) => s.id)).toEqual(["mybama", "tutoring", "tickets", "waze", "whatsthemove"]);
+    expect(SERVICES.filter((s) => s.ready).map((s) => s.id)).toEqual(["mybama"]);
+    expect(SERVICES.every((s) => s.reads && s.sends)).toBe(true);
+    expect(byId("nope")).toBeNull();
+  });
+
+  it("shares one UA sign-in between Blackboard and myBama, and gives outside services their own store", () => {
+    const bbSync = readFileSync(new URL("../bbSync.cjs", import.meta.url), "utf8");
+    expect(bbSync).toContain(`const BB_PARTITION = "${UA_PARTITION}";`);
+    expect(partitionOf("mybama")).toBe(UA_PARTITION);
+    const outside = SERVICES.filter((s) => !s.ua).map((s) => partitionOf(s.id));
+    expect(new Set(outside).size).toBe(outside.length);
+    expect(outside).not.toContain(UA_PARTITION);
+  });
+
+  it("keeps the myBama window on UA and its sign-in pages, https only", () => {
+    const mybama = byId("mybama");
+    expect(allowedHost(mybama, "https://mybama.ua.edu/")).toBe(true);
+    expect(allowedHost(mybama, "https://ua.okta.com/app/x")).toBe(true);
+    expect(allowedHost(mybama, "http://mybama.ua.edu/")).toBe(false);
+    expect(allowedHost(mybama, "https://evil-ua.edu.example.com/")).toBe(false);
+    expect(allowedHost(mybama, "https://notua.edu/")).toBe(false);
+  });
+});
+
+describe("the page shown when a load fails", () => {
+  it("names the site and links to try again, with the address escaped", () => {
+    const page = failPage("https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance#!/");
+    expect(page).toContain("Could not reach bannerssb.ua.edu");
+    expect(page).toContain('href="https://bannerssb.ua.edu/StudentSelfService/ssb/weekAtAGlance#!/"');
+    const evil = failPage('https://x.ua.edu/"><script>alert(1)</script>');
+    expect(evil).not.toContain("<script>");
+    expect(evil).toContain("&quot;&gt;&lt;script&gt;");
+    expect(failPage("not a url")).toContain("Could not reach the site");
+  });
+});
+
+describe("probe keeps no student data", () => {
+  it("drops the query and any ids from the path", () => {
+    expect(safePath("https://ssb.ua.edu/api/student/12345678/schedule?term=202640&pidm=99")).toBe("ssb.ua.edu/api/student/:n/schedule");
+    expect(safePath("https://x.ua.edu/u/jdoe@crimson.ua.edu/a1b2c3d4e5f6a7b8c9d0")).toBe("x.ua.edu/u/:n/:n");
+    expect(safePath("not a url")).toBe("");
+  });
+
+  it("describes JSON by keys and types only, never values", () => {
+    const body = { student: { name: "Jane Doe", id: 12345678 }, meetings: [{ building: "BIDG", room: "116", days: ["M", "W"] }, { building: "SHEL" }] };
+    const shape = shapeOf(body);
+    expect(shape).toEqual({ student: { name: "string", id: "number" }, meetings: ["2 items", { building: "string", room: "string", days: ["2 items", "string"] }] });
+    expect(JSON.stringify(shape)).not.toMatch(/Jane|12345678|BIDG|116/);
+  });
+
+  it("shows only the format of schedule fields, and never of names or ids", () => {
+    const body = {
+      courseInformationHeader: { name: "Jane Doe", bannerId: "A12345678" },
+      classList: [{ classStartTime: "0900", classEndTime: "9:50 AM", classBuilding: "Bidgood Hall", classRoomCode: "116", startEndMonth: 10, classCrn: "45678" }],
+    };
+    const shape = shapeOf(body);
+    expect(shape.courseInformationHeader).toEqual({ name: "string", bannerId: "string" });
+    expect(shape.classList[1]).toEqual({
+      classStartTime: 'string like "9999"',
+      classEndTime: 'string like "9:99 AA"',
+      classBuilding: 'string like "Aaaaaaa Aaaa"',
+      classRoomCode: 'string like "999"',
+      startEndMonth: "number 10",
+      classCrn: "string",
+    });
+    expect(JSON.stringify(shape)).not.toMatch(/Jane|A12345678|Bidgood|45678/);
+  });
+
+  it("lists query parameter names, never values", () => {
+    expect(queryKeys("https://x.ua.edu/a?startDate=11%2F02%2F2026&termCode=202640")).toEqual(["startDate", "termCode"]);
+    expect(queryKeys("nope")).toEqual([]);
+  });
+});
