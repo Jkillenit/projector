@@ -34,6 +34,13 @@ function Detail({ r, onAsk, onClose }) {
           <span className="t-small t-faint">Site link: [not checked yet]</span>
         </>
       )}
+      {r.category === "tutoring" ? (
+        // Book on UA's own page, then put the session on the map (#34). Booking inside the app needs a tutoring connection.
+        <div className="ui-chips">
+          {url ? <Button href={url} external size="sm">Book a session</Button> : null}
+          <Button href={routeHref("map", [], { add: "tutoring", title: r.name })} size="sm">Add it to my map</Button>
+        </div>
+      ) : null}
       <div className="card-foot">
         <span>Source: official UA page</span>
         <span>{checkedLabel(r)}</span>
