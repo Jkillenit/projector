@@ -30,9 +30,9 @@ const MapScreen = lazy(() => import("../features/map/MapScreen.jsx").then((m) =>
 
 const THEME_KEY = "fd.theme";
 
-/** "dark" (default), "light" or "system" (follows the OS). */
+/** "light" (default), "dark" or "system" (follows the OS). */
 function useTheme() {
-  const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "dark"));
+  const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "light"));
   useEffect(() => {
     saveJson(THEME_KEY, theme);
     const mq = window.matchMedia?.("(prefers-color-scheme: light)");

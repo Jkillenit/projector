@@ -1,44 +1,143 @@
-/* Projector design tokens. The only place hex colors live. Dark is the default theme. */
+/* Projector design tokens ("Bento Campus", see design-system/projector/MASTER.md). The only place hex colors live. Light is the default theme. */
 
 :root,
-:root[data-theme="dark"] {
-  color-scheme: dark;
+:root[data-theme="light"] {
+  color-scheme: light;
 
   /* surfaces */
-  --bg: #111113;
-  --bg-sidebar: #0C0C0E;
-  --surface: #18181B;
-  --surface-2: #1F1F23;
-  --surface-input: #141416;
-  --surface-hover: #1C1C20;
-  --hover: #26262B;
-  --border: #2A2A2F;
-  --border-strong: #2E2E34;
-  --border-btn: #34343A;
-  --border-hover: #3A3A40;
-  --divider: #222226;
-  --sidebar-line: #1E1E22;
-  --track: #26262B;
-  --scrim: rgba(0, 0, 0, 0.5);
+  --bg: #F7F5F2;
+  --bg-sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F3F0EC;
+  --surface-input: #FFFFFF;
+  --surface-hover: #FAF8F6;
+  --hover: #EFEBE6;
+  --border: #E6E2DC;
+  --border-strong: #DAD5CE;
+  --border-btn: #CFC9C1;
+  --border-hover: #B5AEA6;
+  --border-input: #8F877F;
+  --divider: #EFEBE6;
+  --sidebar-line: #E6E2DC;
+  --track: #E6E2DC;
+  --scrim: rgba(28, 25, 23, 0.40);
   --on-fill: #FFFFFF;
 
   /* text */
-  --text: #ECECEE;
-  --text-2: #D4D4D8;
-  --muted: #A1A1AA;
-  --faint: #8B8B94;
+  --text: #1C1917;
+  --text-2: #44403C;
+  --muted: #57534E;
+  --faint: #6B645D;
 
-  /* accent (muted crimson) */
-  --accent: #B83A4F;
-  --accent-text: #E8798B;
-  --accent-hover: #F29AA8;
-  --accent-tint: rgba(200, 71, 93, 0.14);
-  --accent-panel: rgba(200, 71, 93, 0.08);
-  --accent-line: rgba(200, 71, 93, 0.30);
-  --today-bg: rgba(200, 71, 93, 0.10);
-  --today-line: rgba(200, 71, 93, 0.35);
+  /* accent (UA crimson) */
+  --accent: #9E1B32;
+  --accent-fill-hover: #82162A;
+  --accent-text: #9E1B32;
+  --accent-hover: #7A1426;
+  --accent-tint: rgba(158, 27, 50, 0.10);
+  --accent-panel: rgba(158, 27, 50, 0.06);
+  --accent-line: rgba(158, 27, 50, 0.30);
+  --today-bg: rgba(158, 27, 50, 0.08);
+  --today-line: rgba(158, 27, 50, 0.30);
+
+  /* new (gold): new grades, posts and events only */
+  --new: #C98A1B;
+  --new-text: #7A4E00;
+  --new-tint: rgba(201, 138, 27, 0.16);
+  --new-panel: rgba(201, 138, 27, 0.08);
+  --new-line: rgba(201, 138, 27, 0.35);
 
   /* status */
+  --good: #2E8A4E;
+  --good-text: #1F6B3A;
+  --good-tint: rgba(46, 138, 78, 0.10);
+  --good-panel: rgba(46, 138, 78, 0.06);
+  --good-line: rgba(46, 138, 78, 0.30);
+  --good-ring: rgba(46, 138, 78, 0.15);
+  --warn: #A86F12;
+  --warn-text: #7F5300;
+  --warn-tint: rgba(168, 111, 18, 0.10);
+  --warn-panel: rgba(168, 111, 18, 0.06);
+  --warn-line: rgba(168, 111, 18, 0.30);
+  --notice-bg: rgba(168, 111, 18, 0.06);
+  --notice-line: rgba(168, 111, 18, 0.30);
+  --notice-text: #5C4310;
+  --notice-btn-line: #D9C49A;
+  --support: #2F5FA8;
+  --support-fill: #2F5FA8;
+  --support-bg: rgba(47, 95, 168, 0.06);
+  --support-line: rgba(47, 95, 168, 0.30);
+  --support-btn-line: #B7C7E0;
+
+  /* course palette: dot / tag text / tag bg / header wash (dot at 6%) */
+  --c1-dot: #D9A54A; --c1-text: #7F5300; --c1-tint: rgba(217, 165, 74, 0.14); --c1-wash: rgba(217, 165, 74, 0.08);
+  --c2-dot: #4FB3A9; --c2-text: #1D6E66; --c2-tint: rgba(79, 179, 169, 0.14); --c2-wash: rgba(79, 179, 169, 0.08);
+  --c3-dot: #6C8EEF; --c3-text: #3450B0; --c3-tint: rgba(108, 142, 239, 0.14); --c3-wash: rgba(108, 142, 239, 0.08);
+  --c4-dot: #A68AE8; --c4-text: #6243B0; --c4-tint: rgba(166, 138, 232, 0.14); --c4-wash: rgba(166, 138, 232, 0.08);
+  --c5-dot: #8F877F; --c5-text: #57534E; --c5-tint: rgba(143, 135, 127, 0.14); --c5-wash: rgba(143, 135, 127, 0.08);
+  --c6-dot: #D97A8C; --c6-text: #A23A50; --c6-tint: rgba(217, 122, 140, 0.14); --c6-wash: rgba(217, 122, 140, 0.08);
+
+  /* type */
+  --font-sans: "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* shape */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-full: 999px;
+
+  /* depth: cards float, controls sit */
+  --shadow-1: 0 1px 2px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.04);
+  --shadow-2: 0 4px 12px rgba(28, 25, 23, 0.08);
+  --shadow-3: 0 16px 40px rgba(28, 25, 23, 0.18);
+
+  /* focus and motion */
+  --ring: 0 0 0 4px var(--good-ring);
+  --ease: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #151312;
+  --bg-sidebar: #110F0E;
+  --surface: #1D1A18;
+  --surface-2: #26221F;
+  --surface-input: #1A1716;
+  --surface-hover: #221F1C;
+  --hover: #2C2825;
+  --border: #34302C;
+  --border-strong: #3B3632;
+  --border-btn: #4A443F;
+  --border-hover: #5A534D;
+  --border-input: #7A726A;
+  --divider: #2A2623;
+  --sidebar-line: #262220;
+  --track: #2C2825;
+  --scrim: rgba(0, 0, 0, 0.60);
+
+  --text: #F3F0EC;
+  --text-2: #DDD7D0;
+  --muted: #B8B0A7;
+  --faint: #9C948B;
+
+  --accent: #B3243D;
+  --accent-fill-hover: #9E1B32;
+  --accent-text: #F28B9C;
+  --accent-hover: #F7A8B5;
+  --accent-tint: rgba(242, 139, 156, 0.14);
+  --accent-panel: rgba(242, 139, 156, 0.08);
+  --accent-line: rgba(242, 139, 156, 0.30);
+  --today-bg: rgba(242, 139, 156, 0.10);
+  --today-line: rgba(242, 139, 156, 0.35);
+
+  --new: #E9B65A;
+  --new-text: #E9B65A;
+  --new-tint: rgba(233, 182, 90, 0.14);
+  --new-panel: rgba(233, 182, 90, 0.08);
+  --new-line: rgba(233, 182, 90, 0.30);
+
   --good: #5FB57A;
   --good-text: #7FCB97;
   --good-tint: rgba(95, 181, 122, 0.12);
@@ -60,65 +159,15 @@
   --support-line: rgba(123, 167, 232, 0.30);
   --support-btn-line: #3A4A63;
 
-  /* course palette: dot / tag text / tag bg / header wash (dot at 6%) */
-  --c1-dot: #D9A54A; --c1-text: #E3B866; --c1-tint: rgba(217, 165, 74, 0.12); --c1-wash: rgba(217, 165, 74, 0.06);
-  --c2-dot: #4FB3A9; --c2-text: #6FC9BF; --c2-tint: rgba(79, 179, 169, 0.12); --c2-wash: rgba(79, 179, 169, 0.06);
-  --c3-dot: #6C8EEF; --c3-text: #8FA9F2; --c3-tint: rgba(108, 142, 239, 0.14); --c3-wash: rgba(108, 142, 239, 0.06);
-  --c4-dot: #A68AE8; --c4-text: #B49BEE; --c4-tint: rgba(166, 138, 232, 0.14); --c4-wash: rgba(166, 138, 232, 0.06);
+  --c1-text: #E3B866; --c1-tint: rgba(217, 165, 74, 0.12); --c1-wash: rgba(217, 165, 74, 0.06);
+  --c2-text: #6FC9BF; --c2-tint: rgba(79, 179, 169, 0.12); --c2-wash: rgba(79, 179, 169, 0.06);
+  --c3-text: #8FA9F2; --c3-tint: rgba(108, 142, 239, 0.14); --c3-wash: rgba(108, 142, 239, 0.06);
+  --c4-text: #B49BEE; --c4-tint: rgba(166, 138, 232, 0.14); --c4-wash: rgba(166, 138, 232, 0.06);
   --c5-dot: #71717A; --c5-text: #A1A1AA; --c5-tint: rgba(161, 161, 170, 0.12); --c5-wash: rgba(113, 113, 122, 0.06);
-  --c6-dot: #D97A8C; --c6-text: #E595A4; --c6-tint: rgba(217, 122, 140, 0.12); --c6-wash: rgba(217, 122, 140, 0.06);
+  --c6-text: #E595A4; --c6-tint: rgba(217, 122, 140, 0.12); --c6-wash: rgba(217, 122, 140, 0.06);
 
-  /* type */
-  --font-sans: "Geist Sans", "Geist", system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
-
-  /* shape and motion */
-  --ring: 0 0 0 4px var(--good-ring);
-  --ease: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-
-  --bg: #FAFAF9;
-  --bg-sidebar: #F4F4F2;
-  --surface: #FFFFFF;
-  --surface-2: #F4F4F5;
-  --surface-input: #FFFFFF;
-  --surface-hover: #F7F7F8;
-  --hover: #EDEDEF;
-  --border: #E4E4E7;
-  --border-strong: #D9D9DE;
-  --border-btn: #D4D4D8;
-  --border-hover: #C4C4CA;
-  --divider: #EDEDEF;
-  --sidebar-line: #E4E4E7;
-  --track: #E4E4E7;
-  --scrim: rgba(24, 24, 27, 0.35);
-
-  --text: #18181B;
-  --text-2: #3F3F46;
-  --muted: #52525B;
-  --faint: #6B6B74;
-
-  --accent: #B83A4F;
-  --accent-text: #A3324A;
-  --accent-hover: #86283C;
-
-  --good: #2E8A4E;
-  --good-text: #23703F;
-  --warn: #A86F12;
-  --warn-text: #7F5300;
-  --notice-text: #5C4310;
-  --notice-btn-line: #D9C49A;
-  --support: #2F5FA8;
-  --support-fill: #2F5FA8;
-  --support-btn-line: #B7C7E0;
-
-  --c1-text: #7F5300;
-  --c2-text: #1D6E66;
-  --c3-text: #3450B0;
-  --c4-text: #6243B0;
-  --c5-text: #52525B;
-  --c6-text: #A23A50;
+  /* dark uses a hairline instead of a soft shadow */
+  --shadow-1: 0 0 0 1px var(--border);
+  --shadow-2: 0 0 0 1px var(--border-strong);
+  --shadow-3: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
