@@ -78,7 +78,7 @@ export function CodeTag({ children, style }) {
   );
 }
 
-/** tone: accent | good | warn | neutral | support. `inline` is the slimmer task-meta size; `tiny` is 11px. */
+/** tone: accent | good | warn | neutral | support | new (gold, only for new things). `inline` is the slimmer task-meta size; `tiny` is 12px. */
 export function Pill({ tone = "neutral", inline, tiny, children }) {
   return <span className={cx("ui-pill", `ui-pill--${tone}`, inline && "ui-pill--inline", tiny && "ui-pill--tiny")}>{children}</span>;
 }

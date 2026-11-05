@@ -10,7 +10,9 @@ import { formatPct } from "../today/priority.js";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
 import { coursePicks } from "./coursePicks.js";
 import { greeting } from "./dueSoon.js";
-import { askSuggestions, dueText, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
+
+import { useCampusEvents } from "../campus/useCampusEvents.js";
+import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
 import { lastVisitOrDefault } from "./newGrades.js";
 import { useHomeData } from "./useHomeData.js";
 
@@ -59,7 +61,7 @@ function TaskRow({ t, now }) {
 function Tonight({ tasks, now }) {
   const [first, ...rest] = tasks;
   return (
-    <Card className="home-card" aria-labelledby="tonight-h">
+    <Card className="home-card home-tile--tonight" aria-labelledby="tonight-h">
       <div className="home-tonight-head">
         <h2 id="tonight-h" className="t-title">Tonight</h2>
         <span className="t-small t-faint">{tasks.length === 1 ? "1 task" : `${tasks.length} tasks`}</span>
@@ -87,7 +89,7 @@ function DayDot({ id }) {
 
 function ThisWeek({ week }) {
   return (
-    <Card aria-labelledby="week-h">
+    <Card className="home-tile--week" aria-labelledby="week-h">
       <div className="card-head">
         <h2 id="week-h" className="t-heading">This week</h2>
         <TextLink href={routeHref("calendar")} arrow>Open calendar</TextLink>
@@ -108,20 +110,20 @@ function ThisWeek({ week }) {
   );
 }
 
-function AskCard({ suggestions, onAsk }) {
+function AskBar({ suggestions, onAsk }) {
   const [text, setText] = useState("");
   return (
-    <Card aria-labelledby="ask-h">
-      <h2 id="ask-h" className="t-heading">Ask about anything on campus</h2>
+    <div className="home-askbar">
       <form className="home-ask" onSubmit={(e) => { e.preventDefault(); if (text.trim()) onAsk(text.trim()); }}>
-        <label className="vh" htmlFor="home-ask-input">Your question</label>
-        <input id="home-ask-input" className="ui-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Tutoring, clubs, money, where to go for help…" />
+        <label className="vh" htmlFor="home-ask-input">Ask about anything on campus</label>
+        <Icon name="ask" size={20} className="home-ask-icon" />
+        <input id="home-ask-input" className="ui-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Tutoring, clubs, money, where to get help…" />
         <Button type="submit" size="lg">Ask</Button>
       </form>
       <div className="ui-chips">
-        {suggestions.map((s) => <Chip key={s} onClick={() => onAsk(s)}>{s}</Chip>)}
+        {suggestions.slice(0, 3).map((s) => <Chip key={s} onClick={() => onAsk(s)}>{s}</Chip>)}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -132,7 +134,7 @@ function GradeRow({ c, shown, fresh }) {
       <span className="home-grade-top">
         <CourseDot />
         <span className="home-grade-code">{c.code}</span>
-        {fresh ? <Pill tone="accent" tiny>New grade</Pill> : null}
+        {fresh ? <Pill tone="new" tiny>New grade</Pill> : null}
         {c.current == null ? (
           <span className="t-faint t-small">No grades</span>
         ) : (
@@ -150,7 +152,7 @@ function GradeRow({ c, shown, fresh }) {
 
 function ClassesCard({ courses, shown, onShown, freshFor }) {
   return (
-    <Card aria-labelledby="classes-h">
+    <Card className="home-tile--classes" aria-labelledby="classes-h">
       <div className="card-head">
         <h2 id="classes-h" className="t-heading">How classes are going</h2>
         <Button variant="outline-sm" size="sm" icon="eye" aria-pressed={shown} onClick={() => onShown(!shown)}>
@@ -191,7 +193,7 @@ function HelpCard({ facts }) {
     return found.length ? found : GENERAL.map((id) => ({ key: id, resource: resources.find((r) => r.id === id) })).filter((p) => p.resource);
   }, [facts]);
   return (
-    <Card aria-labelledby="help-h">
+    <Card className="home-tile--help" aria-labelledby="help-h">
       <h2 id="help-h" className="t-heading">Help for this week</h2>
       <ul className="home-help">
         {picks.map((p) => <HelpItem key={p.key} p={p} style={p.courseId ? courseStyle(colorOf(p.courseId)) : undefined} />)}
@@ -200,16 +202,43 @@ function HelpCard({ facts }) {
   );
 }
 
+function EventsCard({ interests }) {
+  const { status, events } = useCampusEvents();
+  const picks = useMemo(() => homeEvents(events, interests), [events, interests]);
+  return (
+    <Card className="home-tile--events" aria-labelledby="events-h">
+      <div className="card-head">
+        <h2 id="events-h" className="t-heading">On campus this week</h2>
+        <TextLink href={routeHref("events")} arrow>All events</TextLink>
+      </div>
+      {status === "loading" ? (
+        <div className="home-events"><Skeleton height={72} /><Skeleton height={72} /><Skeleton height={72} /></div>
+      ) : picks.length ? (
+        <ul className="home-events">
+          {picks.map((e) => (
+            <li key={e.id} className="home-event">
+              <span className="home-event-when">{eventWhen(e.start)}</span>
+              <span className="home-event-title">{e.title}</span>
+              {e.where ? <span className="t-small t-muted">{e.where}</span> : null}
+              {e.match.length ? <Pill tone="good" tiny>For you</Pill> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="t-small t-muted">Nothing on the list right now.</p>
+      )}
+    </Card>
+  );
+}
+
 function HomeSkeleton() {
   return (
-    <div className="home-body" aria-busy="true">
-      <div className="home-left">
-        <Card><Skeleton height={28} width="30%" radius={8} /><Skeleton height={88} /><Skeleton height={56} /><Skeleton height={56} /></Card>
-        <Card><Skeleton height={22} width="25%" radius={8} /><Skeleton height={84} /></Card>
-      </div>
-      <div className="home-right">
-        <Card><Skeleton height={22} width="50%" radius={8} /><Skeleton height={64} /><Skeleton height={64} /></Card>
-      </div>
+    <div className="home-bento" aria-busy="true">
+      <Card className="home-tile--tonight"><Skeleton height={28} width="30%" radius={8} /><Skeleton height={88} /><Skeleton height={56} /><Skeleton height={56} /></Card>
+      <Card className="home-tile--classes"><Skeleton height={22} width="50%" radius={8} /><Skeleton height={64} /><Skeleton height={64} /></Card>
+      <Card className="home-tile--week"><Skeleton height={22} width="25%" radius={8} /><Skeleton height={84} /></Card>
+      <Card className="home-tile--help"><Skeleton height={22} width="50%" radius={8} /><Skeleton height={64} /></Card>
+      <Card className="home-tile--events"><Skeleton height={22} width="30%" radius={8} /><Skeleton height={72} /></Card>
     </div>
   );
 }
@@ -243,9 +272,10 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
 
   return (
     <div className="page">
-      <header className="page-head">
+      <header className="page-head home-head">
         <h1 className="t-display">{first ? `${greeting()}, ${first}` : greeting()}</h1>
         {data.loaded ? <p className="page-sub">{subtitleText(new Date(), data.dueCount, newCount)}</p> : null}
+        <AskBar suggestions={suggestions} onAsk={actions.ask} />
       </header>
 
       {expired ? (
@@ -255,16 +285,12 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
       {!data.loaded ? (
         <HomeSkeleton />
       ) : (
-        <div className="home-body">
-          <div className="home-left">
-            <Tonight tasks={data.tasks} now={now} />
-            <ThisWeek week={data.week} />
-            <AskCard suggestions={suggestions} onAsk={actions.ask} />
-          </div>
-          <div className="home-right">
-            <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
-            <HelpCard facts={data.facts} />
-          </div>
+        <div className="home-bento">
+          <Tonight tasks={data.tasks} now={now} />
+          <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
+          <ThisWeek week={data.week} />
+          <HelpCard facts={data.facts} />
+          <EventsCard interests={profile.interests} />
         </div>
       )}
     </div>

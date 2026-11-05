@@ -18,8 +18,8 @@
     "dist:mac": "vite build && electron-builder --mac"
   },
   "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
     "@fontsource/geist-mono": "^5.3.0",
-    "@fontsource/geist-sans": "^5.3.0",
     "better-sqlite3": "^12.9.0",
     "officeparser": "^6.1.1",
     "pdf-parse": "^2.4.5",

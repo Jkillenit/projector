@@ -56,7 +56,7 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
         <div className="set-field">
           <span>Theme</span>
           <div className="set-seg">
-            <Segmented label="Theme" options={[["dark", "Dark"], ["light", "Light"], ["system", "System"]]} value={theme} onChange={onTheme} />
+            <Segmented label="Theme" options={[["light", "Light"], ["dark", "Dark"], ["system", "System"]]} value={theme} onChange={onTheme} />
           </div>
         </div>
         <label className="set-switch">
