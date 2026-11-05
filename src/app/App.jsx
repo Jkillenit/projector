@@ -22,6 +22,7 @@ import { CommandPalette } from "../shell/CommandPalette.jsx";
 import { CourseColorProvider } from "../shell/CourseColors.jsx";
 import { Drawer, TopBar } from "../shell/TopBar.jsx";
 import { Sidebar, SyncBox } from "../shell/Sidebar.jsx";
+import { TabBar } from "../shell/TabBar.jsx";
 import { useRoute } from "../shell/useRoute.js";
 import { useUpcoming } from "../shell/useUpcoming.js";
 
@@ -30,9 +31,9 @@ const MapScreen = lazy(() => import("../features/map/MapScreen.jsx").then((m) =>
 
 const THEME_KEY = "fd.theme";
 
-/** "dark" (default), "light" or "system" (follows the OS). */
+/** "light" (default), "dark" or "system" (follows the OS). */
 function useTheme() {
-  const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "dark"));
+  const [theme, setTheme] = useState(() => loadJson(THEME_KEY, "light"));
   useEffect(() => {
     saveJson(THEME_KEY, theme);
     const mq = window.matchMedia?.("(prefers-color-scheme: light)");
@@ -173,6 +174,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
               <div key={`${route.name}/${route.parts.join("/")}`} className="ui-fade">{screen}</div>
             </ErrorBoundary>
           </main>
+          <TabBar route={route} />
         </div>
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</Drawer>
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} courses={sideCourses} upcoming={upcoming.rows} profile={profile} paletteActions={paletteActions} actions={actions} />
