@@ -1,6 +1,7 @@
 import { localDayKey } from "../../lib/dates.js";
 import { weekDays, weekStart } from "../dashboard/calendarWeek.js";
 import { daysFromToday } from "../dashboard/dateLabels.js";
+import { interestsOf } from "../clubs/sourceClubs.js";
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -82,4 +83,10 @@ export function postedText(name, iso, now = new Date()) {
   const d = daysFromToday(iso, now);
   const when = d === 0 ? "today" : d === -1 ? "yesterday" : new Date(iso).toLocaleDateString("en-US", { weekday: "long" });
   return `${name} posted ${when}`;
+}
+
+/** Up to `n` campus events for Home: ones that match the student's interests first, each group soonest first. */
+export function homeEvents(events, interests = [], n = 3) {
+  const tagged = events.map((e) => ({ ...e, match: interestsOf(e.text || e.title || "").filter((i) => interests.includes(i)) }));
+  return [...tagged.filter((e) => e.match.length), ...tagged.filter((e) => !e.match.length)].slice(0, n);
 }
