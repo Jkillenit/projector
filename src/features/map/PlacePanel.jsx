@@ -20,7 +20,7 @@ function YourClasses({ classes, range }) {
   if (!classes?.length) return null;
   return (
     <section className="map-section" aria-label="Your classes here">
-      <h3 className="t-label t-faint">Your classes here</h3>
+      <h3 className="t-label t-faint">Your classes and sessions here</h3>
       <ul className="map-events">
         {classes.map((m) => (
           <li key={`${m.course}-${m.date}-${m.start}`}>

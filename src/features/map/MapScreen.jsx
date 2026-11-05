@@ -9,6 +9,10 @@ import { PlacePanel } from "./PlacePanel.jsx";
 import { MyClasses } from "./MyClasses.jsx";
 import { classPins, classesInRange } from "./classLayer.js";
 import { useMyClasses } from "./useMyClasses.js";
+import { AddSession } from "./AddSession.jsx";
+import { asMeeting, upcomingSessions } from "./mySessions.js";
+import { useMySessions } from "./useMySessions.js";
+import { localDayKey } from "../../lib/dates.js";
 
 const PLACES = [...campus.buildings, ...campus.areas];
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
@@ -32,7 +36,7 @@ function spotOf(e) {
 }
 
 /** Our own campus map: OpenStreetMap buildings, with today's (or this week's) events pinned where they happen. */
-export function MapScreen({ query, placeId }) {
+export function MapScreen({ query, placeId, addKind, addTitle }) {
   const [view, setView] = useState(START);
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
@@ -62,9 +66,24 @@ export function MapScreen({ query, placeId }) {
   }, [events, range]);
 
   // Classes from myBama, as their own layer: today's, or the rest of this week's.
+  // Your day: classes from myBama and sessions you added, as one layer of squares.
   const week = useMyClasses();
-  const classesNow = useMemo(() => classesInRange(week.meetings, range), [week.meetings, range]);
+  const { sessions, add: addSession, remove: removeSession } = useMySessions();
+  const [adding, setAdding] = useState(null); // null, or the form's prefill
+  const classesNow = useMemo(() => {
+    const today = localDayKey(new Date());
+    const weekEnd = localDayKey(new Date(Date.now() + 6 * 86400000));
+    const mine = upcomingSessions(sessions)
+      .filter((s) => (range === "today" ? s.date === today : s.date <= weekEnd))
+      .map(asMeeting);
+    return [...classesInRange(week.meetings, range), ...mine].sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  }, [week.meetings, sessions, range]);
   const { pins: classSpots, unplaced } = useMemo(() => classPins(classesNow, PLACES), [classesNow]);
+
+  // #/map?add=tutoring&title=Ingenuity Lab tutoring opens the form, from a tutoring resource's "Add it to my map".
+  useEffect(() => {
+    if (addKind || addTitle) setAdding({ kind: addKind, title: addTitle });
+  }, [addKind, addTitle]);
 
   const focus = (place) => {
     if (!place) return;
@@ -186,7 +205,7 @@ export function MapScreen({ query, placeId }) {
               // Up and left of the building's center, so a class and an event in one building do not cover each other.
               <g
                 key={p.key}
-                className={`map-class-pin${picked === p.key ? " is-on" : ""}`}
+                className={`map-class-pin${p.classes.every((m) => m.session) ? " is-session" : ""}${picked === p.key ? " is-on" : ""}`}
                 transform={`translate(${p.xy[0] - r * 1.3} ${p.xy[1] - r * 1.3})`}
                 role="button"
                 tabIndex={0}
@@ -226,13 +245,24 @@ export function MapScreen({ query, placeId }) {
         </div>
 
         <Card className="map-side" aria-live="polite">
-          {place || pin ? (
+          {adding ? (
+            <AddSession
+              initial={adding}
+              onCancel={() => setAdding(null)}
+              onAdd={async (s) => {
+                await addSession(s);
+                setAdding(null);
+                if (addKind || addTitle) window.location.hash = routeHref("map"); // or a reload opens the form again
+                if (s.date !== localDayKey(new Date())) setRange("week");
+              }}
+            />
+          ) : place || pin ? (
             <PlacePanel place={place} title={place?.name || pin.events[0].where} xy={pin?.xy} events={placeEvents} classes={placeClasses} range={range} places={PLACES} />
           ) : (
             <>
-              <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => setPicked(key)} />
+              <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => setPicked(key)} onAdd={() => setAdding({})} onRemove={removeSession} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
-              <p className="t-small t-muted">Tap a pin or a building. Squares are your classes, circles are events. Drag to move, scroll or use + and − to zoom.</p>
+              <p className="t-small t-muted">Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom.</p>
               {unpinned ? (
                 <p className="t-small t-faint">
                   {unpinned} more {unpinned === 1 ? "is" : "are"} online or at a place we could not find. <TextLink href={routeHref("events")} arrow>See all events</TextLink>

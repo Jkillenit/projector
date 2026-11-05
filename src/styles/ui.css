@@ -1043,3 +1043,8 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-section--first { border-top: 0; padding-top: 0; }
 .map-class-link { all: unset; cursor: pointer; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
 .map-class-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+.map-class-pin.is-session rect { fill: var(--support-fill, var(--accent)); }
+.map-add { margin-top: 0; }
+.map-add-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.map-add-row span { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+@media (max-width: 599px) { .map-add-row { grid-template-columns: 1fr 1fr; } }
