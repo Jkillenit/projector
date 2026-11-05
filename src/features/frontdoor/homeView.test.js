@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { askSuggestions, dueText, homeEvents, kindLabel, postedText, subtitleText, timeLeft, weekCells } from "./homeView.js";
+import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft, weekCells } from "./homeView.js";
 
 const NOW = new Date(2026, 10, 2, 19, 0); // Monday 7 PM
 const at = (days, h = 23, m = 59) => new Date(2026, 10, 2 + days, h, m).toISOString();
@@ -44,22 +44,35 @@ describe("home view", () => {
 });
 
 describe("homeEvents", () => {
-  const ev = (id, text) => ({ id, title: text, text, start: `2026-11-0${id}T18:00:00` });
+  const ev = (id, text, days = id) => ({ id, title: text, text, start: new Date(2026, 10, 2 + days, 18, 0).toISOString() });
   const list = [ev(1, "Chess night"), ev(2, "Coding club hack night"), ev(3, "Open mic"), ev(4, "Robotics coding workshop")];
 
   it("puts your interests first, keeps date order, caps at n", () => {
-    expect(homeEvents(list, ["coding"], 3).map((e) => e.id)).toEqual([2, 4, 1]);
+    expect(homeEvents(list, ["coding"], 3, NOW).map((e) => e.id)).toEqual([2, 4, 1]);
   });
 
   it("marks which of your interests each event matches", () => {
-    expect(homeEvents(list, ["coding"], 3).map((e) => e.match)).toEqual([["coding"], ["coding"], []]);
+    expect(homeEvents(list, ["coding"], 3, NOW).map((e) => e.match)).toEqual([["coding"], ["coding"], []]);
   });
 
   it("falls back to date order with no interests", () => {
-    expect(homeEvents(list, [], 2).map((e) => e.id)).toEqual([1, 2]);
+    expect(homeEvents(list, [], 2, NOW).map((e) => e.id)).toEqual([1, 2]);
+  });
+
+  it("only shows this week: a matching event 12 days out never beats tonight", () => {
+    const later = [ev(1, "Open mic", 0), ev(2, "Coding club hack night", 12)];
+    expect(homeEvents(later, ["coding"], 3, NOW).map((e) => e.id)).toEqual([1]);
   });
 
   it("handles no events", () => {
-    expect(homeEvents([], ["coding"])).toEqual([]);
+    expect(homeEvents([], ["coding"], 3, NOW)).toEqual([]);
+  });
+});
+
+describe("eventWhen", () => {
+  it("names the day with the time", () => {
+    expect(eventWhen(new Date(2026, 10, 2, 21, 0).toISOString(), NOW)).toBe("Today 9:00 PM");
+    expect(eventWhen(new Date(2026, 10, 3, 18, 0).toISOString(), NOW)).toBe("Tomorrow 6:00 PM");
+    expect(eventWhen(new Date(2026, 10, 6, 13, 30).toISOString(), NOW)).toBe("Fri 1:30 PM");
   });
 });

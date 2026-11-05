@@ -334,7 +334,8 @@ select.ui-input { padding-right: 8px; }
 .ui-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: var(--muted); }
 .ui-left { flex: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--faint); }
 .ui-chev { flex: none; color: var(--faint); }
-.ui-row.is-hl { background: var(--surface-2); outline: 1px solid var(--border-strong); outline-offset: -1px; }
+.ui-row.is-hl { background: var(--surface-2); }
+.ui-row.is-hl:not(:focus-visible) { outline: 1px solid var(--border-strong); outline-offset: -1px; }
 
 /* ─── Skeleton ─── */
 .ui-skel { display: block; background: var(--surface-2); animation: ui-pulse 1.6s ease-in-out infinite; }
@@ -348,6 +349,8 @@ select.ui-input { padding-right: 8px; }
 /* ─── App shell ─── */
 .app {
   display: flex;
+  /* viewport-fit=cover: keep the layout clear of a phone's notch in landscape */
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
   height: 100vh;
   height: 100dvh;
   background: var(--bg);
@@ -355,6 +358,8 @@ select.ui-input { padding-right: 8px; }
 .app-side { flex: none; width: 240px; }
 .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .app-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* Focus moves and new answers scroll into view above the sticky Ask dock, not under it. */
+.app-scroll:has(.ask-dock) { scroll-padding-bottom: 140px; }
 .page {
   max-width: 1240px;
   margin: 0 auto;
@@ -641,7 +646,7 @@ select.ui-input { padding-right: 8px; }
 .home-ask .ui-input { height: 52px; padding-left: 46px; border-radius: var(--r-lg); font-size: 17px; box-shadow: var(--shadow-1); }
 .home-ask .ui-btn { height: 52px; border-radius: var(--r-lg); }
 .home-ask-icon { position: absolute; left: 16px; top: 16px; color: var(--accent-text); pointer-events: none; }
-.home-events { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 0; list-style: none; }
+.home-events { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; padding: 0; list-style: none; }
 .home-event { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface-2); }
 .home-event-when { font-size: 13px; color: var(--accent-text); }
 .home-event-title { font-size: 16px; line-height: 22px; font-weight: 700; color: var(--text); }
@@ -835,7 +840,8 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .cal-weekday { padding: 0 4px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--faint); text-align: center; }
 .cal-day { min-height: 64px; justify-content: flex-start; background: transparent; font: inherit; }
 .cal-day.is-selected { border-color: var(--border-hover); background: var(--surface-2); }
-.cal-day.is-today.is-selected { background: var(--today-bg); border-color: var(--today-line); outline: 1px solid var(--today-line); outline-offset: -1px; }
+.cal-day.is-today.is-selected { background: var(--today-bg); border-color: var(--today-line); }
+.cal-day.is-today.is-selected:not(:focus-visible) { outline: 1px solid var(--today-line); outline-offset: -1px; }
 .cal-day.is-outside { opacity: 0.45; }
 @media (max-width: 599px) {
   .cal-grid { gap: 4px; }
@@ -995,7 +1001,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
   text-align: left;
 }
 .campus-card:hover { box-shadow: var(--shadow-2); }
-.campus-card[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: -2px; }
+.campus-card[aria-pressed="true"]:not(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
 .campus-card .ui-pill { margin-top: auto; }
 .campus-side { flex: 2 1 320px; min-width: 0; position: sticky; top: 24px; }
 .campus-detail { padding: 24px; gap: 16px; align-items: flex-start; }

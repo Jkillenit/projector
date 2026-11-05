@@ -62,7 +62,7 @@ export function EventsScreen({ profile }) {
                 <p className="t-small t-muted">{[e.where, e.host].filter(Boolean).join(" · ")}</p>
                 <div className="ui-chips">
                   {e.online ? <Pill tone="neutral">Online</Pill> : null}
-                  {e.match.length ? <Pill tone="new">Matches your interest in {e.match.join(" and ")}</Pill> : null}
+                  {e.match.length ? <Pill tone="good">Matches your interest in {e.match.join(" and ")}</Pill> : null}
                 </div>
                 {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "See it on UA's calendar" : "See it on The SOURCE"}</TextLink> : null}
                 {!e.online && e.where ? <TextLink href={routeHref("map", [], { q: e.where })} arrow>On the map</TextLink> : null}

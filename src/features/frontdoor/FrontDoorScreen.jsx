@@ -10,9 +10,9 @@ import { formatPct } from "../today/priority.js";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
 import { coursePicks } from "./coursePicks.js";
 import { greeting } from "./dueSoon.js";
-import { eventTime } from "../campus/campusEvents.js";
+
 import { useCampusEvents } from "../campus/useCampusEvents.js";
-import { askSuggestions, dueText, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
+import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
 import { lastVisitOrDefault } from "./newGrades.js";
 import { useHomeData } from "./useHomeData.js";
 
@@ -217,10 +217,10 @@ function EventsCard({ interests }) {
         <ul className="home-events">
           {picks.map((e) => (
             <li key={e.id} className="home-event">
-              <span className="home-event-when num">{eventTime(e.start)}</span>
+              <span className="home-event-when">{eventWhen(e.start)}</span>
               <span className="home-event-title">{e.title}</span>
               {e.where ? <span className="t-small t-muted">{e.where}</span> : null}
-              {e.match.length ? <Pill tone="new" tiny>For you</Pill> : null}
+              {e.match.length ? <Pill tone="good" tiny>For you</Pill> : null}
             </li>
           ))}
         </ul>

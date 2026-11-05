@@ -67,7 +67,7 @@ export function UiGallery() {
           <Pill tone="warn">UA sign in</Pill>
           <Pill tone="neutral">Coding</Pill>
           <Pill tone="new" tiny>New grade</Pill>
-          <Pill tone="new">For you</Pill>
+
         </Row>
         <Row>
           <Chip>Study help before my MKT 300 exam</Chip>

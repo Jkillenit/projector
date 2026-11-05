@@ -85,8 +85,18 @@ export function postedText(name, iso, now = new Date()) {
   return `${name} posted ${when}`;
 }
 
-/** Up to `n` campus events for Home: ones that match the student's interests first, each group soonest first. */
-export function homeEvents(events, interests = [], n = 3) {
-  const tagged = events.map((e) => ({ ...e, match: interestsOf(e.text || e.title || "").filter((i) => interests.includes(i)) }));
+const WEEK_DAYS = 7;
+
+/** Up to `n` campus events in the next 7 days for Home: ones that match the student's interests first, each group soonest first. */
+export function homeEvents(events, interests = [], n = 3, now = new Date()) {
+  const inWeek = events.filter((e) => daysFromToday(e.start, now) < WEEK_DAYS);
+  const tagged = inWeek.map((e) => ({ ...e, match: interestsOf(e.text || e.title || "").filter((i) => interests.includes(i)) }));
   return [...tagged.filter((e) => e.match.length), ...tagged.filter((e) => !e.match.length)].slice(0, n);
+}
+
+/** "Today 9:00 PM", "Tomorrow 6:00 PM", "Fri 1:30 PM". */
+export function eventWhen(iso, now = new Date()) {
+  const days = daysFromToday(iso, now);
+  const day = days <= 0 ? "Today" : days === 1 ? "Tomorrow" : new Date(iso).toLocaleDateString("en-US", { weekday: "short" });
+  return `${day} ${timeText(iso)}`;
 }
