@@ -28,6 +28,11 @@ export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemov
         </p>
       ) : null}
       {week.stale ? <p className="t-small t-faint">Classes from your last myBama check.</p> : null}
+      {week.status === "syllabus" ? (
+        <p className="t-small t-faint">
+          From your syllabi. For your myBama schedule, <TextLink href={routeHref("settings")} arrow>connect your UA account</TextLink>
+        </p>
+      ) : null}
       {rows.length ? (
         <ul className="map-events">
           {rows.map(({ m, key }) => (
@@ -48,11 +53,14 @@ export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemov
             </li>
           ))}
         </ul>
-      ) : week.status === "ready" ? (
+      ) : week.status === "ready" || week.status === "syllabus" ? (
         <p className="t-small t-muted">Nothing on your schedule {when}.</p>
       ) : null}
       {week.noMeetingTime?.length ? (
         <p className="t-small t-muted">No set meeting time: {week.noMeetingTime.map((c) => `${c.course}${c.note ? ` (${c.note})` : ""}`).join(", ")}</p>
+      ) : null}
+      {week.status === "syllabus" && week.unknown?.length ? (
+        <p className="t-small t-muted">We don't know where these meet yet: {week.unknown.join(", ")}. Add it on the course page.</p>
       ) : null}
       <div className="ui-chips">
         <Button size="sm" onClick={onAdd}>Add a session</Button>

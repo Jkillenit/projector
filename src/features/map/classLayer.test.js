@@ -24,6 +24,11 @@ describe("classes on the map", () => {
     expect(unplaced.map((m) => m.course)).toEqual(["XYZ 101"]);
   });
 
+  it("never pins an online class to a building", () => {
+    const online = { course: "CS 101", date: "2026-11-04", start: "10:00", end: "11:00", building: "Online", room: "" };
+    expect(classPins([online], places)).toEqual({ pins: [], unplaced: [online] });
+  });
+
   it("writes the time and place plainly", () => {
     expect(classWhen(meetings[0], "today")).toBe("9:00 AM to 9:50 AM");
     expect(classWhen(meetings[3], "week")).toBe("Fri 2:00 PM to 3:15 PM");

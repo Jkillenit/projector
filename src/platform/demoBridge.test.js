@@ -41,6 +41,13 @@ describe("demo bridge", () => {
     expect(week.meetings.every((m) => codes.includes(m.course) && m.date >= "2026-11-02" && m.date <= "2026-11-06" && m.building)).toBe(true);
   });
 
+  it("knows where each demo course meets, as if from its syllabus", async () => {
+    const bridge = make();
+    expect(JSON.parse(await bridge.db.settings.get("course.meeting.fi302"))).toMatchObject({ mode: "in_person", days: "TR", building: "Bidgood Hall", room: "116" });
+    expect(JSON.parse(await bridge.db.settings.get("course.meeting.mkt300"))).toMatchObject({ mode: "online_async" });
+    expect(await bridge.db.settings.get("course.meeting.nope")).toBeNull();
+  });
+
   it("serves the made-up clubs, never The SOURCE", async () => {
     const res = await make().clubs.list();
     expect(res).toMatchObject({ ok: true, source: "demo" });

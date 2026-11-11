@@ -10,6 +10,7 @@ import demoSchedule from "../demo/schedule.json";
 import services from "../../electron/connections/services.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
+import { scheduleToMeeting } from "../features/courses/courseMeeting.js";
 
 export const DEMO_KEY = "fd.demo";
 export const PROFILE_KEY = "fd.profile";
@@ -58,6 +59,10 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     const c = courseById(id);
     if (kind === "bb.overall") return c?.overall ? JSON.stringify(c.overall) : null;
     if (kind === "grades.drops") return c?.drops ? JSON.stringify(c.drops) : null;
+    if (key.startsWith("course.meeting.")) {
+      const m = scheduleToMeeting(demoSchedule[key.slice("course.meeting.".length)]);
+      return m ? JSON.stringify(m) : null;
+    }
     if (key === "bb.orgs") return JSON.stringify(courses.filter((x) => x.organization).map((x) => x.bb_course_id));
     return null;
   };

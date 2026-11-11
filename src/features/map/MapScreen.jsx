@@ -65,8 +65,8 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
     return { pins: [...bySpot.values()], unpinned: missing };
   }, [events, range]);
 
-  // Classes from myBama, as their own layer: today's, or the rest of this week's.
-  // Your day: classes from myBama and sessions you added, as one layer of squares.
+  // Your day: classes (myBama, or each course's syllabus meeting when myBama is not connected)
+  // and sessions you added, as one layer of squares: today's, or the rest of this week's.
   const week = useMyClasses();
   const { sessions, add: addSession, remove: removeSession } = useMySessions();
   const [adding, setAdding] = useState(null); // null, or the form's prefill

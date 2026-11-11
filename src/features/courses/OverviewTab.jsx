@@ -5,6 +5,7 @@ import { courseStore } from "../../db/courseStore.js";
 import { plainDate } from "../../lib/dates.js";
 import { routeHref } from "../../shell/useRoute.js";
 import { groupAssignments } from "../mirror/assignmentState.js";
+import { CourseMeeting } from "./CourseMeeting.jsx";
 
 const plain = (html) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
@@ -54,6 +55,7 @@ export function OverviewTab({ courseUuid, courseId, code }) {
         </Card>
       </div>
       <div className="split-side">
+        <CourseMeeting courseUuid={courseUuid} />
         <Card aria-labelledby="ov-news">
           <div className="card-head">
             <h2 id="ov-news" className="t-heading">Latest announcement</h2>

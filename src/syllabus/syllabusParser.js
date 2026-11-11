@@ -4,7 +4,79 @@ export function parseSyllabus(text) {
     grading: extractGrading(source),
     gradingScale: extractGradingScale(source),
     attendance: extractAttendancePolicy(source),
+    meeting: extractMeeting(source),
   };
+}
+
+// Only lines that talk about the class meeting. "Office hours: Zoom" is not the class.
+const MEETING_LINE = /\b(class(?:es)?\s+meets?|meeting\s+(?:time|place|days?)|class\s+time|time\s+and\s+place|location|classroom|lecture|course\s+format)\b/i;
+const TIME_RANGE =
+  /(\d{1,2}):(\d{2})\s*([ap]\.?\s?m\.?)?\s*(?:-|–|—|to)\s*(\d{1,2}):(\d{2})\s*([ap]\.?\s?m\.?)?/i;
+const SHORT_DAYS = /\b((?:Tu|Th|M|T|W|R|F)(?:\s?(?:Tu|Th|M|T|W|R|F))*)\b(?=\s*\d)/;
+const DAY_LETTER = { M: "M", T: "T", Tu: "T", W: "W", Th: "R", R: "R", F: "F", mon: "M", tues: "T", wednes: "W", thurs: "R", fri: "F" };
+const ROOM = /([A-Z][A-Za-z.&'-]*(?:\s+[A-Z][A-Za-z.&'-]*){0,3})\s+(?:Room\s+|Rm\.?\s+)?(\d{1,4}[A-Z]?)\b(?![:.]\d)/;
+
+/**
+ * Where and when the class meets, from syllabus text.
+ * { mode: in_person | online_sync | online_async | hybrid | unknown, days: "MWF" (R = Thursday),
+ *   start: "09:00", end: "09:50", building: "Bidgood Hall", room: "116" }
+ */
+export function extractMeeting(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .filter((line) => MEETING_LINE.test(line) && !/office\s+hours?/i.test(line));
+  const scope = lines.join("\n");
+
+  const time = scope.match(TIME_RANGE);
+  const times = time ? meetingTimes(time) : { start: null, end: null };
+  const days = meetingDays(scope);
+
+  let building = "";
+  let room = "";
+  for (const line of lines) {
+    const place = line.replace(TIME_RANGE, " ").match(ROOM);
+    if (place && !/^(room|rm\.?)$/i.test(place[1])) {
+      building = place[1].trim();
+      room = place[2];
+      break;
+    }
+  }
+
+  const online = /\b(zoom|online|virtual|remote|teams)\b/i.test(scope);
+  const selfPaced = /asynchronous|self-paced|no\s+scheduled\s+(?:class\s+)?meetings|no\s+set\s+meeting/i.test(scope);
+  let mode = "unknown";
+  if (room && online) mode = "hybrid";
+  else if (room) mode = "in_person";
+  else if (selfPaced || (online && !time)) mode = "online_async";
+  else if (online) mode = "online_sync";
+
+  if (mode === "online_async") return { mode, days: "", start: null, end: null, building: "", room: "" };
+  return { mode, days, ...times, building, room };
+}
+
+function meetingDays(scope) {
+  const short = scope.match(SHORT_DAYS);
+  const found = short
+    ? short[1].match(/Tu|Th|M|T|W|R|F/g)
+    : [...scope.matchAll(/\b(mon|tues|wednes|thurs|fri)day\b/gi)].map((m) => m[1].toLowerCase());
+  const letters = new Set(found.map((d) => DAY_LETTER[d]));
+  return [..."MTWRF"].filter((d) => letters.has(d)).join("");
+}
+
+function meetingTimes(match) {
+  const [, sh, sm, smer, eh, em, emer] = match;
+  const meridiem = (raw) => (raw ? raw.toLowerCase()[0] : null);
+  const to24 = (h, mer) => {
+    const hour = Number(h) % 12;
+    if (mer === "p") return hour + 12;
+    if (mer === "a") return hour;
+    return hour >= 1 && hour <= 7 ? hour + 12 : Number(h); // no AM/PM: 1 to 7 is afternoon
+  };
+  const end = to24(eh, meridiem(emer));
+  let start = to24(sh, meridiem(smer) || meridiem(emer));
+  if (!smer && start * 60 + Number(sm) > end * 60 + Number(em)) start -= 12; // "11:00 - 12:15 PM"
+  const hhmm = (h, m) => `${String(h).padStart(2, "0")}:${m}`;
+  return { start: hhmm(start, sm), end: hhmm(end, em) };
 }
 
 function extractGrading(text) {

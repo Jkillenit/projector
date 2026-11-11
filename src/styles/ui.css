@@ -1169,3 +1169,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-add-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .map-add-row span { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 @media (max-width: 599px) { .map-add-row { grid-template-columns: 1fr 1fr; } }
+.meet-days { display: flex; flex-wrap: wrap; gap: 6px 14px; border: 0; padding: 0; margin: 8px 0 0; }
+.meet-days legend { padding: 0; margin-bottom: 6px; }
+.meet-day { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.study-form .meet-days + .map-add-row { grid-template-columns: 1fr 1fr; }
