@@ -1,5 +1,6 @@
 import { parseSyllabus } from "../../syllabus/syllabusParser.js";
 import { courseStore } from "../../db/courseStore.js";
+import { meetingKey, readMeeting, shouldSaveSyllabusMeeting } from "../courses/courseMeeting.js";
 
 const GRADING_HEADING =
   /(grad(e|ing)\s*(breakdown|distribution|policy|policies|weights?|components?|criteria|scale)|course\s+grade|evaluation|assessment\s+(weights?|breakdown)|how\s+you\s+will\s+be\s+graded)/gi;
@@ -32,6 +33,15 @@ export function parseSyllabusGrading(text) {
   return best || full;
 }
 
+/** Saves where and when the class meets, unless the student already fixed it by hand. */
+async function saveSyllabusMeeting(courseUuid, text) {
+  const { meeting } = parseSyllabus(text);
+  const existing = readMeeting(await courseStore.getSetting(meetingKey(courseUuid)));
+  if (shouldSaveSyllabusMeeting(existing, meeting)) {
+    await courseStore.setSetting(meetingKey(courseUuid), JSON.stringify({ ...meeting, source: "syllabus" }));
+  }
+}
+
 /**
  * Turns a synced syllabus into grade components when the course has none yet, then sorts the
  * synced Blackboard grades into them. Existing components are never replaced automatically.
@@ -40,6 +50,7 @@ export function parseSyllabusGrading(text) {
 export async function applySyllabusText(courseUuid, text) {
   const db = window.studyHub?.db;
   if (!db || !courseUuid || !text) return { status: "none" };
+  await saveSyllabusMeeting(courseUuid, text).catch(() => {});
   const existing = await db.grades.getComponents(courseUuid);
   if (existing?.length) {
     const applied = await db.bb.applyGrades(courseUuid);
