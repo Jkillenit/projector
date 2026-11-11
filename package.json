@@ -90,5 +90,11 @@
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "Projector"
     }
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "electron@34.5.8": true,
+    "esbuild@0.25.12": true,
+    "tesseract.js": false
   }
 }
