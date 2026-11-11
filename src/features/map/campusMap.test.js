@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { ORIGIN, directionLinks, findBuilding, heightOf, placeParts, project, simplify, toPath, unproject } from "./campusMap.js";
+import { ORIGIN, directionLinks, findBuilding, heightOf, placeParts, project, roomOf, simplify, toPath, unproject } from "./campusMap.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const nameOf = (where) => findBuilding(where, places)?.name ?? null;
@@ -87,5 +87,17 @@ describe("finding a building from a place", () => {
   it("keeps the OpenStreetMap credit in the data", () => {
     expect(campus.credit).toContain("OpenStreetMap");
     expect(campus.buildings.length).toBeGreaterThan(250);
+  });
+});
+
+describe("roomOf", () => {
+  it("finds the room in a class place", () => {
+    expect(roomOf("Bidgood Hall 116")).toBe("116");
+    expect(roomOf("Room 1093, Shelby Hall")).toBe("1093");
+    expect(roomOf("Lloyd 38A")).toBe("38A");
+    expect(roomOf("Rm. 205 Lloyd Hall")).toBe("205");
+  });
+  it("gives null when there is no room", () => {
+    for (const where of ["Online", "TBA", "Zoom 1234", "Shelby Hall", "Bruno Business Library, 1st Floor Lobby", "", null]) expect(roomOf(where)).toBeNull();
   });
 });

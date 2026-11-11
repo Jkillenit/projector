@@ -85,13 +85,24 @@ export function placeParts(where) {
     .filter((p) => p.length > 1);
 }
 
+/** True for places with nowhere to walk to: online, Zoom, TBA. */
+export const isOnline = (where) => /\b(online|virtual|zoom|teams|tba|tbd)\b/i.test(String(where || ""));
+
+/** "Bidgood Hall 116" → "116"; "Room 1093, Shelby Hall" → "1093"; "Lloyd 38A" → "38A". Null when online or no room. */
+export function roomOf(where) {
+  if (isOnline(where)) return null;
+  const raw = String(where || "");
+  const m = raw.match(/\b(?:room|rm)\.?\s*(\d+[a-z]?)\b/i) || raw.match(/\b(\d+[a-z]?)\b/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
 /**
  * The building (or named area, like the Quad) a class or event place names, or null. Tries each part of the place:
  * exact name or alias, then with "the" or "hall" left off, then fuzzy (every word must hit). Online places never match.
  */
 export function findBuilding(where, places) {
   const raw = String(where || "");
-  if (/\b(online|virtual|zoom|teams|tba|tbd)\b/i.test(raw)) return null;
+  if (isOnline(raw)) return null;
   const parts = placeParts(raw);
   const names = (b) => [b.name, ...(b.alt || [])].map(norm);
   const bare = (s) => s.replace(/^the /, "").replace(/ (hall|building|center|bldg)$/, "");

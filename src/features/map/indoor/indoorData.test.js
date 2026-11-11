@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkIndoor, footprint, toCampus } from "./indoorData.js";
+import { checkIndoor, findRoom, footprint, toCampus } from "./indoorData.js";
 import demoHall from "../../../demo/indoor/demo-hall.indoor.json";
 
 // A small valid building: two floors joined by stairs and an elevator.
@@ -126,5 +126,27 @@ describe("Demo Hall", () => {
     expect(rooms.map((r) => r.id)).toContain("216");
     expect(entrances.filter((e) => e.stepFree)).toHaveLength(1);
     expect(new Set(demoHall.floors.flatMap((f) => f.links.map((l) => l.kind)))).toEqual(new Set(["stairs", "elevator"]));
+  });
+});
+
+describe("findRoom", () => {
+  const indoor = [demoHall];
+  it("finds the room from a place", () => {
+    const found = findRoom("Demo Hall 216", indoor);
+    expect(found.building.name).toBe("Demo Hall");
+    expect(found.floor.level).toBe(2);
+    expect(found.room.id).toBe("216");
+    expect(findRoom("Room 105, Demo Hall", indoor).room.id).toBe("105");
+  });
+  it("uses the room it is given first, like a myBama meeting's room", () => {
+    expect(findRoom("Demo Hall", indoor, "105").room.id).toBe("105");
+    expect(findRoom("Demo Hall 216", indoor, "105").room.id).toBe("105");
+  });
+  it("says why when it cannot find the room", () => {
+    expect(findRoom("Online", indoor)).toEqual({ room: null, reason: "This class has no room to walk to" });
+    expect(findRoom("Shelby Hall 1093", indoor)).toEqual({ room: null, reason: "We don't have the inside of this building yet" });
+    expect(findRoom("Demo Hall", indoor)).toEqual({ room: null, reason: "We don't know the room number" });
+    expect(findRoom("Demo Hall 999", indoor)).toEqual({ room: null, reason: "We can't find room 999 in Demo Hall" });
+    expect(findRoom("Demo Hall 216", [])).toEqual({ room: null, reason: "We don't have the inside of this building yet" });
   });
 });
