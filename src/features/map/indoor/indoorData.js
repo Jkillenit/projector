@@ -1,4 +1,5 @@
 // Pure checks for one building's indoor file. Format: docs/map-3d/indoor-format.md.
+import { toPath } from "../campusMap.js";
 
 // shortcut: entrances and links count as on a walk line within 0.5 m; loosen it if real plans need more.
 const ON_WALK_METERS = 0.5;
@@ -91,4 +92,12 @@ export function toCampus([x, y], { origin, rotation = 0 }) {
   const r = (rotation * Math.PI) / 180;
   const cos = Math.cos(r), sin = Math.sin(r);
   return [origin[0] + x * cos - y * sin, origin[1] + x * sin + y * cos];
+}
+
+/** The building as a campus.json entry, from its lowest floor's outline: { id, name, alt, c, h, path }. */
+export function footprint(data) {
+  const ground = [...data.floors].sort((a, b) => a.level - b.level)[0];
+  const ring = ground.outline.map((p) => toCampus(p, data));
+  const mid = (k) => Math.round(ring.reduce((s, p) => s + p[k], 0) / ring.length);
+  return { id: data.building, name: data.name, alt: [], c: [mid(0), mid(1)], h: data.floors.length * data.floorHeight, path: toPath(ring, true) };
 }

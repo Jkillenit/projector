@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Button } from "../../components/ui/index.jsx";
 import { localDayKey } from "../../lib/dates.js";
-import campus from "./campus.json";
+import { PLACES } from "./places.js";
 import { KINDS, makeSession } from "./mySessions.js";
 
-const PLACE_NAMES = [...campus.buildings, ...campus.areas].map((p) => p.name).sort();
+const PLACE_NAMES = PLACES.map((p) => p.name).sort();
 
 /** "Add my session": what, when and where. `initial` can prefill kind and title (from a tutoring resource). */
 export function AddSession({ initial, onAdd, onCancel }) {

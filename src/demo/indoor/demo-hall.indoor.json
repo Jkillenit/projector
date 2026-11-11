@@ -1,0 +1,443 @@
+{
+  "building": "demo-hall",
+  "name": "Demo Hall",
+  "note": "Made up for Demo mode. Not a real UA building or floor plan (rule 14).",
+  "origin": [
+    -497,
+    -183
+  ],
+  "rotation": 0,
+  "floorHeight": 4,
+  "floors": [
+    {
+      "level": 1,
+      "name": "Floor 1",
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          48,
+          0
+        ],
+        [
+          48,
+          24
+        ],
+        [
+          0,
+          24
+        ]
+      ],
+      "rooms": [
+        {
+          "id": "101",
+          "name": "Room 101",
+          "outline": [
+            [
+              6,
+              0
+            ],
+            [
+              20,
+              0
+            ],
+            [
+              20,
+              10
+            ],
+            [
+              6,
+              10
+            ]
+          ],
+          "door": [
+            13.0,
+            10
+          ]
+        },
+        {
+          "id": "102",
+          "name": "Room 102",
+          "outline": [
+            [
+              28,
+              0
+            ],
+            [
+              42,
+              0
+            ],
+            [
+              42,
+              10
+            ],
+            [
+              28,
+              10
+            ]
+          ],
+          "door": [
+            35.0,
+            10
+          ]
+        },
+        {
+          "id": "103",
+          "name": "Room 103",
+          "outline": [
+            [
+              6,
+              14
+            ],
+            [
+              18,
+              14
+            ],
+            [
+              18,
+              24
+            ],
+            [
+              6,
+              24
+            ]
+          ],
+          "door": [
+            12.0,
+            14
+          ]
+        },
+        {
+          "id": "104",
+          "name": "Room 104",
+          "outline": [
+            [
+              18,
+              14
+            ],
+            [
+              32,
+              14
+            ],
+            [
+              32,
+              24
+            ],
+            [
+              18,
+              24
+            ]
+          ],
+          "door": [
+            25.0,
+            14
+          ]
+        },
+        {
+          "id": "105",
+          "name": "Room 105",
+          "outline": [
+            [
+              32,
+              14
+            ],
+            [
+              42,
+              14
+            ],
+            [
+              42,
+              24
+            ],
+            [
+              32,
+              24
+            ]
+          ],
+          "door": [
+            37.0,
+            14
+          ]
+        }
+      ],
+      "walk": [
+        [
+          [
+            0,
+            12
+          ],
+          [
+            48,
+            12
+          ]
+        ],
+        [
+          [
+            24,
+            0
+          ],
+          [
+            24,
+            12
+          ]
+        ]
+      ],
+      "entrances": [
+        {
+          "id": "north",
+          "name": "North door",
+          "at": [
+            24,
+            0
+          ],
+          "stepFree": true,
+          "main": true
+        },
+        {
+          "id": "west",
+          "name": "West door",
+          "at": [
+            0,
+            12
+          ],
+          "stepFree": false,
+          "main": false
+        }
+      ],
+      "links": [
+        {
+          "id": "stairs-a",
+          "name": "Stairs A",
+          "kind": "stairs",
+          "at": [
+            4,
+            12
+          ]
+        },
+        {
+          "id": "elevator",
+          "name": "Elevator",
+          "kind": "elevator",
+          "at": [
+            44,
+            12
+          ]
+        }
+      ],
+      "landmarks": [
+        {
+          "name": "Vending machines",
+          "at": [
+            20,
+            13
+          ]
+        },
+        {
+          "name": "Trophy case",
+          "at": [
+            30,
+            11
+          ]
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "name": "Floor 2",
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          48,
+          0
+        ],
+        [
+          48,
+          24
+        ],
+        [
+          0,
+          24
+        ]
+      ],
+      "rooms": [
+        {
+          "id": "210",
+          "name": "Room 210",
+          "outline": [
+            [
+              6,
+              0
+            ],
+            [
+              24,
+              0
+            ],
+            [
+              24,
+              10
+            ],
+            [
+              6,
+              10
+            ]
+          ],
+          "door": [
+            15.0,
+            10
+          ]
+        },
+        {
+          "id": "212",
+          "name": "Room 212",
+          "outline": [
+            [
+              24,
+              0
+            ],
+            [
+              42,
+              0
+            ],
+            [
+              42,
+              10
+            ],
+            [
+              24,
+              10
+            ]
+          ],
+          "door": [
+            33.0,
+            10
+          ]
+        },
+        {
+          "id": "214",
+          "name": "Room 214",
+          "outline": [
+            [
+              6,
+              14
+            ],
+            [
+              18,
+              14
+            ],
+            [
+              18,
+              24
+            ],
+            [
+              6,
+              24
+            ]
+          ],
+          "door": [
+            12.0,
+            14
+          ]
+        },
+        {
+          "id": "216",
+          "name": "Room 216",
+          "outline": [
+            [
+              18,
+              14
+            ],
+            [
+              32,
+              14
+            ],
+            [
+              32,
+              24
+            ],
+            [
+              18,
+              24
+            ]
+          ],
+          "door": [
+            25.0,
+            14
+          ]
+        },
+        {
+          "id": "218",
+          "name": "Room 218",
+          "outline": [
+            [
+              32,
+              14
+            ],
+            [
+              42,
+              14
+            ],
+            [
+              42,
+              24
+            ],
+            [
+              32,
+              24
+            ]
+          ],
+          "door": [
+            37.0,
+            14
+          ]
+        }
+      ],
+      "walk": [
+        [
+          [
+            2,
+            12
+          ],
+          [
+            46,
+            12
+          ]
+        ]
+      ],
+      "entrances": [],
+      "links": [
+        {
+          "id": "stairs-a",
+          "name": "Stairs A",
+          "kind": "stairs",
+          "at": [
+            4,
+            12
+          ]
+        },
+        {
+          "id": "elevator",
+          "name": "Elevator",
+          "kind": "elevator",
+          "at": [
+            44,
+            12
+          ]
+        }
+      ],
+      "landmarks": [
+        {
+          "name": "Water fountain",
+          "at": [
+            24,
+            11
+          ]
+        }
+      ]
+    }
+  ]
+}
