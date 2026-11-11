@@ -13,3 +13,11 @@ Thumbs.db
 .idea/
 screenshots/
 .superpowers/
+
+# Rule 14: real floor plans and indoor data are a campus safety matter and the repo is public.
+# They load from the student's own computer in Live mode only. Demo Hall is made up, so it is allowed.
+indoor-data/
+floorplans/
+*.indoor.json
+!src/demo/indoor/demo-hall.indoor.json
+.claude/settings.local.json
