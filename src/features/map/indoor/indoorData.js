@@ -1,5 +1,5 @@
 // Pure checks for one building's indoor file. Format: docs/map-3d/indoor-format.md.
-import { toPath } from "../campusMap.js";
+import { findBuilding, isOnline, roomOf, toPath } from "../campusMap.js";
 
 // shortcut: entrances and links count as on a walk line within 0.5 m; loosen it if real plans need more.
 const ON_WALK_METERS = 0.5;
@@ -100,4 +100,21 @@ export function footprint(data) {
   const ring = ground.outline.map((p) => toCampus(p, data));
   const mid = (k) => Math.round(ring.reduce((s, p) => s + p[k], 0) / ring.length);
   return { id: data.building, name: data.name, alt: [], c: [mid(0), mid(1)], h: data.floors.length * data.floorHeight, path: toPath(ring, true) };
+}
+
+/**
+ * The room a class place points to, in the indoor files we have: { building, floor, room }, or { room: null, reason }.
+ * `room` comes first when given (myBama meetings have it); otherwise it is read from the place.
+ */
+export function findRoom(where, indoor, room) {
+  if (isOnline(where)) return { room: null, reason: "This class has no room to walk to" };
+  const building = findBuilding(where, indoor);
+  if (!building) return { room: null, reason: "We don't have the inside of this building yet" };
+  const id = String(room || roomOf(where) || "").trim().toUpperCase();
+  if (!id) return { room: null, reason: "We don't know the room number" };
+  for (const floor of building.floors) {
+    const hit = list(floor.rooms).find((r) => String(r.id).toUpperCase() === id);
+    if (hit) return { building, floor, room: hit };
+  }
+  return { room: null, reason: `We can't find room ${id} in ${building.name}` };
 }
