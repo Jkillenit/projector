@@ -34,7 +34,7 @@ const LINK = /\{\{(\w+)\}\}/g;
 
 /** Backlog text → [{ key, labels, milestone, title, body }] in file order. */
 export function parseIssues(text) {
-  const parts = text.split(/^<!-- issue (.*?) -->[ \t]*$/m).slice(1);
+  const parts = text.replace(/\r\n/g, "\n").split(/^<!-- issue (.*?) -->[ \t]*$/m).slice(1);
   const out = [];
   for (let i = 0; i < parts.length; i += 2) {
     const attrs = Object.fromEntries([...parts[i].matchAll(/(\w+)=(?:"([^"]*)"|(\S+))/g)].map((m) => [m[1], m[2] ?? m[3]]));

@@ -23,6 +23,9 @@ describe("parseIssues", () => {
     expect(epic).toMatchObject({ key: "X00", labels: ["map-3d", "epic"], milestone: "One", title: "Tracking" });
     expect(first.body).toBe("Body with a link to #{{X00}}.");
   });
+  it("reads Windows line endings the same way", () => {
+    expect(parseIssues(SAMPLE.replace(/\n/g, "\r\n"))).toEqual(parseIssues(SAMPLE));
+  });
 });
 
 describe("checkIssues", () => {
