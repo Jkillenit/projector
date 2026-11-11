@@ -60,6 +60,17 @@ export function toPath(points, closed) {
   return points.map(([x, y], i) => `${i ? "L" : "M"}${r(x)} ${r(y)}`).join("") + (closed ? "Z" : "");
 }
 
+/**
+ * A building's height in whole meters from its OSM tags: `height`, else `building:levels` × 3.5 m, else 3 levels.
+ * Bad values (not a number, zero, negative, over 200 m) are skipped.
+ */
+export function heightOf(tags = {}) {
+  const ok = (n) => (Number.isFinite(n) && n > 0 && n < 200 ? n : null);
+  const raw = String(tags.height ?? "");
+  const h = ok(parseFloat(raw) * (/ft|'/.test(raw) ? 0.3048 : 1)) ?? ok(parseFloat(tags["building:levels"]) * 3.5) ?? 10.5;
+  return Math.round(h);
+}
+
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 // Words that say which room or floor, not which building: "Bidgood Hall 116", "Room 1093", "1st Floor Lobby".
 // "Outside of BB Comer", "Near the Quad": the building comes after these.

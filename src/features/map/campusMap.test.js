@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { ORIGIN, directionLinks, findBuilding, placeParts, project, simplify, toPath, unproject } from "./campusMap.js";
+import { ORIGIN, directionLinks, findBuilding, heightOf, placeParts, project, simplify, toPath, unproject } from "./campusMap.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const nameOf = (where) => findBuilding(where, places)?.name ?? null;
@@ -34,6 +34,21 @@ describe("campus map math", () => {
     const square = [[0, 0], [5, 0], [10, 0], [10, 10], [0, 10], [0, 0]];
     expect(simplify(square, 1)).toEqual([[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]);
     expect(toPath([[0, 0], [10.4, 0], [10, 9.6]], true)).toBe("M0 0L10 0L10 10Z");
+  });
+
+  it("guesses a building's height in meters from its OSM tags", () => {
+    expect(heightOf({ height: "24.5" })).toBe(25);
+    expect(heightOf({ height: "24 m", "building:levels": "2" })).toBe(24);
+    expect(heightOf({ height: "40 ft" })).toBe(12);
+    expect(heightOf({ "building:levels": "4" })).toBe(14);
+    expect(heightOf({})).toBe(11);
+    expect(heightOf({ height: "tall", "building:levels": "3" })).toBe(11);
+    expect(heightOf({ height: "-5", "building:levels": "0" })).toBe(11);
+    expect(heightOf({ height: "900" })).toBe(11);
+  });
+
+  it("keeps a whole-meter height on every named building", () => {
+    expect(campus.buildings.every((b) => Number.isInteger(b.h) && b.h > 0)).toBe(true);
   });
 });
 
