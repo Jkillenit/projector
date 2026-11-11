@@ -17,6 +17,7 @@
 - Never write code that drafts or completes coursework.
 - Do not weaken the guardrails in `src/features/guide/matcher.js` without the safety lead's review.
 - No new npm package without team agreement in the PR.
+- Never commit real floor plans, real indoor data or real interior photos. They load from a folder on the student's own computer, in Live mode only. Demo mode uses made up buildings, like Demo Hall. Treat any plan UA gives us as private.
 
 ## BMAD rule
 

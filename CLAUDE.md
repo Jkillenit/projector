@@ -35,6 +35,7 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
 11. Keep the guardrails in `src/features/guide/matcher.js` and their tests. Do not weaken them without the safety lead's review.
 12. Plain UI copy: short sentences, everyday words.
 13. Do not renumber or delete database migrations in `electron/database.cjs`, even for tables we no longer use.
+14. Real floor plans, real indoor data and real interior photos are never committed, not even in a branch. They load only from a folder on the student's own computer, in Live mode. Demo mode uses made up buildings only, like Demo Hall (`src/demo/indoor/demo-hall.indoor.json`).
 
 ## Commands
 
