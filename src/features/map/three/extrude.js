@@ -7,7 +7,7 @@ export function pathToRings(d) {
   const rings = [];
   for (const seg of d.split("M").slice(1)) {
     const nums = (seg.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
-    if (nums.length % 2 || /[^LZ\d.\s-]/i.test(seg)) continue;
+    if (nums.length % 2 || /[^LZ\d.\s-]/.test(seg)) continue;
     const ring = [];
     for (let i = 0; i < nums.length; i += 2) ring.push([nums[i], nums[i + 1]]);
     const [f, l] = [ring[0], ring[ring.length - 1]];
