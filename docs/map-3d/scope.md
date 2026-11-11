@@ -65,7 +65,7 @@ In Demo mode this runs on **Demo Hall**, a made-up building. With UA's written O
 
 ## Indoor data format (short version)
 
-One JSON file per building. Same meter units as `campus.json`. The full spec lives in the format issue.
+One JSON file per building. Same meter units as `campus.json`. The full spec is in `indoor-format.md`.
 
 ```json
 {
