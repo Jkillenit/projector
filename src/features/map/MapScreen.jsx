@@ -5,6 +5,7 @@ import { routeHref } from "../../shell/useRoute.js";
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import campus from "./campus.json";
 import { findBuilding, placeParts, project } from "./campusMap.js";
+import { BUILDINGS, PLACES } from "./places.js";
 import { PlacePanel } from "./PlacePanel.jsx";
 import { MyClasses } from "./MyClasses.jsx";
 import { classPins, classesInRange } from "./classLayer.js";
@@ -14,7 +15,6 @@ import { asMeeting, upcomingSessions } from "./mySessions.js";
 import { useMySessions } from "./useMySessions.js";
 import { localDayKey } from "../../lib/dates.js";
 
-const PLACES = [...campus.buildings, ...campus.areas];
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
 const START = { cx: QUAD[0], cy: QUAD[1], w: 1800 };
 const MIN_W = 150;
@@ -196,7 +196,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             ))}
             <path className="map-road" d={campus.roads} style={{ strokeWidth: Math.max(4, view.w / 300) }} />
             <path className="map-context" d={campus.context} />
-            {campus.buildings.map((b) => (
+            {BUILDINGS.map((b) => (
               <path key={b.id} className={`map-bldg${picked === b.id || pin?.place?.id === b.id ? " is-on" : ""}`} d={b.path} onClick={tap(() => setPicked(b.id))}>
                 <title>{b.name}</title>
               </path>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkIndoor, toCampus } from "./indoorData.js";
+import { checkIndoor, footprint, toCampus } from "./indoorData.js";
+import demoHall from "../../../demo/indoor/demo-hall.indoor.json";
 
 // A small valid building: two floors joined by stairs and an elevator.
 function hall() {
@@ -102,5 +103,28 @@ describe("toCampus", () => {
     const [x, y] = toCampus([0, 10], { origin: [100, 100], rotation: 90 });
     expect(x).toBeCloseTo(90);
     expect(y).toBeCloseTo(100);
+  });
+});
+
+describe("footprint", () => {
+  it("places the ground floor outline on the campus map", () => {
+    expect(footprint(hall())).toEqual({
+      id: "demo-hall", name: "Demo Hall", alt: [], c: [440, -205], h: 8,
+      path: "M410 -220L470 -220L470 -190L410 -190Z",
+    });
+  });
+});
+
+describe("Demo Hall", () => {
+  it("passes the checker", () => {
+    expect(checkIndoor(demoHall)).toEqual({ ok: true, problems: [] });
+  });
+  it("has what the demo needs", () => {
+    const rooms = demoHall.floors.flatMap((f) => f.rooms);
+    const entrances = demoHall.floors.flatMap((f) => f.entrances);
+    expect(demoHall.floors).toHaveLength(2);
+    expect(rooms.map((r) => r.id)).toContain("216");
+    expect(entrances.filter((e) => e.stepFree)).toHaveLength(1);
+    expect(new Set(demoHall.floors.flatMap((f) => f.links.map((l) => l.kind)))).toEqual(new Set(["stairs", "elevator"]));
   });
 });
