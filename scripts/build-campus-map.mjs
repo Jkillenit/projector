@@ -9,9 +9,10 @@
  *
  * Map data © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright). Keep the credit on the map.
  * src/features/map/buildings-extra.json adds aliases ({ name, alt }) or buildings OSM lacks ({ name, alt, lat, lon }).
+ * Add h (meters) to an entry to fix a height OSM has wrong.
  */
 import { readFileSync, writeFileSync } from "fs";
-import { project, simplify, toPath } from "../src/features/map/campusMap.js";
+import { heightOf, project, simplify, toPath } from "../src/features/map/campusMap.js";
 
 const [input] = process.argv.slice(2);
 if (!input) throw new Error("Usage: node scripts/build-campus-map.mjs osm.json");
@@ -40,14 +41,17 @@ for (const e of osm.elements) {
   const c = [Math.round(pts.reduce((s, p) => s + p[0], 0) / pts.length), Math.round(pts.reduce((s, p) => s + p[1], 0) / pts.length)];
   if (t.leisure) areas.push({ id: `${e.type[0]}${e.id}`, name: t.name.trim(), alt: aliases(t), c, path });
   else if (t.name) {
-    buildings.push({ id: `${e.type[0]}${e.id}`, name: t.name.trim(), alt: aliases(t), c, path });
+    buildings.push({ id: `${e.type[0]}${e.id}`, name: t.name.trim(), alt: aliases(t), c, h: heightOf(t), path });
   } else context.push(path);
 }
 
 for (const x of extra) {
   const known = [...buildings, ...areas].find((b) => b.name === x.name);
-  if (known) known.alt = [...new Set([...known.alt, ...(x.alt || [])])];
-  else if (x.lat != null && x.lon != null) buildings.push({ id: `x-${x.name}`, name: x.name, alt: x.alt || [], c: project(x.lat, x.lon).map(Math.round), path: "" });
+  if (known) {
+    known.alt = [...new Set([...known.alt, ...(x.alt || [])])];
+    if (x.h && "h" in known) known.h = Math.round(x.h);
+  } else if (x.lat != null && x.lon != null)
+    buildings.push({ id: `x-${x.name}`, name: x.name, alt: x.alt || [], c: project(x.lat, x.lon).map(Math.round), h: Math.round(x.h || heightOf({})), path: "" });
 }
 
 const all = [...buildings.map((b) => b.c), ...areas.flatMap((a) => [...a.path.matchAll(/[ML](-?\d+) (-?\d+)/g)].map((m) => [+m[1], +m[2]]))];
