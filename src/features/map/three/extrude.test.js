@@ -26,7 +26,7 @@ describe("pathToRings", () => {
     expect(pathToRings(`${SQUARE}M-5 -5L-1 -5L-1 -1Z`)).toHaveLength(2);
   });
   it("gives nothing for bad or empty paths", () => {
-    for (const bad of [undefined, "", "M", "M1 2L3", "M1 2C3 4 5 6 7 8Z", "M1 2L3 4Z", "hello"]) {
+    for (const bad of [undefined, "", "M", "M1 2L3", "M1 2C3 4 5 6 7 8Z", "M1 2L3 4Z", "hello", "M0 0l10 0l0 10z"]) {
       expect(pathToRings(bad)).toEqual([]);
     }
   });
@@ -42,6 +42,19 @@ describe("extrudeRings", () => {
     expect([roof.slice(0, 3), roof.slice(3, 6), roof.slice(6, 9), roof.slice(9)]).toContainEqual([10, 12, 10]);
     const ys = shape.positions.filter((_, i) => i % 3 === 1);
     expect(new Set(ys)).toEqual(new Set([0, 12]));
+  });
+  it("every wall faces away from the middle, whichever way the outline winds", () => {
+    for (const d of [SQUARE, "M0 0L0 10L10 10L10 0Z"]) {
+      const { positions: p, indices: ix } = extrudeRings(pathToRings(d), 5)[0];
+      for (let t = 0; t < 4 * 6; t += 3) {
+        const [a, b, c] = ix.slice(t, t + 3).map((i) => i * 3);
+        // x and z parts of (b - a) x (c - a)
+        const nx = (p[b + 1] - p[a + 1]) * (p[c + 2] - p[a + 2]) - (p[b + 2] - p[a + 2]) * (p[c + 1] - p[a + 1]);
+        const nz = (p[b] - p[a]) * (p[c + 1] - p[a + 1]) - (p[b + 1] - p[a + 1]) * (p[c] - p[a]);
+        const mx = (p[a] + p[b] + p[c]) / 3 - 5, mz = (p[a + 2] + p[b + 2] + p[c + 2]) / 3 - 5;
+        expect(nx * mx + nz * mz).toBeGreaterThan(0);
+      }
+    }
   });
   it("roof faces up whichever way the outline winds", () => {
     for (const d of [SQUARE, "M0 0L0 10L10 10L10 0Z"]) {
@@ -64,7 +77,9 @@ describe("extrudeRings", () => {
     for (const b of campus.buildings) {
       const rings = pathToRings(b.path);
       expect(rings.length, b.name).toBeGreaterThan(0);
-      extrudeRings(rings, b.h).forEach((shape, i) => {
+      const shapes = extrudeRings(rings, b.h);
+      expect(shapes, b.name).toHaveLength(rings.length);
+      shapes.forEach((shape, i) => {
         expect(roofArea(shape, rings[i].length), b.name).toBeCloseTo(ringArea(rings[i]), 3);
       });
     }
