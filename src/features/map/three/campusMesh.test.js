@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addRibbons, GROUND_LAYERS, lineToRibbon, mergeBuildings, roadWidth } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, isLandmark, lineToRibbon, mergeBuildings, roadWidth } from "./campusMesh.js";
 import nature from "../campus-nature.json";
 import campus from "../campus.json";
 
@@ -21,6 +21,30 @@ describe("mergeBuildings", () => {
       const o = m.owners.find((x) => x.id === id);
       for (const v of m.indices.slice(t * 3, t * 3 + 3)) expect(v >= o.start && v < o.end).toBe(true);
     });
+  });
+
+  it("puts all walls before all roofs, so walls and roofs can take their own textures (#122)", () => {
+    const m = mergeBuildings([{ id: "a", path: SQUARE, h: 7 }, { id: "b", path: "M20 0L30 0L30 10L20 10Z", h: 3.5 }]);
+    expect(m.wallIndices).toBe(2 * 4 * 6); // two buildings, four walls, two triangles each
+    m.indices.forEach((v, k) => expect(m.isRoof[v]).toBe(k >= m.wallIndices));
+    expect(m.triOwner.slice(0, 8)).toEqual(Array(8).fill("a"));
+    expect(m.isRoof).toHaveLength(m.positions.length / 3);
+  });
+
+  it("gives walls UVs in meters along and up the wall, roofs their x and z", () => {
+    const m = mergeBuildings([{ id: "a", path: SQUARE, h: 7 }]);
+    expect(m.uvs).toHaveLength((m.positions.length / 3) * 2);
+    const us = [];
+    const vs = [];
+    m.isRoof.forEach((roof, v) => {
+      if (roof) expect([m.uvs[v * 2], m.uvs[v * 2 + 1]]).toEqual([m.positions[v * 3], m.positions[v * 3 + 2]]);
+      else {
+        us.push(m.uvs[v * 2]);
+        vs.push(m.uvs[v * 2 + 1]);
+      }
+    });
+    expect(Math.max(...us)).toBeCloseTo(40); // all the way round a 10 m square
+    expect(new Set(vs)).toEqual(new Set([0, 7]));
   });
 
   it("skips buildings with no shape or no height", () => {
@@ -115,5 +139,14 @@ describe("ground layers", () => {
     expect(roadWidth("primary")).toBeGreaterThan(roadWidth("residential"));
     expect(roadWidth("residential")).toBeGreaterThan(roadWidth("service"));
     expect(roadWidth("unknown")).toBeGreaterThan(0);
+  });
+});
+
+describe("isLandmark", () => {
+  it("knows the landmarks by their map names, and only those", () => {
+    expect(isLandmark("Denny Chimes")).toBe(true);
+    expect(isLandmark("Gorgas House")).toBe(false);
+    const names = new Set(campus.buildings.map((b) => b.name));
+    for (const n of ["Amelia Gayle Gorgas Library", "Denny Chimes", "University of Alabama Student Center"]) expect(names.has(n), n).toBe(true);
   });
 });

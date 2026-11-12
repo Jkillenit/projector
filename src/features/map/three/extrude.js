@@ -48,8 +48,9 @@ function triangulate(ring) {
 }
 
 /**
- * One shape per ring: { positions: [x,y,z,...], indices: [...] }.
- * Walls get their own corners (for flat shading); the roof sits at height h. roof: false gives walls only, walls: false a flat top only.
+ * One shape per ring: { positions: [x,y,z,...], indices: [...], uvs: [u,v,...], wallVerts, wallIndices }.
+ * Walls come first and get their own corners (for flat shading); the roof sits at height h.
+ * UVs are meters: along the wall and up it for walls, x and z for the roof, so textures repeat by real size (#122). roof: false gives walls only, walls: false a flat top only.
  * shortcut: every ring is its own solid, so a courtyard ring becomes a block, not a hole; add holes if a real building needs one.
  */
 export function extrudeRings(rings, h, { roof: withRoof = true, walls = true } = {}) {
@@ -60,18 +61,27 @@ export function extrudeRings(rings, h, { roof: withRoof = true, walls = true } =
     if (area2(ring) === 0) continue;
     const positions = [];
     const indices = [];
+    const uvs = [];
+    let run = 0; // meters along the wall so far
     if (walls) ring.forEach(([ax, az], i) => {
       const [bx, bz] = ring[(i + 1) % ring.length];
       const v = positions.length / 3;
+      const len = Math.hypot(bx - ax, bz - az);
       positions.push(ax, 0, az, bx, 0, bz, bx, h, bz, ax, h, az);
+      uvs.push(run, 0, run + len, 0, run + len, h, run, h);
       indices.push(v, v + 1, v + 2, v, v + 2, v + 3);
+      run += len;
     });
+    const wallVerts = positions.length / 3;
+    const wallIndices = indices.length;
     if (withRoof) {
-      const roof = positions.length / 3;
-      for (const [x, z] of ring) positions.push(x, h, z);
-      for (const i of triangulate(ring)) indices.push(roof + i);
+      for (const [x, z] of ring) {
+        positions.push(x, h, z);
+        uvs.push(x, z);
+      }
+      for (const i of triangulate(ring)) indices.push(wallVerts + i);
     }
-    shapes.push({ positions, indices });
+    shapes.push({ positions, indices, uvs, wallVerts, wallIndices });
   }
   return shapes;
 }

@@ -3,26 +3,43 @@ import { extrudeRings, pathToRings } from "./extrude.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
- * Returns { positions, indices, owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
+ * Returns { positions, uvs (meters), isRoof: [per vertex], indices: all walls first, then all roofs, wallIndices: how many indices are walls,
+ * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
 export function mergeBuildings(buildings) {
   const positions = [];
-  const indices = [];
+  const uvs = [];
+  const isRoof = [];
   const owners = [];
-  const triOwner = [];
+  const walls = { indices: [], owner: [] };
+  const roofs = { indices: [], owner: [] };
   for (const b of buildings || []) {
     const start = positions.length / 3;
     for (const s of extrudeRings(pathToRings(b.path), b.h)) {
       const base = positions.length / 3;
       for (const v of s.positions) positions.push(v);
-      for (const i of s.indices) indices.push(base + i);
-      for (let t = 0; t < s.indices.length / 3; t++) triOwner.push(b.id);
+      for (const v of s.uvs) uvs.push(v);
+      for (let v = 0; v < s.positions.length / 3; v++) isRoof.push(v >= s.wallVerts);
+      s.indices.forEach((i, k) => {
+        const part = k < s.wallIndices ? walls : roofs;
+        part.indices.push(base + i);
+        if (k % 3 === 0) part.owner.push(b.id);
+      });
     }
     const end = positions.length / 3;
     if (end > start) owners.push({ id: b.id, start, end });
   }
-  return { positions, indices, owners, triOwner };
+  return {
+    positions, uvs, isRoof, owners,
+    indices: walls.indices.concat(roofs.indices),
+    wallIndices: walls.indices.length,
+    triOwner: walls.owner.concat(roofs.owner),
+  };
 }
+
+/** Landmarks get crimson brick so they stand out (#122). Bryant-Denny is only an area in OSM, so it has no walls to color. */
+const LANDMARKS = new Set(["Amelia Gayle Gorgas Library", "Denny Chimes", "University of Alabama Student Center"]);
+export const isLandmark = (name) => LANDMARKS.has(name);
 
 /** Flat ground layers, bottom first. Each one draws over the ones before it. */
 export const GROUND_LAYERS = ["wood", "grass", "pitch", "water", "parking", "roads", "paths"];

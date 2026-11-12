@@ -108,6 +108,8 @@
   --map-building: #D6C0AC;
   --map-context: #E0DDD8; /* unnamed buildings: grayer and closer to the ground than ones you can tap */
   --map-roof: #CFC2B6;
+  --map-brick: #C98F7A; /* walls: UA red brick, tinting the brick tile (#122) */
+  --map-landmark: #A84A55; /* landmark walls: crimson brick, while a picked building turns crimson roof and all */
   --map-accent: var(--accent);
   --map-pick: #9E1B32;
   --map-hover: #C4485E;
@@ -199,6 +201,8 @@
   --map-building: #4A3E35;
   --map-context: #2B2826;
   --map-roof: #47403A;
+  --map-brick: #7A4C40;
+  --map-landmark: #8E3A48;
   --map-accent: var(--accent);
   --map-pick: #EC6F85;
   --map-hover: #B83A52;
