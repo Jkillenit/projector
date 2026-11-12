@@ -7,6 +7,8 @@ import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_R
 import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
+import { placeTrees, seeded } from "./trees.js";
+import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
 const FLY_MS = 1500;
@@ -87,6 +89,47 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return b;
   }));
 
+  // Trees (#123): two lumpy crowns and a trunk, one InstancedMesh each, so one draw call per model.
+  // Crowns take --map-tree, so seasons (#128) can turn them; each tree is a shade lighter or darker.
+  // Not in the tap list, so a tap goes through a tree to the building behind it.
+  const trees = placeTrees(nature, buildings, campus.bounds);
+  const CROWN = [3.5, 5, 6.5]; // crown radius by size, meters
+  const TRUNK = [3, 4, 5];
+  const crownMat = new THREE.MeshLambertMaterial({ flatShading: true });
+  const trunkMat = new THREE.MeshLambertMaterial();
+  const crownShape = (k) => {
+    const geo = new THREE.IcosahedronGeometry(1, 1);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      // A bump per corner, keyed by where the corner is, so faces that share it stay joined.
+      const lump = 0.85 + 0.3 * seeded(seedOf(`${k}:${p.getX(i).toFixed(3)},${p.getY(i).toFixed(3)},${p.getZ(i).toFixed(3)}`))();
+      p.setXYZ(i, p.getX(i) * lump, p.getY(i) * lump * 0.8, p.getZ(i) * lump);
+    }
+    geo.computeVertexNormals();
+    return geo;
+  };
+  const crowns = [0, 1].map((k) => add(new THREE.InstancedMesh(crownShape(k), crownMat, Math.ceil((trees.length - k) / 2))));
+  const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 1, 5, 1, true).translate(0, 0.5, 0);
+  const trunks = add(new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length));
+  {
+    const o = new THREE.Object3D();
+    const shade = new THREE.Color();
+    const r = seeded(seedOf("tree looks"));
+    trees.forEach(([x, z, s], i) => {
+      const [crown, trunk, turn] = [CROWN[s] * (0.9 + r() * 0.2), TRUNK[s], r() * Math.PI * 2];
+      o.position.set(x, 0, z);
+      o.rotation.set(0, turn, 0);
+      o.scale.set(1, trunk, 1);
+      o.updateMatrix();
+      trunks.setMatrixAt(i, o.matrix);
+      o.position.y = trunk + crown * 0.6;
+      o.scale.setScalar(crown);
+      o.updateMatrix();
+      crowns[i % 2].setMatrixAt(i >> 1, o.matrix);
+      crowns[i % 2].setColorAt(i >> 1, shade.setScalar(0.85 + r() * 0.25));
+    });
+  }
+
   // Tappable shapes: one mesh each, colored per vertex (RGBA) so one place can light up. Areas are a thin see-through tint.
   const tappable = (places, h, size, material) => {
     const merged = mergeBuildings(places.map((p) => ({ id: p.id, path: p.path, h: h ?? p.h })));
@@ -156,6 +199,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     ground.material.color.set(token("--map-ground"));
     for (const m of layers) m.material.color.set(token(m.userData.token));
     edges.material.color.set(token("--map-roof"));
+    crownMat.color.set(token("--map-tree"));
+    trunkMat.color.set(token("--map-trunk"));
     paint(true);
   }
 
