@@ -60,6 +60,9 @@ describe("3D map and walkthrough contrast", () => {
     ["map-road", "map-path", 1.5],
     ...["ground", "campus", "grass", "parking", "path", "building", "context", "slate-1", "slate-2", "slate-3"].map((k) => ["map-pick", `map-${k}`]),
     ["map-hover", "map-ground"],
+    // #150: field lines read on the pitch, and lane lines on the track.
+    ["map-line", "map-pitch", 1.5],
+    ["map-line", "map-track", 1.5],
   ];
   const val = (t, k) => {
     const ref = t[k]?.match(/^var\(--([\w-]+)\)$/);

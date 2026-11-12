@@ -138,3 +138,104 @@ export function textureCanvas(kind) {
   }
   return canvases[kind];
 }
+
+/** Field textures (#150), painted in the theme's colors: { pitch, stripe, line, dirt, track }. Not cached, so a theme change repaints. */
+const FIELD_SIZE = { football: [512, 256], soccer: [512, 256], diamond: [512, 512], court: [256, 128], track: [64, 256], dirt: [8, 8] };
+const PAINT_FIELD = {
+  football(ctx, w, h, c) {
+    const yd = w / 120; // 120 yards, end zones included
+    for (let i = 0; i < 12; i++) {
+      ctx.fillStyle = i === 0 || i === 11 ? c.stripe : i % 2 ? c.pitch : c.stripe;
+      ctx.fillRect(i * 10 * yd, 0, 10 * yd, h);
+    }
+    ctx.fillStyle = c.line;
+    for (let y = 10; y <= 110; y += 5) ctx.fillRect(y * yd - 1, 6, y % 10 ? 1.5 : 2.5, h - 12);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = c.line;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
+  },
+  soccer(ctx, w, h, c) {
+    for (let i = 0; i < 12; i++) {
+      ctx.fillStyle = i % 2 ? c.pitch : c.stripe;
+      ctx.fillRect((i * w) / 12, 0, w / 12 + 1, h);
+    }
+    const [mx, my] = [w / 105, h / 68]; // px per meter on a 105 by 68 m field
+    ctx.strokeStyle = c.line;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
+    ctx.beginPath();
+    ctx.moveTo(w / 2, 4);
+    ctx.lineTo(w / 2, h - 4);
+    ctx.ellipse(w / 2, h / 2, 9.15 * mx, 9.15 * my, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const x of [4, w - 4 - 16.5 * mx]) ctx.strokeRect(x, h / 2 - 20.15 * my, 16.5 * mx, 40.3 * my);
+    for (const x of [4, w - 4 - 5.5 * mx]) ctx.strokeRect(x, h / 2 - 9.15 * my, 5.5 * mx, 18.3 * my);
+  },
+  diamond(ctx, w, h, c) {
+    // Home plate near one end, the diamond pointing down the field. shortcut: home is always at the u = 0 end; OSM does not say which end it is.
+    for (let i = 0; i < 10; i++) {
+      ctx.fillStyle = i % 2 ? c.pitch : c.stripe;
+      ctx.fillRect((i * w) / 10, 0, w / 10 + 1, h);
+    }
+    const m = w / 110; // px per meter on a 110 m field
+    const [hx, hy] = [w * 0.08, h / 2];
+    const base = 27.4 * m;
+    const d = base / Math.SQRT2;
+    ctx.fillStyle = c.dirt;
+    ctx.beginPath();
+    ctx.arc(hx + 18.4 * m, hy, 29 * m, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = c.pitch;
+    ctx.beginPath();
+    ctx.moveTo(hx + 3 * m, hy);
+    ctx.lineTo(hx + d, hy - d + 3 * m);
+    ctx.lineTo(hx + 2 * d - 3 * m, hy);
+    ctx.lineTo(hx + d, hy + d - 3 * m);
+    ctx.fill();
+    ctx.strokeStyle = c.line;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(w, hy - (w - hx));
+    ctx.lineTo(hx, hy);
+    ctx.lineTo(w, hy + (w - hx));
+    ctx.stroke();
+  },
+  court(ctx, w, h, c) {
+    ctx.fillStyle = c.stripe;
+    ctx.fillRect(0, 0, w, h);
+    const m = w / 36.6;
+    const [x0, y0, cw, ch] = [(w - 23.77 * m) / 2, (h - 10.97 * m) / 2, 23.77 * m, 10.97 * m];
+    ctx.fillStyle = c.pitch;
+    ctx.fillRect(x0, y0, cw, ch);
+    ctx.strokeStyle = c.line;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x0, y0, cw, ch);
+    const s = 1.37 * m; // doubles alley
+    ctx.strokeRect(x0, y0 + s, cw, ch - 2 * s);
+    ctx.beginPath();
+    for (const x of [w / 2 - 6.4 * m, w / 2 + 6.4 * m]) { ctx.moveTo(x, y0 + s); ctx.lineTo(x, y0 + ch - s); }
+    ctx.moveTo(w / 2 - 6.4 * m, h / 2);
+    ctx.lineTo(w / 2 + 6.4 * m, h / 2);
+    ctx.moveTo(w / 2, y0 - 4);
+    ctx.lineTo(w / 2, y0 + ch + 4);
+    ctx.stroke();
+  },
+  track(ctx, w, h, c) {
+    ctx.fillStyle = c.track;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = c.line;
+    for (let y = 0; y < h; y += h / 8) ctx.fillRect(0, y, w, 2);
+  },
+  dirt(ctx, w, h, c) {
+    ctx.fillStyle = c.dirt;
+    ctx.fillRect(0, 0, w, h);
+  },
+};
+export const FIELD_LOOKS = Object.keys(PAINT_FIELD);
+
+export function fieldCanvas(look, colors) {
+  const c = document.createElement("canvas");
+  [c.width, c.height] = FIELD_SIZE[look];
+  PAINT_FIELD[look](c.getContext("2d"), c.width, c.height, colors);
+  return c;
+}
