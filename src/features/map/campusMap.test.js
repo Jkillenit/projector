@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { ORIGIN, directionLinks, findBuilding, heightOf, placeParts, project, roomOf, simplify, toPath, unproject } from "./campusMap.js";
+import { ORIGIN, buildingLook, directionLinks, findBuilding, heightOf, natureLayer, placeParts, project, roomOf, simplify, toPath, unproject } from "./campusMap.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const nameOf = (where) => findBuilding(where, places)?.name ?? null;
@@ -49,6 +49,38 @@ describe("campus map math", () => {
 
   it("keeps a whole-meter height on every named building", () => {
     expect(campus.buildings.every((b) => Number.isInteger(b.h) && b.h > 0)).toBe(true);
+  });
+
+  it("sorts OSM tags into nature layers", () => {
+    expect(natureLayer({ natural: "tree" })).toBe("trees");
+    expect(natureLayer({ natural: "tree_row" })).toBe("treeRows");
+    expect(natureLayer({ waterway: "river" })).toBe("river");
+    expect(natureLayer({ natural: "water", water: "river" })).toBe("water");
+    expect(natureLayer({ waterway: "riverbank" })).toBe("water");
+    expect(natureLayer({ landuse: "forest" })).toBe("wood");
+    expect(natureLayer({ natural: "scrub" })).toBe("wood");
+    expect(natureLayer({ landuse: "meadow" })).toBe("grass");
+    expect(natureLayer({ amenity: "parking" })).toBe("parking");
+    expect(natureLayer({ leisure: "pitch", name: "Sewell-Thomas" })).toBe("pitch");
+    expect(natureLayer({ highway: "footway" })).toBe("paths");
+    expect(natureLayer({ highway: "steps" })).toBe("paths");
+    expect(natureLayer({ highway: "service" })).toBe("roads");
+    expect(natureLayer({ highway: "primary" })).toBe("roads");
+    // A parking deck is a building, not a lot.
+    expect(natureLayer({ amenity: "parking", building: "parking" })).toBe(null);
+    expect(natureLayer({ leisure: "stadium" })).toBe(null);
+    expect(natureLayer({})).toBe(null);
+  });
+
+  it("keeps a building's colors and roof from OSM, or nothing", () => {
+    expect(buildingLook({ "building:colour": "Red", "roof:colour": "#AABBCC", "roof:shape": "gabled", "building:material": "brick" })).toEqual({
+      colour: "red",
+      roof: "#aabbcc",
+      roofShape: "gabled",
+      material: "brick",
+    });
+    expect(buildingLook({ "roof:shape": " flat " })).toEqual({ roofShape: "flat" });
+    expect(buildingLook({ building: "yes" })).toBe(null);
   });
 });
 

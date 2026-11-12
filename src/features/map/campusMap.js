@@ -71,6 +71,32 @@ export function heightOf(tags = {}) {
   return Math.round(h);
 }
 
+const PATHS = new Set(["footway", "path", "pedestrian", "cycleway", "steps"]);
+
+/** Which campus-nature.json layer an OSM feature belongs in, or null. Buildings never go in one (a parking deck is a building, not a lot). */
+export function natureLayer(t = {}) {
+  if (t.building) return null;
+  if (t.natural === "tree") return "trees";
+  if (t.natural === "tree_row") return "treeRows";
+  if (t.waterway === "river") return "river";
+  if (t.natural === "water" || t.waterway === "riverbank") return "water";
+  if (t.landuse === "forest" || t.natural === "wood" || t.natural === "scrub") return "wood";
+  if (t.landuse === "grass" || t.landuse === "meadow") return "grass";
+  if (t.amenity === "parking") return "parking";
+  if (t.leisure === "pitch") return "pitch";
+  if (t.highway) return PATHS.has(t.highway) ? "paths" : "roads";
+  return null;
+}
+
+const LOOK_TAGS = { colour: "building:colour", roof: "roof:colour", roofShape: "roof:shape", material: "building:material" };
+
+/** A building's colors and roof from its OSM tags, lowercased, or null when OSM has none. */
+export function buildingLook(t = {}) {
+  const look = {};
+  for (const [k, tag] of Object.entries(LOOK_TAGS)) if (t[tag]) look[k] = String(t[tag]).trim().toLowerCase();
+  return Object.keys(look).length ? look : null;
+}
+
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 // Words that say which room or floor, not which building: "Bidgood Hall 116", "Room 1093", "1st Floor Lobby".
 // "Outside of BB Comer", "Near the Quad": the building comes after these.
