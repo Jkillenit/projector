@@ -194,15 +194,17 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   };
   const paintBuildings = (mesh, on, near) => {
     const attr = mesh.geometry.attributes.color;
-    const { owners, isRoof } = mesh.userData.merged;
+    const { owners, isRoof, isTrim } = mesh.userData.merged;
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
+    const stone = new THREE.Color(token("--map-path")); // landmark columns (#130): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
     for (const o of owners) {
       const look = looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : null;
       const wall = lit || color(look.colour, look.landmark ? landmark : brick);
       const roof = lit || color(look.roof, slates[roofTone(o.id, slates.length)]);
-      for (let v = o.start; v < o.end; v++) (isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
+      const trim = lit || stone;
+      for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
     }
     attr.needsUpdate = true;
   };

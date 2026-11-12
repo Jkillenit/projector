@@ -1,26 +1,32 @@
 // Pure: campus.json shapes as flat arrays the 3D view hands to three. Does not import three.
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { seedOf } from "../campusMap.js";
+import { landmarkShapes } from "./landmarks.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
- * Returns { positions, uvs (meters), isRoof: [per vertex], indices: all walls first, then all roofs, wallIndices: how many indices are walls,
+ * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim.
+ * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: all walls first, then all roofs, wallIndices: how many indices are walls,
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
 export function mergeBuildings(buildings) {
   const positions = [];
   const uvs = [];
   const isRoof = [];
+  const isTrim = [];
   const owners = [];
   const walls = { indices: [], owner: [] };
   const roofs = { indices: [], owner: [] };
   for (const b of buildings || []) {
     const start = positions.length / 3;
-    for (const s of extrudeRings(pathToRings(b.path), b.h)) {
+    for (const s of landmarkShapes(b) || extrudeRings(pathToRings(b.path), b.h)) {
       const base = positions.length / 3;
       for (const v of s.positions) positions.push(v);
       for (const v of s.uvs) uvs.push(v);
-      for (let v = 0; v < s.positions.length / 3; v++) isRoof.push(v >= s.wallVerts);
+      for (let v = 0; v < s.positions.length / 3; v++) {
+        isRoof.push(v >= s.wallVerts);
+        isTrim.push(!!s.trim);
+      }
       s.indices.forEach((i, k) => {
         const part = k < s.wallIndices ? walls : roofs;
         part.indices.push(base + i);
@@ -31,7 +37,7 @@ export function mergeBuildings(buildings) {
     if (end > start) owners.push({ id: b.id, start, end });
   }
   return {
-    positions, uvs, isRoof, owners,
+    positions, uvs, isRoof, isTrim, owners,
     indices: walls.indices.concat(roofs.indices),
     wallIndices: walls.indices.length,
     triOwner: walls.owner.concat(roofs.owner),
