@@ -1146,7 +1146,13 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .walk-steps button { display: flex; gap: 10px; width: 100%; min-height: 44px; padding: 8px 10px; text-align: left; font: inherit; color: var(--text); background: none; border: 1px solid transparent; border-radius: var(--r-md); cursor: pointer; }
 .walk-steps button::before { counter-increment: walk; content: counter(walk); flex: none; width: 1.6em; color: var(--muted); font-weight: 600; }
 .walk-steps button:hover { background: var(--surface-hover); }
-.walk-steps button.is-on { background: var(--accent-panel); border-color: var(--accent); }
+.walk-steps button.is-on { background: var(--accent-panel); border-color: var(--accent-text); }
+.map-body.is-steps { grid-template-columns: minmax(0, 560px); }
+@media (max-width: 899px) {
+  /* 3D map and walk controls: 44 px targets on touch screens (#69) */
+  .map-zoom .ui-btn--sm, .walk-head .ui-btn--sm, .walk-controls .ui-btn--sm { height: 44px; min-width: 44px; }
+  .map-tools .ui-seg-btn, .walk-side .ui-seg-btn { height: 44px; }
+}
 .map-zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
 .map-credit { position: absolute; right: 8px; bottom: 6px; font-size: 12px; color: var(--muted); background: var(--surface); padding: 1px 6px; border-radius: var(--r-sm); }
 .map-side { gap: 10px; max-height: 70vh; overflow: auto; }
