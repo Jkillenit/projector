@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A made up building traced the way docs/map-3d/tracing.md says (rule 14: never a real plan). One unit is half a meter. -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+     width="100" height="60" viewBox="0 0 100 60">
+  <g inkscape:groupmode="layer" inkscape:label="floor-1" transform="translate(5,5)">
+    <path inkscape:label="scale-10" d="M 0,50 H 20" stroke="#000" fill="none"/>
+    <path inkscape:label="outline" d="M 0,0 H 80 V 40 H 0 Z" stroke="#000" fill="none"/>
+    <path inkscape:label="walk" d="m 40,0 v 20 M 0,20 H 80" stroke="#00f" fill="none"/>
+    <rect inkscape:label="room-101" x="50" y="24" width="20" height="16" fill="#fcc"/>
+    <circle inkscape:label="door-101" cx="60" cy="24" r="1"/>
+    <circle inkscape:label="entrance-north main stepfree" cx="40.4" cy="0" r="1"/>
+    <path inkscape:label="stairs-a" sodipodi:type="arc" sodipodi:cx="10" sodipodi:cy="20" sodipodi:rx="1" sodipodi:ry="1" d="M 11,20 A 1,1 0 1 1 9,20 A 1,1 0 1 1 11,20 Z"/>
+    <ellipse inkscape:label="elevator-1" cx="74" cy="20.6" rx="1" ry="1"/>
+    <text inkscape:label="landmark" x="30" y="22" font-size="3"><tspan x="30" y="22">Vending machines</tspan></text>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="floor-2" transform="translate(5,5)" style="display:none">
+    <path inkscape:label="outline" d="M 0,0 H 80 V 40 H 0 Z" stroke="#000" fill="none"/>
+    <path inkscape:label="walk" d="M 0,20 H 80" stroke="#00f" fill="none"/>
+    <rect inkscape:label="room-201" x="50" y="24" width="20" height="16" fill="#fcc"/>
+    <circle inkscape:label="door-201" cx="60" cy="24" r="1"/>
+    <circle inkscape:label="stairs-a" cx="10" cy="20" r="1"/>
+    <circle inkscape:label="elevator-1" cx="74" cy="20" r="1"/>
+  </g>
+</svg>
