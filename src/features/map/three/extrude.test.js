@@ -38,6 +38,12 @@ describe("extrudeRings", () => {
     expect(shape.positions).toHaveLength(16 * 3);
     expect(shape.indices).toHaveLength(4 * 6);
   });
+  it("walls: false gives a flat top only", () => {
+    const [shape] = extrudeRings(pathToRings(SQUARE), 0.5, { walls: false });
+    expect(shape.positions.filter((_, i) => i % 3 === 1)).toEqual([0.5, 0.5, 0.5, 0.5]);
+    expect(shape.positions).toHaveLength(4 * 3);
+    expect(shape.indices).toHaveLength(2 * 3);
+  });
   it("a square gives 4 walls and a 2 triangle roof", () => {
     const [shape] = extrudeRings(pathToRings(SQUARE), 12);
     expect(shape.positions).toHaveLength((16 + 4) * 3);

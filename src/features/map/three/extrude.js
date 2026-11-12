@@ -49,10 +49,10 @@ function triangulate(ring) {
 
 /**
  * One shape per ring: { positions: [x,y,z,...], indices: [...] }.
- * Walls get their own corners (for flat shading); the roof sits at height h. roof: false gives walls only.
+ * Walls get their own corners (for flat shading); the roof sits at height h. roof: false gives walls only, walls: false a flat top only.
  * shortcut: every ring is its own solid, so a courtyard ring becomes a block, not a hole; add holes if a real building needs one.
  */
-export function extrudeRings(rings, h, { roof: withRoof = true } = {}) {
+export function extrudeRings(rings, h, { roof: withRoof = true, walls = true } = {}) {
   const shapes = [];
   for (const raw of rings || []) {
     if (!Array.isArray(raw) || raw.length < 3 || !(h > 0)) continue;
@@ -60,7 +60,7 @@ export function extrudeRings(rings, h, { roof: withRoof = true } = {}) {
     if (area2(ring) === 0) continue;
     const positions = [];
     const indices = [];
-    ring.forEach(([ax, az], i) => {
+    if (walls) ring.forEach(([ax, az], i) => {
       const [bx, bz] = ring[(i + 1) % ring.length];
       const v = positions.length / 3;
       positions.push(ax, 0, az, bx, 0, bz, bx, h, bz, ax, h, az);

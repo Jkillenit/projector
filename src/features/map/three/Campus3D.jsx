@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { pathToRings } from "./extrude.js";
-import { mergeBuildings, roadSegments } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
 import { flyPath, viewFor } from "./camera.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
@@ -11,7 +11,7 @@ const FLY_MS = 1500;
 const TO_2D = " Showing the 2D map.";
 
 /** Builds the scene once. Returns { setPicked, setPins, fly, zoom, reset, dispose }. */
-function setup(three, host, { buildings, center, onPick }) {
+function setup(three, host, { buildings, center, nature, onPick }) {
   const stage = createStage(three, host, { theme: () => theme() });
   const { THREE, camera, controls, render, add, geometry, solid, renderer } = stage;
   controls.minDistance = 60;
@@ -23,13 +23,35 @@ function setup(three, host, { buildings, center, onPick }) {
   };
   home();
 
+  // The ground: flat layers drawn bottom first, without depth, so they never flicker against each other.
+  // shortcut: the river line is left out, the water outlines already cover it; draw it if a gap shows.
+  const flat = (geo, order) => {
+    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide })));
+    m.renderOrder = order - 100;
+    m.position.y = order * 0.05;
+    return m;
+  };
   const [x0, y0, x1, y1] = campus.bounds;
-  const ground = add(new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshLambertMaterial()));
+  const ground = flat(new THREE.PlaneGeometry(20000, 20000), -1);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set((x0 + x1) / 2, -0.1, (y0 + y1) / 2);
+  ground.position.x = (x0 + x1) / 2;
+  ground.position.z = (y0 + y1) / 2;
+  const ribbons = (name) => {
+    const s = { positions: [], indices: [] };
+    if (name === "paths") addRibbons(s, nature.paths, PATH_WIDTH);
+    else for (const [type, d] of Object.entries(nature.roads)) addRibbons(s, d, roadWidth(type));
+    return geometry(s.positions, s.indices);
+  };
+  const layers = GROUND_LAYERS.map((name, i) => {
+    const geo = name === "roads" || name === "paths" ? ribbons(name) : solid(pathToRings(nature[name]), 0.01, { walls: false });
+    const m = flat(geo, i);
+    m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
+    return m;
+  });
   const areas = add(new THREE.Mesh(solid(campus.areas.flatMap((a) => pathToRings(a.path)), 0.3), new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.25 })));
-  const roads = add(new THREE.LineSegments(geometry(roadSegments(campus.roads, 0.5)), new THREE.LineBasicMaterial()));
-  const context = add(new THREE.Mesh(solid(pathToRings(campus.context), 3), new THREE.MeshLambertMaterial()));
+  // Unnamed buildings at their own heights, one mesh.
+  const others = mergeBuildings(nature.outlines);
+  const context = add(new THREE.Mesh(geometry(others.positions, others.indices), new THREE.MeshLambertMaterial()));
 
   // Named buildings: one mesh, colored per vertex so one building can light up.
   const merged = mergeBuildings(buildings);
@@ -59,7 +81,7 @@ function setup(three, host, { buildings, center, onPick }) {
   function theme() {
     ground.material.color.set(token("--map-ground"));
     areas.material.color.set(token("--map-grass"));
-    roads.material.color.set(token("--map-road"));
+    for (const m of layers) m.material.color.set(token(m.userData.token));
     context.material.color.set(token("--map-building"));
     edges.material.color.set(token("--map-roof"));
     classMat.color.set(token("--good"));
@@ -173,10 +195,11 @@ export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, o
       onFail(NO_WEBGL + TO_2D);
       return undefined;
     }
-    loadThree()
-      .then((three) => {
+    // Ground and other buildings load only with the scene, so the 2D map stays light.
+    Promise.all([loadThree(), import("../campus-nature.json")])
+      .then(([three, { default: nature }]) => {
         if (gone) return;
-        scene.current = setup(three, host.current, { buildings, center, onPick: pick });
+        scene.current = setup(three, host.current, { buildings, center, nature, onPick: pick });
         setReady(true);
       })
       .catch(() => !gone && onFail(NO_LOAD + TO_2D));
