@@ -1148,6 +1148,12 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .walk-steps button:hover { background: var(--surface-hover); }
 .walk-steps button.is-on { background: var(--accent-panel); border-color: var(--accent-text); }
 .walk-photo { display: block; width: 100%; max-height: 240px; object-fit: contain; border: 1px solid var(--border); border-radius: var(--r-md); }
+/* Floor plan importer (#62, dev only) */
+.plan-preview { display: block; width: 100%; max-width: 560px; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md); }
+.plan-campus { fill: var(--border); stroke: var(--muted); stroke-width: 0.3; }
+.plan-outline { fill: none; stroke: var(--accent-text); stroke-width: 0.6; }
+.plan-room { fill: var(--accent-panel); stroke: var(--accent-text); stroke-width: 0.25; }
+.plan-walk { fill: none; stroke: var(--accent-text); stroke-width: 0.4; stroke-dasharray: 1 1; }
 .map-body.is-steps { grid-template-columns: minmax(0, 560px); }
 @media (max-width: 899px) {
   /* 3D map and walk controls: 44 px targets on touch screens (#69) */

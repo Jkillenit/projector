@@ -28,6 +28,7 @@ import { useUpcoming } from "../shell/useUpcoming.js";
 
 // The map carries the campus outlines (about 300 KB), so it loads only when opened.
 const MapScreen = lazy(() => import("../features/map/MapScreen.jsx").then((m) => ({ default: m.MapScreen })));
+const PlanImporter = lazy(() => import("../features/map/importer/PlanImporter.jsx").then((m) => ({ default: m.PlanImporter })));
 
 const THEME_KEY = "fd.theme";
 
@@ -150,7 +151,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   else if (route.name === "map") screen = <Suspense fallback={<div className="page" aria-busy="true" />}><MapScreen query={route.query.q} placeId={route.query.place} addKind={route.query.add} addTitle={route.query.title} walk={route.query.walk} room={route.query.room} /></Suspense>;
   else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
   else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
-  else if (route.name === "dev") screen = <UiGallery />;
+  else if (route.name === "dev") screen = route.parts[0] === "plan" ? <Suspense fallback={<div className="page" aria-busy="true" />}><PlanImporter /></Suspense> : <UiGallery />;
   else screen = <FrontDoorScreen profile={profile} mode={mode} expired={expired} onSignIn={signIn} gradesShown={gradesShown} onGradesShown={setGradesShown} actions={actions} />;
 
   const paletteActions = [
