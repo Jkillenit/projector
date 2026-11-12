@@ -63,6 +63,8 @@ describe("campus map math", () => {
     expect(natureLayer({ leisure: "park", name: "The Quad" })).toBe("grass");
     expect(natureLayer({ amenity: "parking" })).toBe("parking");
     expect(natureLayer({ leisure: "pitch", name: "Sewell-Thomas" })).toBe("pitch");
+    expect(natureLayer({ leisure: "track", sport: "running" })).toBe("track");
+    expect(natureLayer({ amenity: "university", name: "The University of Alabama" })).toBe("campus");
     expect(natureLayer({ highway: "footway" })).toBe("paths");
     expect(natureLayer({ highway: "steps" })).toBe("paths");
     expect(natureLayer({ highway: "service" })).toBe("roads");
