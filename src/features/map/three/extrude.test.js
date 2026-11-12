@@ -33,6 +33,11 @@ describe("pathToRings", () => {
 });
 
 describe("extrudeRings", () => {
+  it("roof: false gives the walls only", () => {
+    const [shape] = extrudeRings(pathToRings(SQUARE), 1.2, { roof: false });
+    expect(shape.positions).toHaveLength(16 * 3);
+    expect(shape.indices).toHaveLength(4 * 6);
+  });
   it("a square gives 4 walls and a 2 triangle roof", () => {
     const [shape] = extrudeRings(pathToRings(SQUARE), 12);
     expect(shape.positions).toHaveLength((16 + 4) * 3);

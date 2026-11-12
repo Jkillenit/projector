@@ -147,7 +147,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   else if (route.name === "ask") screen = <AskScreen profile={profile} seed={askSeed} actions={actions} />;
   else if (route.name === "campus") screen = <CampusScreen profile={profile} section={route.parts[0]} resourceId={route.parts[0] === "r" ? route.parts[1] : null} actions={actions} />;
   else if (route.name === "events") screen = <EventsScreen profile={profile} />;
-  else if (route.name === "map") screen = <Suspense fallback={<div className="page" aria-busy="true" />}><MapScreen query={route.query.q} placeId={route.query.place} addKind={route.query.add} addTitle={route.query.title} /></Suspense>;
+  else if (route.name === "map") screen = <Suspense fallback={<div className="page" aria-busy="true" />}><MapScreen query={route.query.q} placeId={route.query.place} addKind={route.query.add} addTitle={route.query.title} walk={route.query.walk} room={route.query.room} /></Suspense>;
   else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
   else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
   else if (route.name === "dev") screen = <UiGallery />;

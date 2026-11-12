@@ -7,5 +7,7 @@ const isLive = typeof window !== "undefined" && window.studyHub?.mode === "live"
 
 /** Buildings drawn on the map: campus.json, plus Demo Hall in Demo mode. */
 export const BUILDINGS = isLive ? campus.buildings : [...campus.buildings, footprint(demoHall)];
+/** Indoor files we have (#60). Demo mode: Demo Hall. Live mode loads real ones from this computer later (#63). */
+export const INDOOR = isLive ? [] : [demoHall];
 /** Everything a place name can match: buildings and named areas like the Quad. */
 export const PLACES = [...BUILDINGS, ...campus.areas];
