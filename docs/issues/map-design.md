@@ -1,6 +1,6 @@
 # Map design issues
 
-Every issue for the map design push. Scope: [docs/map-design/scope.md](../map-design/scope.md). Keys D00 to D23, milestone "Map design". D18 to D23 come from self review 1 ([docs/map-design/review-1.md](../map-design/review-1.md)).
+Every issue for the map design push. Scope: [docs/map-design/scope.md](../map-design/scope.md). Keys D00 to D27, milestone "Map design". D18 to D23 come from self review 1, D24 to D27 from the comparison with UA's map ([docs/map-design/review-1.md](../map-design/review-1.md)).
 
 ```
 node scripts/create-issues.mjs docs/issues/map-design.md --dry-run
@@ -39,11 +39,17 @@ L (split into the issues below)
 - [ ] #{{D06}} Pins and labels in the scene
 - [ ] #{{D07}} The scene becomes the map, SVG is the fallback
 
-**Phase 3: semi-realistic look**
+**Phase 3: semi-realistic look, and clear the bar set by UA's map** (order matters: data first)
 - [ ] #{{D08}} Textures made in code: grass, asphalt, concrete, water, roofs
 - [ ] #{{D09}} Buildings that look like UA: brick, windows, roof colors
+- [ ] #{{D20}} One OSM rebuild: lawns, campus edge, sports and street names
+- [ ] #{{D24}} Campus palette: green campus, dark roads, slate roofs
+- [ ] #{{D18}} A real skyline: building heights that vary
 - [ ] #{{D10}} Trees: placed from OSM and filled in
 - [ ] #{{D11}} Light and shadows, with quality tiers
+- [ ] #{{D25}} Sports fields that look like fields
+- [ ] #{{D26}} Parking lots with stall lines
+- [ ] #{{D27}} Street names
 
 **Phase 4: alive**
 - [ ] #{{D12}} Time of day: sun, sky and night lights follow the clock
@@ -51,9 +57,7 @@ L (split into the issues below)
 - [ ] #{{D14}} People and cars on the paths and roads
 - [ ] #{{D15}} Seasons and game day dressing
 
-**Review fixes (self review 1, `docs/map-design/review-1.md`)**
-- [ ] #{{D20}} Lawns that look like lawns: rebuild the OSM data
-- [ ] #{{D18}} A real skyline: building heights that vary
+**Polish (from self review 1, `docs/map-design/review-1.md`)**
 - [ ] #{{D19}} Textures that hold up at a distance
 - [ ] #{{D21}} Names for the buildings students look for
 - [ ] #{{D22}} Parking decks and towers without house windows
@@ -69,6 +73,7 @@ L (split into the issues below)
 - [ ] In Demo mode, at laptop and phone width: open the map in 2.5D, switch to Map and 3D and back, tap a building, walk to a class. It looks like the same place in every view.
 - [ ] Text only mode and the no-WebGL fallback still work.
 - [ ] Every CC0 asset is listed in `public/map-assets/CREDITS.md`.
+- [ ] Side by side with UA's map at the same framing, light and dark: every row of the bar in `docs/map-design/scope.md` is met.
 
 <!-- issue key=D01 labels="map-design,must" milestone="Map design" -->
 # Widen the OSM build: nature, paths, parking and building looks
@@ -332,7 +337,7 @@ M
 
 #{{D08}}
 
-<!-- issue key=D10 labels="map-design,should" milestone="Map design" -->
+<!-- issue key=D10 labels="map-design,must" milestone="Map design" -->
 # Trees: placed from OSM and filled in
 
 ## Story
@@ -343,7 +348,7 @@ so that the campus looks green like it really is.
 
 ## Priority (MoSCoW)
 
-Should
+Must (raised after comparing with UA's map: trees are most of its look)
 
 ## Size
 
@@ -351,8 +356,12 @@ M
 
 ## Acceptance criteria
 
-- [ ] 2 or 3 CC0 tree models, loaded with three's `GLTFLoader` (no new package). Listed in `CREDITS.md`.
+- [ ] Simple crowns made in code first (a few lumpy shapes, two or three sizes). CC0 models with three's `GLTFLoader` only if they look clearly better from above; then they go in `public/map-assets/` and `CREDITS.md`.
 - [ ] Trees at OSM tree points and along tree rows.
+- [ ] Street trees in rows along both sides of campus roads, set back from the curb, skipped at buildings, driveways and parking.
+- [ ] Lawns get clusters toward their edges and scattered trees in the middle, the way the Quad looks.
+- [ ] At the default 2.5D zoom, campus reads as tree lined, like UA's map (see the bar in `scope.md`).
+- [ ] Crown color comes from tokens, so seasons (#{{D15}}) can turn them.
 - [ ] Woods and big lawns get extra trees from a fixed seed, so every load looks the same. Never on roads, paths, water or buildings.
 - [ ] Drawn with `InstancedMesh`: one draw call per model.
 - [ ] Pure, tested: seeded placement gives the same points each time and none land inside a building or on a road.
@@ -381,6 +390,7 @@ M
 ## Acceptance criteria
 
 - [ ] Sun shadows from buildings and trees on the ground.
+- [ ] In Map and 2.5D at the default zoom, every building and tree has a soft shadow, so the view has depth like UA's map. Check this view first.
 - [ ] A light haze toward the edges so the campus has depth.
 - [ ] Quality tiers: High (desktop, shadows on), Low (phone, simple dark patch under each building instead of real shadows, pixel ratio 1). Picked by device. Pure, tested.
 - [ ] Dark theme still looks right.
@@ -536,7 +546,7 @@ S
 ## Story
 
 As a student
-I want Denny Chimes, the Bryant-Denny bowl and Gorgas Library's columns to look like themselves
+I want Denny Chimes and Gorgas Library's columns to look like themselves
 so that I can find my bearings from landmarks.
 
 ## Priority (MoSCoW)
@@ -549,7 +559,7 @@ M
 
 ## Acceptance criteria
 
-- [ ] Simple shapes made in code (no scanned models): the Denny Chimes tower, the stadium bowl, Gorgas's front columns.
+- [ ] Simple shapes made in code (no scanned models): the Denny Chimes tower and Gorgas's front columns. The stadium bowl moved to #{{D25}}.
 - [ ] They replace the plain raised outline for those buildings and stay tappable.
 - [ ] Phone tier keeps them simple.
 
@@ -557,7 +567,7 @@ M
 
 #{{D09}}
 
-<!-- issue key=D18 labels="map-design,should" milestone="Map design" -->
+<!-- issue key=D18 labels="map-design,must" milestone="Map design" -->
 # A real skyline: building heights that vary
 
 ## Story
@@ -570,7 +580,7 @@ Found in self review 1 (`docs/map-design/review-1.md`, item 1).
 
 ## Priority (MoSCoW)
 
-Should
+Must (shadows and the 2.5D view need real size differences)
 
 ## Size
 
@@ -618,30 +628,32 @@ S
 #{{D09}}
 
 <!-- issue key=D20 labels="map-design,must" milestone="Map design" -->
-# Lawns that look like lawns: rebuild the OSM data
+# One OSM rebuild: lawns, campus edge, sports and street names
 
 ## Story
 
 As a student
-I want the Quad and the parks to look like grass
-so that I can see the green spaces I walk across.
+I want the map built from fresh, fuller OpenStreetMap data
+so that lawns, the campus edge, sports fields and street names can all show.
 
-Found in self review 1 (`docs/map-design/review-1.md`, item 3).
+Found in self review 1 (`docs/map-design/review-1.md`, item 3) and the comparison with UA's map (`docs/map-design/scope.md`, the bar). One rebuild for all of these, so the data changes once.
 
 ## Priority (MoSCoW)
 
-Must
+Must. Do first: #{{D24}}, #{{D25}} and #{{D27}} need its data.
 
 ## Size
 
-S
+M
 
 ## Acceptance criteria
 
-- [ ] Save a fresh Overpass answer and run `node scripts/build-campus-map.mjs` so named parks land in the grass layer (`natureLayer` already counts `leisure=park` as grass since #121).
-- [ ] Check the diff: no named building lost, ids used by Demo data still there.
-- [ ] The Quad shows the grass texture, not the see-through area tint.
-- [ ] Grass stays clearly green next to the ground in both themes (a contrast test pair).
+- [ ] Named parks land in the grass layer (`natureLayer` already counts `leisure=park` as grass since #121). The Quad shows the grass texture, not the see-through tint.
+- [ ] The campus edge (`amenity=university` outline) is saved, for the green campus ground (#{{D24}}).
+- [ ] Sports areas keep their `sport` tag (american_football, baseball, softball, soccer, tennis, ...), and `leisure=track` is saved, for #{{D25}}.
+- [ ] Road names are saved with the roads, for #{{D27}}.
+- [ ] The Overpass query in `scripts/build-campus-map.mjs` lists the new tags. Pure, tested: the new layer rules.
+- [ ] Check the diff: no named building lost, ids used by Demo data still there. `campus.json` (first screen) stays about the same size; the new data goes in `campus-nature.json`.
 
 ## Depends on
 
@@ -732,3 +744,122 @@ XS
 ## Depends on
 
 #{{D07}}
+
+<!-- issue key=D24 labels="map-design,must" milestone="Map design" -->
+# Campus palette: green campus, dark roads, slate roofs
+
+## Story
+
+As a student
+I want the campus to look green with roads that stand out
+so that I can see where campus is and how to get around at a glance.
+
+From the comparison with UA's map (`docs/map-design/scope.md`, the bar).
+
+## Priority (MoSCoW)
+
+Must
+
+## Size
+
+M
+
+## Acceptance criteria
+
+- [ ] Inside the campus edge the ground is lawn (grass texture). Outside it stays plain and quieter, so campus stands out.
+- [ ] Roads are dark charcoal and sidewalks and paths light, like a finished map. Roads read at a glance on grass and on plain ground. The contrast test is updated to hold this.
+- [ ] Roofs vary: a few slate and gray tones (tokens), picked per building from a fixed seed. OSM `roof:colour` still wins. Tappable and background buildings still look different (#118).
+- [ ] The pick color still clears 3 to 1 on every new ground and roof color.
+- [ ] Light and dark both checked on screen. The flat SVG fallback gets the same colors.
+
+## Depends on
+
+#{{D20}}
+
+<!-- issue key=D25 labels="map-design,should" milestone="Map design" -->
+# Sports fields that look like fields
+
+## Story
+
+As a student
+I want the stadium, the fields and the track to look like what they are
+so that I can find Bryant-Denny, the rec fields and the track at a glance.
+
+From the comparison with UA's map, and self review 1 item 6 (the stadium is an empty gray oval today).
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+M
+
+## Acceptance criteria
+
+- [ ] Bryant-Denny Stadium: a simple bowl made in code (stands around a green field), tappable as the stadium. Moved here from #{{D17}}.
+- [ ] Football and soccer fields: mown stripes and white lines. Baseball and softball: a diamond and infield dirt. Tennis: courts. The track: a red oval with lanes.
+- [ ] Picked by the OSM `sport` tag and `leisure=track` (#{{D20}}). Unknown sports stay plain pitch green.
+- [ ] Textures made in code, like #121. Pure, tested: which look a field gets from its tags, and the field's long axis from its outline.
+
+## Depends on
+
+#{{D20}}
+
+<!-- issue key=D26 labels="map-design,should" milestone="Map design" -->
+# Parking lots with stall lines
+
+## Story
+
+As a student who drives
+I want parking lots to show their rows of stalls
+so that I can tell a lot from a road or a plaza.
+
+From the comparison with UA's map.
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Lots show white stall lines in rows, lined up with the lot's long side.
+- [ ] Made in code, no image file. Lines fade out when zoomed far out so lots do not shimmer.
+- [ ] Pure, tested: a lot's long axis from its outline.
+
+## Depends on
+
+#{{D09}}
+
+<!-- issue key=D27 labels="map-design,should,a11y" milestone="Map design" -->
+# Street names
+
+## Story
+
+As a student
+I want to see street names like University Boulevard and Hackberry Lane
+so that I can match the map to the signs and to directions people give me.
+
+From the comparison with UA's map.
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Main road names show along the road in the scene, readable in every view, and thin out like building names (#{{D06}}).
+- [ ] They give way to building names and never cover a pin.
+- [ ] Names come from OSM (#{{D20}}). Pure, tested: where a name goes on its road.
+
+## Depends on
+
+#{{D20}}
