@@ -272,7 +272,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     if (bowl) {
       const id = bowl.userData.id;
       const lit = id === picked ? on : id === hovered ? near : null;
-      BOWL_PARTS.forEach((p, k) => bowl.material[k].color.set(lit || (p === "seat" ? 0xffffff : token(BOWL_TOKENS[p]))));
+      BOWL_PARTS.forEach((p, k) => bowl.material[k].color.set(lit || (p === "seat" || p === "bench" ? 0xffffff : token(BOWL_TOKENS[p]))));
     }
     for (const [mesh, base, alpha] of [[areas, new THREE.Color(token("--map-grass")), 0.25]]) {
       const attr = mesh.geometry.attributes.color;
@@ -308,11 +308,14 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       m.material.needsUpdate = true;
     }
     if (bowl) {
-      const seats = bowl.material[BOWL_PARTS.indexOf("seat")];
-      seats.map?.dispose();
-      seats.map = new THREE.CanvasTexture(fieldCanvas("seats", colors));
-      Object.assign(seats.map, { wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, colorSpace: THREE.SRGBColorSpace, anisotropy: renderer.capabilities.getMaxAnisotropy() });
-      seats.needsUpdate = true;
+      // Crimson chairbacks and grey aluminum bleachers: one seat tile, two colors.
+      for (const [part, seat] of [["seat", colors.seat], ["bench", token("--map-slate-1")]]) {
+        const seats = bowl.material[BOWL_PARTS.indexOf(part)];
+        seats.map?.dispose();
+        seats.map = new THREE.CanvasTexture(fieldCanvas("seats", { ...colors, seat }));
+        Object.assign(seats.map, { wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, colorSpace: THREE.SRGBColorSpace, anisotropy: renderer.capabilities.getMaxAnisotropy() });
+        seats.needsUpdate = true;
+      }
     }
     trunkMat.color.set(token("--map-trunk"));
     paint(true);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOWL, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, rayOut, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
+import { BOWL, BOWL_PARTS, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, rayOut, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
 import { inRing } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import nature from "../campus-nature.json";
@@ -163,10 +163,15 @@ describe("stadiumBowl", () => {
   const ys = (part) => bowl.groups[part].map((i) => bowl.positions[i * 3 + 1]);
   it("builds every part of Bryant-Denny", () => {
     expect(bowl).not.toBe(null);
-    for (const part of ["seat", "suite", "wall", "pad", "roof", "board"]) expect(bowl.groups[part].length).toBeGreaterThan(0);
+    for (const part of BOWL_PARTS) expect(bowl.groups[part].length).toBeGreaterThan(0);
     expect(Math.max(...ys("seat"))).toBe(BOWL.top);
     expect(Math.max(...ys("board"))).toBeGreaterThan(BOWL.top);
     expect(bowl.uvs.length).toBe((bowl.positions.length / 3) * 2);
+  });
+  it("keeps crimson chairbacks to the lower sidelines; the rest of the lower bowl is bleachers", () => {
+    expect(Math.max(...ys("bench"))).toBe(BOWL.mid);
+    expect(Math.min(...ys("seat"))).toBe(BOWL.pad); // some lower bowl is still crimson
+    expect(bowl.groups.bench.length).toBeGreaterThan(bowl.groups.seat.length / 4);
   });
   it("hugs the field: the first row is close to it, but never on it", () => {
     const f = longAxis(field);
