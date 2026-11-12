@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
-import { fieldUV, markedFields, stadiumBowl, underBowl } from "./fields.js";
+import { BOWL, BOWL_PARTS, fieldUV, markedFields, stadiumBowl, underBowl } from "./fields.js";
 import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
@@ -75,16 +75,16 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const fieldMeshes = [];
   {
     const order = GROUND_LAYERS.indexOf("pitch") + 0.5;
-    const all = markedFields(nature);
+    const all = markedFields(nature, { stadium: stadiumRing });
     for (const look of FIELD_LOOKS) {
       const s = { positions: [], indices: [], uvs: [] };
       for (const f of all) {
         if (f.look !== look) continue;
-        for (const shape of extrudeRings([f.ring], 0.01, { walls: false })) {
+        for (const shape of f.shape ? [f.shape] : extrudeRings([f.ring], 0.01, { walls: false })) {
           const base = s.positions.length / 3;
           s.positions.push(...shape.positions);
           s.indices.push(...shape.indices.map((i) => base + i));
-          s.uvs.push(...fieldUV(shape.positions, f.frame, look));
+          s.uvs.push(...(f.frame ? fieldUV(shape.positions, f.frame, look) : new Array((shape.positions.length / 3) * 2).fill(0)));
         }
       }
       if (!s.indices.length) continue;
@@ -97,18 +97,26 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       fieldMeshes.push(m);
     }
   }
-  // Bryant-Denny (#150): stands around the field, tappable as the stadium.
+  // Bryant-Denny (#150): a bowl that hugs the field, tappable as the stadium. One material per part (seats, suites, walls...).
   const bowl = (() => {
-    const [area, field] = [stadiumArea, campus.areas.find((a) => a.name === STADIUM.field)];
+    const field = campus.areas.find((a) => a.name === STADIUM.field);
     const shape = stadiumRing && field && stadiumBowl(stadiumRing, pathToRings(field.path)[0]);
     if (!shape) return null;
-    const geo = geometry(shape.positions, shape.indices);
-    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(shape.positions.length), 3));
-    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+    const indices = BOWL_PARTS.flatMap((p) => shape.groups[p]);
+    const geo = geometry(shape.positions, indices);
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(shape.uvs, 2));
+    let at = 0;
+    BOWL_PARTS.forEach((p, k) => {
+      geo.addGroup(at, shape.groups[p].length, k);
+      at += shape.groups[p].length;
+    });
+    const mats = BOWL_PARTS.map(() => new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }));
+    const m = add(new THREE.Mesh(geo, mats));
     m.castShadow = m.receiveShadow = true;
-    m.userData = { id: area.id, isSeat: shape.isSeat, merged: { triOwner: new Array(shape.indices.length / 3).fill(area.id) } };
+    m.userData = { id: stadiumArea.id, merged: { triOwner: new Array(indices.length / 3).fill(stadiumArea.id) } };
     return m;
   })();
+  const BOWL_TOKENS = { suite: "--map-road", wall: "--map-brick", pad: "--map-landmark", roof: "--map-slate-3", board: "--map-road" };
 
   // Buildings (#122): brick walls with a window per bay and floor, textured roofs. Walls and roofs are two groups of one mesh,
   // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
@@ -189,7 +197,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     };
     const shadeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
     const rings = [];
-    for (const b of [...buildings, ...outlines]) {
+    for (const b of [...buildings, ...outlines, ...(bowl ? [{ path: stadiumArea.path, h: BOWL.top }] : [])]) {
       const [dx, dz] = shadowOffset(Math.min(b.h || 0, 40) * 0.5);
       for (const r of pathToRings(b.path)) rings.push(r.map(([x, z]) => [x + dx, z + dz]));
     }
@@ -227,8 +235,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     el.className = "map-3d-label";
     el.textContent = p.name;
     const o = new CSS2DObject(el);
-    o.position.set(p.c[0], (p.h || 0) + 2, p.c[1]);
-    o.userData = { id: p.id, name: p.name, rank: footprint(p.path) * (p.h ? 1 : 0.05) }; // areas give way to buildings
+    const h = bowl && p === stadiumArea ? BOWL.top : p.h; // the stadium's name sits on its rim, and wins like a building
+    o.position.set(p.c[0], (h || 0) + 2, p.c[1]);
+    o.userData = { id: p.id, name: p.name, rank: footprint(p.path) * (h ? 1 : 0.05) }; // areas give way to buildings
     labelGroup.add(o);
   }
 
@@ -261,12 +270,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     paintBuildings(town, on, near);
     if (all) paintBuildings(context);
     if (bowl) {
-      const { id, isSeat } = bowl.userData;
+      const id = bowl.userData.id;
       const lit = id === picked ? on : id === hovered ? near : null;
-      const [seat, wall] = [lit || new THREE.Color(token("--map-landmark")), lit || new THREE.Color(token("--map-context"))];
-      const attr = bowl.geometry.attributes.color;
-      isSeat.forEach((yes, v) => (yes ? seat : wall).toArray(attr.array, v * 3));
-      attr.needsUpdate = true;
+      BOWL_PARTS.forEach((p, k) => bowl.material[k].color.set(lit || (p === "seat" ? 0xffffff : token(BOWL_TOKENS[p]))));
     }
     for (const [mesh, base, alpha] of [[areas, new THREE.Color(token("--map-grass")), 0.25]]) {
       const attr = mesh.geometry.attributes.color;
@@ -287,7 +293,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     edges.material.color.set(token("--map-roof"));
     crownMat.color.set(token("--map-tree"));
     const pitch = new THREE.Color(token("--map-pitch"));
-    const colors = { pitch: `#${pitch.getHexString()}`, stripe: `#${pitch.clone().offsetHSL(0, 0, 0.035).getHexString()}`, line: token("--map-line"), dirt: token("--map-dirt"), track: token("--map-track") };
+    const colors = {
+      pitch: `#${pitch.getHexString()}`, stripe: `#${pitch.clone().offsetHSL(0, 0, 0.035).getHexString()}`, line: token("--map-line"), dirt: token("--map-dirt"),
+      track: token("--map-track"), endzone: token("--map-landmark"), seat: token("--map-landmark"), aisle: token("--map-context"),
+    };
     for (const m of fieldMeshes) {
       m.material.map?.dispose();
       const t = new THREE.CanvasTexture(fieldCanvas(m.userData.look, colors));
@@ -297,6 +306,13 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       t.anisotropy = renderer.capabilities.getMaxAnisotropy();
       m.material.map = t;
       m.material.needsUpdate = true;
+    }
+    if (bowl) {
+      const seats = bowl.material[BOWL_PARTS.indexOf("seat")];
+      seats.map?.dispose();
+      seats.map = new THREE.CanvasTexture(fieldCanvas("seats", colors));
+      Object.assign(seats.map, { wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, colorSpace: THREE.SRGBColorSpace, anisotropy: renderer.capabilities.getMaxAnisotropy() });
+      seats.needsUpdate = true;
     }
     trunkMat.color.set(token("--map-trunk"));
     paint(true);
@@ -492,7 +508,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
-      for (const t of [...Object.values(textures), wallMat, roofMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean)]) t.dispose();
+      for (const t of [...Object.values(textures), wallMat, roofMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },

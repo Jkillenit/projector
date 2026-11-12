@@ -139,20 +139,55 @@ export function textureCanvas(kind) {
   return canvases[kind];
 }
 
-/** Field textures (#150), painted in the theme's colors: { pitch, stripe, line, dirt, track }. Not cached, so a theme change repaints. */
-const FIELD_SIZE = { football: [512, 256], soccer: [512, 256], diamond: [512, 512], court: [256, 128], track: [64, 256], dirt: [8, 8] };
+/**
+ * Field textures (#150), painted in the theme's colors: { pitch, stripe, line, dirt, track, endzone, seat, aisle }.
+ * Not cached, so a theme change repaints.
+ */
+const FIELD_SIZE = { football: [1024, 512], stadium: [1024, 512], soccer: [512, 256], diamond: [1024, 1024], court: [256, 128], track: [64, 256], dirt: [8, 8], seats: [256, 256] };
+
+// A football field 120 yards with end zones, 53.3 wide: stripes every 5 yards, yard lines, hash marks, numbers.
+function gridiron(ctx, w, h, c, endzone) {
+  const yd = w / 120;
+  for (let i = 0; i < 24; i++) {
+    ctx.fillStyle = i % 2 ? c.pitch : c.stripe;
+    ctx.fillRect(i * 5 * yd, 0, 5 * yd + 1, h);
+  }
+  ctx.fillStyle = endzone;
+  ctx.fillRect(0, 0, 10 * yd, h);
+  ctx.fillRect(110 * yd, 0, 10 * yd, h);
+  const edge = h * 0.035; // the white border
+  ctx.fillStyle = c.line;
+  for (let y = 10; y <= 110; y += 5) ctx.fillRect(y * yd - 1.5, edge, y === 10 || y === 110 ? 5 : 3, h - edge * 2);
+  const across = h / 53.3; // px per yard across
+  for (let y = 11; y < 110; y++) {
+    if (y % 5 === 0) continue;
+    for (const at of [edge, h / 2 - 3.1 * across, h / 2 + 3.1 * across - 4, h - edge - 4]) ctx.fillRect(y * yd - 1, at, 2, 4); // hash marks
+  }
+  ctx.font = `bold ${Math.round(h * 0.07)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (let y = 20; y <= 100; y += 10) {
+    const label = String(y <= 60 ? y - 10 : 110 - y);
+    for (const [at, turn] of [[h * 0.17, Math.PI], [h * 0.83, 0]]) {
+      ctx.save();
+      ctx.translate(y * yd, at);
+      ctx.rotate(turn);
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    }
+  }
+  ctx.strokeStyle = c.line;
+  ctx.lineWidth = edge;
+  ctx.strokeRect(edge / 2, edge / 2, w - edge, h - edge);
+}
+
 const PAINT_FIELD = {
   football(ctx, w, h, c) {
-    const yd = w / 120; // 120 yards, end zones included
-    for (let i = 0; i < 12; i++) {
-      ctx.fillStyle = i === 0 || i === 11 ? c.stripe : i % 2 ? c.pitch : c.stripe;
-      ctx.fillRect(i * 10 * yd, 0, 10 * yd, h);
-    }
-    ctx.fillStyle = c.line;
-    for (let y = 10; y <= 110; y += 5) ctx.fillRect(y * yd - 1, 6, y % 10 ? 1.5 : 2.5, h - 12);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = c.line;
-    ctx.strokeRect(4, 4, w - 8, h - 8);
+    gridiron(ctx, w, h, c, c.stripe);
+  },
+  // Saban Field: crimson end zones (#150).
+  stadium(ctx, w, h, c) {
+    gridiron(ctx, w, h, c, c.endzone);
   },
   soccer(ctx, w, h, c) {
     for (let i = 0; i < 12; i++) {
@@ -171,34 +206,51 @@ const PAINT_FIELD = {
     for (const x of [4, w - 4 - 16.5 * mx]) ctx.strokeRect(x, h / 2 - 20.15 * my, 16.5 * mx, 40.3 * my);
     for (const x of [4, w - 4 - 5.5 * mx]) ctx.strokeRect(x, h / 2 - 9.15 * my, 5.5 * mx, 18.3 * my);
   },
+  // A ballpark 130 m square, home plate at the left middle (HOME_U in fields.js), center field to the right.
+  // Clay skin around the mound, grass infield, dirt circles at home and the mound, bases, foul lines, mowing checks.
   diamond(ctx, w, h, c) {
-    // Home plate near one end, the diamond pointing down the field. shortcut: home is always at the u = 0 end; OSM does not say which end it is.
-    for (let i = 0; i < 10; i++) {
-      ctx.fillStyle = i % 2 ? c.pitch : c.stripe;
-      ctx.fillRect((i * w) / 10, 0, w / 10 + 1, h);
-    }
-    const m = w / 110; // px per meter on a 110 m field
-    const [hx, hy] = [w * 0.08, h / 2];
-    const base = 27.4 * m;
-    const d = base / Math.SQRT2;
-    ctx.fillStyle = c.dirt;
-    ctx.beginPath();
-    ctx.arc(hx + 18.4 * m, hy, 29 * m, 0, Math.PI * 2);
-    ctx.fill();
+    const m = w / 130;
+    const [hx, hy] = [5 * m, h / 2];
+    const at = (x, y) => [hx + x * m, hy + y * m];
     ctx.fillStyle = c.pitch;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = c.stripe;
+    for (let i = 0; i * 8 * m < w; i++) for (let j = 0; j * 8 * m < h; j++) if ((i + j) % 2) ctx.fillRect(i * 8 * m, j * 8 * m, 8 * m + 1, 8 * m + 1);
+    const d = 27.43 / Math.SQRT2;
+    const circle = ([x, y], r) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r * m, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    ctx.fillStyle = c.dirt;
+    ctx.save();
+    ctx.beginPath(); // the skin stays a little past the foul lines
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(...at(80, -95));
+    ctx.lineTo(...at(80, 95));
+    ctx.clip();
+    circle(at(18.44, 0), 29);
+    ctx.restore();
+    ctx.fillStyle = c.pitch; // grass infield, inside the base paths
     ctx.beginPath();
-    ctx.moveTo(hx + 3 * m, hy);
-    ctx.lineTo(hx + d, hy - d + 3 * m);
-    ctx.lineTo(hx + 2 * d - 3 * m, hy);
-    ctx.lineTo(hx + d, hy + d - 3 * m);
+    for (const [x, y] of [[3.2, 0], [d, -d + 2.2], [2 * d - 2.2, 0], [d, d - 2.2]]) ctx.lineTo(...at(x, y));
     ctx.fill();
+    ctx.fillStyle = c.dirt;
+    circle(at(0, 0), 4);
+    circle(at(18.44, 0), 2.7);
     ctx.strokeStyle = c.line;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = Math.max(1.5, 0.15 * m * 2);
     ctx.beginPath();
-    ctx.moveTo(w, hy - (w - hx));
-    ctx.lineTo(hx, hy);
-    ctx.lineTo(w, hy + (w - hx));
+    for (const s of [-1, 1]) {
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(...at(130, 130 * s));
+    }
     ctx.stroke();
+    ctx.fillStyle = c.line;
+    for (const [x, y] of [[d, -d], [2 * d, 0], [d, d], [0, 0]]) {
+      const [px, py] = at(x, y);
+      ctx.fillRect(px - 0.5 * m, py - 0.5 * m, m, m);
+    }
   },
   court(ctx, w, h, c) {
     ctx.fillStyle = c.stripe;
@@ -230,8 +282,19 @@ const PAINT_FIELD = {
     ctx.fillStyle = c.dirt;
     ctx.fillRect(0, 0, w, h);
   },
+  // Stadium seats (SEATS in fields.js: 16 m along, 8 m up): rows of crimson seats, two aisles per tile.
+  seats(ctx, w, h, c) {
+    ctx.fillStyle = c.seat;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    for (let y = 0; y < h; y += h / 9) ctx.fillRect(0, y, w, 3); // the step under each row
+    ctx.globalAlpha = 0.45; // aisles read up close and fade into the seats from far away
+    ctx.fillStyle = c.aisle;
+    for (const x of [0, w / 2]) ctx.fillRect(x, 0, 5, h);
+    ctx.globalAlpha = 1;
+  },
 };
-export const FIELD_LOOKS = Object.keys(PAINT_FIELD);
+export const FIELD_LOOKS = Object.keys(PAINT_FIELD).filter((k) => k !== "seats");
 
 export function fieldCanvas(look, colors) {
   const c = document.createElement("canvas");
