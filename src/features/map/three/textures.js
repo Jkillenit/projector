@@ -4,6 +4,9 @@
 /** Meters one tile covers. Tiles repeat by world size, so a big lawn is not stretched. */
 export const TILE = { grass: 32, asphalt: 12, concrete: 6, water: 40, roof: 10 };
 
+/** One brick tile is one window bay wide and one floor tall (3.5 m, the floor height heightOf uses), so windows sit in rows by floor. */
+export const BRICK = { bay: 4, floor: 3.5 };
+
 /** UVs for flat shapes from their x and z: one tile every `tile` meters. positions is [x, y, z, ...]. */
 export function worldUV(positions, tile) {
   const uv = new Float32Array((positions.length / 3) * 2);
@@ -90,6 +93,32 @@ const PAINT = {
       ctx.fillStyle = `rgba(${g},${g},${g},0.6)`;
       for (let x = 0; x < SIZE; x += 8) ctx.fillRect(x, y + 2 * Math.sin((x / SIZE) * Math.PI * 4), 8, 2);
     }
+  },
+  brick(ctx, rand) {
+    // Courses 8 px tall, bricks 32 px long, every other course offset half a brick. 256 divides evenly, so it tiles.
+    ctx.fillStyle = "rgb(250,250,250)";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    for (let y = 0; y < SIZE; y += 8) {
+      const shift = (y / 8) % 2 ? 16 : 0;
+      for (let x = -16; x < SIZE; x += 32) {
+        const g = 195 + rand() * 45;
+        ctx.fillStyle = `rgb(${g},${g},${g})`;
+        ctx.fillRect(x + shift, y, 30, 6);
+      }
+    }
+    // One window per bay: light frame, dark glass, a cross of mullions, a sill.
+    const [wx, wy, ww, wh] = [88, 44, 80, 124];
+    ctx.fillStyle = "rgb(245,245,245)";
+    ctx.fillRect(wx - 6, wy - 6, ww + 12, wh + 12);
+    ctx.fillRect(wx - 10, wy + wh + 6, ww + 20, 6);
+    const glass = ctx.createLinearGradient(0, wy, 0, wy + wh);
+    glass.addColorStop(0, "rgb(110,110,110)");
+    glass.addColorStop(1, "rgb(60,60,60)");
+    ctx.fillStyle = glass;
+    ctx.fillRect(wx, wy, ww, wh);
+    ctx.fillStyle = "rgb(245,245,245)";
+    ctx.fillRect(wx + ww / 2 - 2, wy, 4, wh);
+    ctx.fillRect(wx, wy + wh / 3, ww, 4);
   },
   roof(ctx, rand) {
     noise(ctx, rand, 222, 255);

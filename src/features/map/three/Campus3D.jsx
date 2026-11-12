@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { pathToRings } from "./extrude.js";
-import { addRibbons, GROUND_LAYERS, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
-import { textureCanvas, TILE, worldUV } from "./textures.js";
+import { BRICK, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
@@ -60,9 +60,32 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
     return m;
   });
-  // Unnamed buildings at their own heights, one mesh. Not tappable, so a grayer color.
-  const others = mergeBuildings(nature.outlines);
-  const context = add(new THREE.Mesh(geometry(others.positions, others.indices), new THREE.MeshLambertMaterial()));
+  // Buildings (#122): brick walls with a window per bay and floor, textured roofs. Walls and roofs are two groups of one mesh,
+  // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
+  const wallMat = new THREE.MeshLambertMaterial({ map: texture("brick"), vertexColors: true });
+  const roofMat = new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true });
+  const looks = new Map();
+  const buildingMesh = (list) => {
+    const merged = mergeBuildings(list);
+    const geo = geometry(merged.positions, merged.indices);
+    const scale = (i) => (merged.isRoof[i >> 1] ? TILE.roof : i % 2 ? BRICK.floor : BRICK.bay);
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(merged.uvs.map((x, i) => x / scale(i)), 2));
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(merged.positions.length), 3));
+    geo.addGroup(0, merged.wallIndices, 0);
+    geo.addGroup(merged.wallIndices, merged.indices.length - merged.wallIndices, 1);
+    const mesh = add(new THREE.Mesh(geo, [wallMat, roofMat]));
+    mesh.userData.merged = merged;
+    return mesh;
+  };
+  // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
+  const context = buildingMesh(nature.outlines.map((o, i) => {
+    looks.set(`o${i}`, o);
+    return { id: `o${i}`, path: o.path, h: o.h };
+  }));
+  const town = buildingMesh(buildings.map((b) => {
+    looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name) });
+    return b;
+  }));
 
   // Tappable shapes: one mesh each, colored per vertex (RGBA) so one place can light up. Areas are a thin see-through tint.
   const tappable = (places, h, size, material) => {
@@ -74,7 +97,6 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return mesh;
   };
   const areas = tappable(campus.areas, 0.3, 4, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true }));
-  const town = tappable(buildings, null, 3, new THREE.MeshLambertMaterial({ vertexColors: true }));
   const edges = add(new THREE.LineSegments(new THREE.EdgesGeometry(town.geometry, 30), new THREE.LineBasicMaterial()));
 
   // Pins and names are HTML over the scene (#119): sharp text, a steady size on screen, buttons for keyboard and screen readers.
@@ -93,10 +115,30 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
 
   let picked = null;
   let hovered = null;
-  const paint = () => {
+  const color = (css, fallback) => {
+    const c = new THREE.Color(fallback);
+    if (css) c.setStyle(css); // an unknown OSM color leaves the default
+    return c;
+  };
+  const paintBuildings = (mesh, on, near) => {
+    const attr = mesh.geometry.attributes.color;
+    const { owners, isRoof } = mesh.userData.merged;
+    const [brick, top, landmark] = [token("--map-brick"), token(mesh === town ? "--map-building" : "--map-context"), token("--map-landmark")];
+    for (const o of owners) {
+      const look = looks.get(o.id);
+      const lit = o.id === picked ? on : o.id === hovered ? near : null;
+      const wall = lit || color(look.colour, look.landmark ? landmark : brick);
+      const roof = lit || color(look.roof, top);
+      for (let v = o.start; v < o.end; v++) (isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
+    }
+    attr.needsUpdate = true;
+  };
+  const paint = (all) => {
     const on = new THREE.Color(token("--map-pick"));
     const near = new THREE.Color(token("--map-hover"));
-    for (const [mesh, base, alpha] of [[town, new THREE.Color(token("--map-building")), 1], [areas, new THREE.Color(token("--map-grass")), 0.25]]) {
+    paintBuildings(town, on, near);
+    if (all) paintBuildings(context);
+    for (const [mesh, base, alpha] of [[areas, new THREE.Color(token("--map-grass")), 0.25]]) {
       const attr = mesh.geometry.attributes.color;
       for (const o of mesh.userData.merged.owners) {
         const lit = o.id === picked || o.id === hovered;
@@ -112,9 +154,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   function theme() {
     ground.material.color.set(token("--map-ground"));
     for (const m of layers) m.material.color.set(token(m.userData.token));
-    context.material.color.set(token("--map-context"));
     edges.material.color.set(token("--map-roof"));
-    paint();
+    paint(true);
   }
 
   // Before each draw of the HTML layer: show the names that fit, never on a pin.
@@ -307,7 +348,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
-      for (const t of Object.values(textures)) t.dispose();
+      for (const t of [...Object.values(textures), wallMat, roofMat]) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },
