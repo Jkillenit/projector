@@ -1139,6 +1139,14 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-3d { position: relative; width: 100%; aspect-ratio: 4 / 3; touch-action: none; cursor: grab; }
 .map-3d canvas { display: block; width: 100%; height: 100%; }
 .map-3d:focus-visible { outline-offset: -3px; }
+/* #119: pins and names over the scene. The layer lets drags through to the map; only pins take taps. */
+.map-3d-html { position: absolute; inset: 0; pointer-events: none; }
+.map-3d-label { font-size: 12px; font-weight: 600; line-height: 18px; white-space: nowrap; color: var(--text); text-shadow: 0 0 2px var(--bg), 0 0 3px var(--bg), 0 0 4px var(--bg); }
+.map-3d-label.is-on { color: var(--accent-text); }
+.map-3d-pin { pointer-events: auto; width: 28px; height: 28px; padding: 0; border: 2px solid var(--bg); border-radius: var(--r-full); background: var(--accent); color: var(--on-fill); font-size: 13px; font-weight: 600; line-height: 1; cursor: pointer; box-shadow: var(--shadow-2); }
+.map-3d-pin.is-class { border-radius: var(--r-sm); background: var(--good); }
+.map-3d-pin.is-session { background: var(--support-fill, var(--accent)); }
+.map-3d-pin:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .map-3d-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 .walk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .walk-controls { display: flex; gap: 8px; }

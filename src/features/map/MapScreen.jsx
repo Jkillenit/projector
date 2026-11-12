@@ -305,9 +305,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
               <MyClasses week={week} indoor={indoor.buildings} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => { setPicked(key); const s = classSpots.find((p) => p.key === key); if (s) setFlyTo({ place: s.place }); }} onAdd={() => setAdding({})} onRemove={removeSession} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
               <p className="t-small t-muted">
-                {note3d
-                  ? "Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom."
-                  : `Tap a pin or a building. Cubes are your classes and sessions, balls are events. ${mode === "3d" ? "Drag to turn, right drag to move" : "Drag to move"}, scroll or use + and − to zoom.`}
+                {`Tap a pin or a place. Squares are your classes and sessions, circles are events. ${mode === "3d" && !note3d ? "Drag to turn, right drag to move" : "Drag to move"}, scroll or use + and − to zoom.`}
               </p>
               {unpinned ? (
                 <p className="t-small t-faint">
