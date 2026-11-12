@@ -44,6 +44,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
   const [search, setSearch] = useState("");
   const [is3d, setIs3d] = useState(false);
   const [note3d, setNote3d] = useState(""); // why 3D is off, when it could not run
+  const [flyTo, setFlyTo] = useState(null); // { place }: a new object each time, so 3D flies even to the same place
   const svgRef = useRef(null);
   const drag = useRef(null);
   const { status, events } = useCampusEvents();
@@ -91,6 +92,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
   const focus = (place) => {
     if (!place) return;
     setPicked(place.id);
+    setFlyTo({ place });
     setView((v) => ({ cx: place.c[0], cy: place.c[1], w: Math.min(v.w, 700) }));
   };
 
@@ -187,6 +189,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
               buildings={BUILDINGS}
               center={place?.c || [view.cx, view.cy]}
               picked={place?.id || null}
+              flyTo={flyTo}
               classSpots={classSpots}
               pins={pins}
               onPick={setPicked}
@@ -279,7 +282,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             <PlacePanel place={place} title={place?.name || pin.events[0].where} xy={pin?.xy} events={placeEvents} classes={placeClasses} range={range} places={PLACES} />
           ) : (
             <>
-              <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => setPicked(key)} onAdd={() => setAdding({})} onRemove={removeSession} />
+              <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => { setPicked(key); const s = classSpots.find((p) => p.key === key); if (s) setFlyTo({ place: s.place }); }} onAdd={() => setAdding({})} onRemove={removeSession} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
               <p className="t-small t-muted">
                 {is3d
