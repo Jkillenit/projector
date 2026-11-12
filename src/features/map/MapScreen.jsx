@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card, Chip, Icon, TextLink } from "../../components/ui/index.jsx";
+import { Button, Card, Chip, Icon, Segmented, TextLink } from "../../components/ui/index.jsx";
 import { fuzzyFilter } from "../../lib/fuzzy.js";
 import { routeHref } from "../../shell/useRoute.js";
 import { useCampusEvents } from "../campus/useCampusEvents.js";
@@ -14,6 +14,7 @@ import { AddSession } from "./AddSession.jsx";
 import { asMeeting, upcomingSessions } from "./mySessions.js";
 import { useMySessions } from "./useMySessions.js";
 import { localDayKey } from "../../lib/dates.js";
+import { Campus3D } from "./three/Campus3D.jsx";
 
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
 const START = { cx: QUAD[0], cy: QUAD[1], w: 1800 };
@@ -41,6 +42,8 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
   const [search, setSearch] = useState("");
+  const [is3d, setIs3d] = useState(false);
+  const [note3d, setNote3d] = useState(""); // why 3D is off, when it could not run
   const svgRef = useRef(null);
   const drag = useRef(null);
   const { status, events } = useCampusEvents();
@@ -114,7 +117,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
     };
     svg.addEventListener("wheel", onWheel, { passive: false });
     return () => svg.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [is3d]); // the svg comes back when 3D is turned off
 
   const h = view.w * 0.75;
   const zoom = (f) => setView((v) => ({ ...v, w: Math.min(MAX_W, Math.max(MIN_W, v.w * f)) }));
@@ -166,7 +169,9 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             <Chip key={id} filter pressed={range === id} onClick={() => setRange(id)}>{label}</Chip>
           ))}
         </div>
+        <Segmented label="Map view" options={[["2d", "2D"], ["3d", "3D"]]} value={is3d ? "3d" : "2d"} onChange={(v) => { setNote3d(""); setIs3d(v === "3d"); }} />
       </div>
+      {note3d ? <p className="t-small t-muted" role="status">{note3d}</p> : null}
       {results.length ? (
         <div className="ui-chips map-results">
           {results.map((p) => (
@@ -177,6 +182,18 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
 
       <div className="map-body">
         <div className="map-frame">
+          {is3d ? (
+            <Campus3D
+              buildings={BUILDINGS}
+              center={place?.c || [view.cx, view.cy]}
+              picked={place?.id || null}
+              classSpots={classSpots}
+              pins={pins}
+              onPick={setPicked}
+              onFail={(why) => { setIs3d(false); setNote3d(why); }}
+            />
+          ) : (
+          <>
           <svg
             ref={svgRef}
             className="map-svg"
@@ -241,6 +258,8 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             <Button size="sm" aria-label="Zoom out" onClick={() => zoom(1.5)}>−</Button>
             <Button size="sm" onClick={() => { setView(START); setPicked(null); }}>Reset</Button>
           </div>
+          </>
+          )}
           <a className="map-credit" href={campus.creditUrl} target="_blank" rel="noopener noreferrer">{campus.credit}</a>
         </div>
 
@@ -262,7 +281,11 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             <>
               <MyClasses week={week} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => setPicked(key)} onAdd={() => setAdding({})} onRemove={removeSession} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
-              <p className="t-small t-muted">Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom.</p>
+              <p className="t-small t-muted">
+                {is3d
+                  ? "Tap a pin or a building. Cubes are your classes and sessions, balls are events. Drag to turn, right drag to move, scroll or use + and − to zoom."
+                  : "Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom."}
+              </p>
               {unpinned ? (
                 <p className="t-small t-faint">
                   {unpinned} more {unpinned === 1 ? "is" : "are"} online or at a place we could not find. <TextLink href={routeHref("events")} arrow>See all events</TextLink>
