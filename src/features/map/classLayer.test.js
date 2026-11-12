@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { classPins, classWhen, classWhere, classesInRange, walkTo } from "./classLayer.js";
+import { classPins, classWhen, classWhere, classesInRange, tomorrowWalks, walkTo } from "./classLayer.js";
 import demoHall from "../../demo/indoor/demo-hall.indoor.json";
 
 const places = [...campus.buildings, ...campus.areas];
@@ -47,5 +47,26 @@ describe("walkTo", () => {
     expect(walkTo({ building: "Bidgood Hall", room: "116" }, indoor)).toEqual({ reason: "We don't have the inside of this building yet" });
     expect(walkTo({ building: "Demo Hall", room: "999" }, indoor).reason).toBe("We can't find room 999 in Demo Hall");
     expect(walkTo({ building: "Online", room: "" }, indoor).reason).toBe("This class has no room to walk to");
+  });
+});
+
+describe("tomorrow's walks (#72)", () => {
+  const indoor = [demoHall];
+  const week = [
+    { course: "MATH 125", date: "2026-11-05", start: "09:00", end: "09:50", building: "Demo Hall", room: "216" },
+    { course: "MGT 300", date: "2026-11-05", start: "11:00", end: "11:50", building: "Demo Hall", room: "105" },
+    { course: "MGT 300", date: "2026-11-05", start: "08:00", end: "08:50", building: "Demo Hall", room: "105" },
+    { course: "FI 302", date: "2026-11-05", start: "09:30", end: "10:45", building: "Bidgood Hall", room: "116" },
+    { course: "MATH 125", date: "2026-11-04", start: "09:00", end: "09:50", building: "Demo Hall", room: "216" },
+  ];
+
+  it("keeps tomorrow's classes we can walk to, soonest first, one per room", () => {
+    expect(tomorrowWalks(week, indoor, NOW).map((w) => `${w.m.start} ${w.m.course} ${w.walk.room}`)).toEqual(["08:00 MGT 300 105", "09:00 MATH 125 216"]);
+  });
+
+  it("is empty when tomorrow has nothing we have the inside of", () => {
+    expect(tomorrowWalks(week.slice(3), indoor, NOW)).toEqual([]);
+    expect(tomorrowWalks(week, [], NOW)).toEqual([]);
+    expect(tomorrowWalks(undefined, indoor, NOW)).toEqual([]);
   });
 });

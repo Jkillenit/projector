@@ -12,6 +12,9 @@ import { coursePicks } from "./coursePicks.js";
 import { greeting } from "./dueSoon.js";
 
 import { useCampusEvents } from "../campus/useCampusEvents.js";
+import { tomorrowWalks } from "../map/classLayer.js";
+import { INDOOR } from "../map/indoor/indoorFiles.js";
+import { useMyClasses } from "../map/useMyClasses.js";
 import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
 import { lastVisitOrDefault } from "./newGrades.js";
 import { useHomeData } from "./useHomeData.js";
@@ -231,6 +234,26 @@ function EventsCard({ interests }) {
   );
 }
 
+/** "Tomorrow: MATH 125 in Demo Hall 216." with a link to the walk (#72). Nothing when there is nothing to preview. */
+function TomorrowWalk() {
+  const { meetings } = useMyClasses();
+  const walks = useMemo(() => tomorrowWalks(meetings, INDOOR), [meetings]);
+  if (!walks.length) return null;
+  return (
+    <Card aria-labelledby="walk-h">
+      <h2 id="walk-h" className="t-heading">Tomorrow</h2>
+      <ul className="home-help">
+        {walks.map(({ m, walk }) => (
+          <li key={`${walk.building}-${walk.room}`} className="home-help-item">
+            <span>{m.course} in {m.building} {m.room}.</span>
+            <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })} arrow>Preview the walk</TextLink>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 function HomeSkeleton() {
   return (
     <div className="home-bento" aria-busy="true">
@@ -281,6 +304,8 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
       {expired ? (
         <Notice action="Sign in again" onAction={onSignIn}>Your Blackboard sign in ran out. Due dates and grades may be a little old.</Notice>
       ) : null}
+
+      <TomorrowWalk />
 
       {!data.loaded ? (
         <HomeSkeleton />
