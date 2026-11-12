@@ -4,12 +4,11 @@ import { routeHref } from "../../shell/useRoute.js";
 import { directionLinks, unproject } from "./campusMap.js";
 import { resourcesAt, whenAt } from "./placeInfo.js";
 import { classWhen, classWhere, walkTo } from "./classLayer.js";
-import { INDOOR } from "./places.js";
 
 /*
  * The side panel for one place. Each section gets the same `ctx` and returns null when it has nothing to show.
  * A new map layer (game day, parking, my sessions) adds one section component and one line in SECTIONS.
- * ctx: { place, title, xy, events, classes, range, places }
+ * ctx: { place, title, xy, events, classes, range, places, indoor }
  */
 
 function About({ place }) {
@@ -35,9 +34,9 @@ function YourClasses({ classes, range }) {
 }
 
 /** "Walk me to Room 216" for your classes here (#68). No inside, no button: we say so instead. */
-function WalkHere({ classes }) {
+function WalkHere({ classes, indoor }) {
   if (!classes?.length) return null;
-  const walks = classes.map((m) => walkTo(m, INDOOR));
+  const walks = classes.map((m) => walkTo(m, indoor));
   const links = [...new Map(walks.filter((w) => w.room).map((w) => [w.room, w])).values()];
   return (
     <section className="map-section ui-chips" aria-label="Walk me there">

@@ -8,6 +8,7 @@ import { BlackboardSyncPanel } from "../blackboard/BlackboardSyncPanel.jsx";
 import { SyncBar } from "../blackboard/SyncBar.jsx";
 import { BlackboardTab } from "./BlackboardTab.jsx";
 import { ConnectionsCard } from "./ConnectionsCard.jsx";
+import { IndoorCard } from "../map/IndoorCard.jsx";
 
 const YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
 
@@ -66,6 +67,8 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
       </Card>
 
       <ConnectionsCard mode={mode} />
+
+      <IndoorCard mode={mode} />
 
       {mode === "live" ? (
         <>

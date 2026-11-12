@@ -8,6 +8,7 @@ const { registerMaintenanceHandlers } = require("./maintenance.cjs");
 const { extractBufferText } = require("./extractText.cjs");
 const { registerSourceHandlers } = require("./publicFeeds.cjs");
 const { registerConnectionHandlers } = require("./connections/connectionWindow.cjs");
+const { registerIndoorHandlers } = require("./indoorFiles.cjs");
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -116,6 +117,7 @@ app.whenReady().then(() => {
   registerMirrorHandlers();
   registerMaintenanceHandlers(() => mainWindow);
   registerSourceHandlers(ipcMain);
+  registerIndoorHandlers(ipcMain, { dir: () => path.join(app.getPath("userData"), "indoor"), openPath: (p) => shell.openPath(p) });
   const connections = registerConnectionHandlers(() => mainWindow, { connectBlackboard, disconnectBlackboard });
   createWindow();
   // One UA sign-in for Blackboard and myBama: connecting either turns on both, and disconnecting either turns off both.
