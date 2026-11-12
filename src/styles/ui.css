@@ -1142,7 +1142,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 /* #119: pins and names over the scene. The layer lets drags through to the map; only pins take taps. */
 .map-3d-html { position: absolute; inset: 0; pointer-events: none; }
 .map-3d-label { font-size: 12px; font-weight: 600; line-height: 18px; white-space: nowrap; color: var(--text); text-shadow: 0 0 2px var(--bg), 0 0 3px var(--bg), 0 0 4px var(--bg); }
-.map-3d-label.is-on { color: var(--accent-text); }
+.map-3d-label.is-on { font-weight: 800; font-size: 13px; }
 .map-3d-pin { pointer-events: auto; width: 28px; height: 28px; padding: 0; border: 2px solid var(--bg); border-radius: var(--r-full); background: var(--accent); color: var(--on-fill); font-size: 13px; font-weight: 600; line-height: 1; cursor: pointer; box-shadow: var(--shadow-2); }
 .map-3d-pin.is-class { border-radius: var(--r-sm); background: var(--good); }
 .map-3d-pin.is-session { background: var(--support-fill, var(--accent)); }

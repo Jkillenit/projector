@@ -81,7 +81,7 @@ export function natureLayer(t = {}) {
   if (t.waterway === "river") return "river";
   if (t.natural === "water" || t.waterway === "riverbank") return "water";
   if (t.landuse === "forest" || t.natural === "wood" || t.natural === "scrub") return "wood";
-  if (t.landuse === "grass" || t.landuse === "meadow") return "grass";
+  if (t.landuse === "grass" || t.landuse === "meadow" || t.leisure === "park") return "grass"; // parks like the Quad are lawns (#121)
   if (t.amenity === "parking") return "parking";
   if (t.leisure === "pitch") return "pitch";
   if (t.highway) return PATHS.has(t.highway) ? "paths" : "roads";
