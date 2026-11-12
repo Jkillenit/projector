@@ -1,6 +1,6 @@
 # Map design issues
 
-Every issue for the map design push. Scope: [docs/map-design/scope.md](../map-design/scope.md). Keys D00 to D17, milestone "Map design".
+Every issue for the map design push. Scope: [docs/map-design/scope.md](../map-design/scope.md). Keys D00 to D23, milestone "Map design". D18 to D23 come from self review 1 ([docs/map-design/review-1.md](../map-design/review-1.md)).
 
 ```
 node scripts/create-issues.mjs docs/issues/map-design.md --dry-run
@@ -50,6 +50,14 @@ L (split into the issues below)
 - [ ] #{{D13}} Ambient motion and a render loop that rests
 - [ ] #{{D14}} People and cars on the paths and roads
 - [ ] #{{D15}} Seasons and game day dressing
+
+**Review fixes (self review 1, `docs/map-design/review-1.md`)**
+- [ ] #{{D20}} Lawns that look like lawns: rebuild the OSM data
+- [ ] #{{D18}} A real skyline: building heights that vary
+- [ ] #{{D19}} Textures that hold up at a distance
+- [ ] #{{D21}} Names for the buildings students look for
+- [ ] #{{D22}} Parking decks and towers without house windows
+- [ ] #{{D23}} Bigger class pins on the flat fallback map
 
 **Phase 5: finish**
 - [ ] #{{D16}} Phone performance pass
@@ -548,3 +556,179 @@ M
 ## Depends on
 
 #{{D09}}
+
+<!-- issue key=D18 labels="map-design,should" milestone="Map design" -->
+# A real skyline: building heights that vary
+
+## Story
+
+As a student
+I want buildings to stand at different heights in 3D
+so that big halls and small houses look different and I can tell places apart.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 1).
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] OSM `height` and `building:levels` still win.
+- [ ] Untagged buildings get a default from their footprint and type: houses and small sheds low, big halls taller, parking decks by their deck count. Today every untagged building is 11 m.
+- [ ] Seeded, so heights are the same every visit.
+- [ ] Pure, tested: default height from footprint and type.
+
+## Depends on
+
+#{{D09}}
+
+<!-- issue key=D19 labels="map-design,should" milestone="Map design" -->
+# Textures that hold up at a distance
+
+## Story
+
+As a student
+I want paths and walls to look clean from far away
+so that the map is calm to read at the default zoom.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 2).
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Footpaths do not look dotted in Map and 2.5D at the default zoom (concrete slab joints blur into dashes today).
+- [ ] Walls do not turn muddy brown from far away (the dark window glass averages the brick down today).
+- [ ] Close up, slabs, bricks and windows still show.
+- [ ] Checked in light and dark.
+
+## Depends on
+
+#{{D09}}
+
+<!-- issue key=D20 labels="map-design,must" milestone="Map design" -->
+# Lawns that look like lawns: rebuild the OSM data
+
+## Story
+
+As a student
+I want the Quad and the parks to look like grass
+so that I can see the green spaces I walk across.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 3).
+
+## Priority (MoSCoW)
+
+Must
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Save a fresh Overpass answer and run `node scripts/build-campus-map.mjs` so named parks land in the grass layer (`natureLayer` already counts `leisure=park` as grass since #121).
+- [ ] Check the diff: no named building lost, ids used by Demo data still there.
+- [ ] The Quad shows the grass texture, not the see-through area tint.
+- [ ] Grass stays clearly green next to the ground in both themes (a contrast test pair).
+
+## Depends on
+
+#{{D08}}
+
+<!-- issue key=D21 labels="map-design,should" milestone="Map design" -->
+# Names for the buildings students look for
+
+## Story
+
+As a student
+I want classroom buildings and landmarks named first
+so that I do not read parking decks and shops before the hall my class is in.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 4).
+
+## Priority (MoSCoW)
+
+Should
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Label rank weighs the kind of place, not only its footprint: buildings with my classes and landmarks first, then academic buildings, then housing, then parking and shops.
+- [ ] At the default zoom the Quad's academic buildings are named before nearby parking decks.
+- [ ] Pure, tested, in `labels.js`.
+
+## Depends on
+
+#{{D06}}
+
+<!-- issue key=D22 labels="map-design,could" milestone="Map design" -->
+# Parking decks and towers without house windows
+
+## Story
+
+As a student
+I want parking decks and towers to look like what they are
+so that I can tell a deck from a dorm at a glance.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 5).
+
+## Priority (MoSCoW)
+
+Could
+
+## Size
+
+S
+
+## Acceptance criteria
+
+- [ ] Parking decks get open concrete bands, not brick and windows.
+- [ ] Small tall shapes like Denny Chimes get plain brick, no window rows (until #{{D17}} gives it a model).
+- [ ] Still one mesh for all buildings, so tapping keeps working.
+
+## Depends on
+
+#{{D09}}
+
+<!-- issue key=D23 labels="map-design,could,a11y" milestone="Map design" -->
+# Bigger class pins on the flat fallback map
+
+## Story
+
+As a student without WebGL
+I want my class and event pins easy to see on the flat map
+so that the fallback still shows me where to go.
+
+Found in self review 1 (`docs/map-design/review-1.md`, item 10).
+
+## Priority (MoSCoW)
+
+Could
+
+## Size
+
+XS
+
+## Acceptance criteria
+
+- [ ] Pins on the SVG map are as easy to spot at the default zoom as the scene's pins (#{{D06}}).
+- [ ] They still scale with zoom and do not cover each other.
+
+## Depends on
+
+#{{D07}}
