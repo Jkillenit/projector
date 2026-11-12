@@ -29,8 +29,26 @@ function readIndoorFolder(dir) {
     });
 }
 
+// Photos at turns (#70): a bare name of a jpg, png or webp in the same folder. No folders, so nothing outside it.
+const PHOTO = /^[\w-]+\.(jpe?g|png|webp)$/i;
+const MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+
+/** One photo as a data URL: { ok, url } or { ok: false }. */
+function readIndoorPhoto(dir, file) {
+  const name = String(file || "");
+  if (!PHOTO.test(name)) return { ok: false };
+  try {
+    const full = path.join(dir, name);
+    if (fs.statSync(full).size > MAX_BYTES) return { ok: false };
+    return { ok: true, url: `data:${MIME[name.split(".").pop().toLowerCase()]};base64,${fs.readFileSync(full).toString("base64")}` };
+  } catch {
+    return { ok: false };
+  }
+}
+
 function registerIndoorHandlers(ipcMain, { dir, openPath }) {
   ipcMain.handle("indoor:list", () => readIndoorFolder(dir()));
+  ipcMain.handle("indoor:photo", (_evt, file) => readIndoorPhoto(dir(), file));
   ipcMain.handle("indoor:openFolder", async () => {
     fs.mkdirSync(dir(), { recursive: true });
     const error = await openPath(dir());
@@ -38,4 +56,4 @@ function registerIndoorHandlers(ipcMain, { dir, openPath }) {
   });
 }
 
-module.exports = { readIndoorFolder, registerIndoorHandlers, MAX_BYTES };
+module.exports = { readIndoorFolder, readIndoorPhoto, registerIndoorHandlers, MAX_BYTES };

@@ -20,4 +20,7 @@ indoor-data/
 floorplans/
 *.indoor.json
 !src/demo/indoor/demo-hall.indoor.json
+# Interior photos (#70): only the drawn Demo Hall placeholders, never real photos.
+src/demo/indoor/photos/*
+!src/demo/indoor/photos/*.svg
 .claude/settings.local.json

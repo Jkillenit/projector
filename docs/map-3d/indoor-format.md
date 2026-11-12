@@ -42,6 +42,7 @@ Put `<name>.indoor.json` in the `indoor` folder in the app's data folder. Settin
 | `entrances` | list | Doors in from outside. Usually only on the ground floor. |
 | `links` | list | Stairs and elevators. |
 | `landmarks` | list | Things to steer by in the steps ("past the vending machines"). |
+| `photos` | list | Optional. A photo at a turn (#70). |
 
 ## Room
 
@@ -120,3 +121,17 @@ This example has one floor, so the checker will say `Stairs A is only on one flo
 - No entrance. An entrance or link with no place, or not on a walk line.
 - A link that is not stairs or an elevator, or is only on one floor.
 - A landmark with no name or no place.
+
+## Photo (#70)
+
+| Field | Type | Meaning |
+|---|---|---|
+| `at` | point | Where you stand to see it. Must be on a walk line (within 0.5 m). The first step that starts within 3 m of it shows it. |
+| `file` | string | A bare file name in the same folder as the indoor file, like `bidgood-turn-1.jpg`. Letters, numbers, `-` and `_` only, no folders. Live mode reads `.jpg`, `.png` and `.webp` up to 5 MB. All buildings share the folder, so start names with the building. |
+| `alt` | string | What to look for, in plain words: "The hall splits left and right. Vending machines are just ahead." |
+
+Rules for real photos:
+
+- They stay in the indoor folder on your own computer. Never commit them (rule 14). `.gitignore` only lets the drawn Demo Hall placeholders (`src/demo/indoor/photos/*.svg`) in.
+- No people in them. Take them outside class time, with permission where the building needs it.
+- Demo Hall uses simple drawings, not photos of a real building.

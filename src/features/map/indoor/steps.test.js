@@ -78,3 +78,20 @@ describe("feet", () => {
     expect(feet(1)).toBe(10);
   });
 });
+
+describe("photos at turns (#70)", () => {
+  const photos = (d, list) => ({ ...d, floors: d.floors.map((f) => ({ ...f, photos: list[f.level] || [] })) });
+  const junction = { at: [24, 12], file: "junction.svg", alt: "A hall going left and right, trophy case ahead" };
+  const stairs = { at: [4, 12], file: "stairs-a.svg", alt: "Stairs A on your right" };
+
+  it("shows a photo on the first step that starts near it, once", () => {
+    const d = photos(demoHall, { 1: [junction, stairs] });
+    const out = steps(route(buildGraph(d), "north", "216"), d);
+    expect(out.map((s) => s.photo?.file || null)).toEqual([null, null, "junction.svg", null, "stairs-a.svg", null, null]);
+  });
+
+  it("only uses photos on the step's own floor", () => {
+    const d = photos(demoHall, { 2: [{ ...junction, at: [24, 0] }] }); // where the North door is on floor 1
+    expect(steps(route(buildGraph(d), "north", "216"), d).filter((s) => s.photo)).toEqual([]);
+  });
+});

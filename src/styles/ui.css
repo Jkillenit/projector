@@ -1147,6 +1147,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .walk-steps button::before { counter-increment: walk; content: counter(walk); flex: none; width: 1.6em; color: var(--muted); font-weight: 600; }
 .walk-steps button:hover { background: var(--surface-hover); }
 .walk-steps button.is-on { background: var(--accent-panel); border-color: var(--accent-text); }
+.walk-photo { display: block; width: 100%; max-height: 240px; object-fit: contain; border: 1px solid var(--border); border-radius: var(--r-md); }
 .map-body.is-steps { grid-template-columns: minmax(0, 560px); }
 @media (max-width: 899px) {
   /* 3D map and walk controls: 44 px targets on touch screens (#69) */

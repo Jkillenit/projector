@@ -8,6 +8,8 @@ import demoCards from "../demo/flashcards.json";
 import demoEvents from "../demo/events.json";
 import demoSchedule from "../demo/schedule.json";
 import demoHall from "../demo/indoor/demo-hall.indoor.json";
+// Drawn placeholders for Demo Hall's photos at turns (#70), by file name.
+const demoPhotos = import.meta.glob("../demo/indoor/photos/*.svg", { eager: true, query: "?url", import: "default" });
 import services from "../../electron/connections/services.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
@@ -218,6 +220,10 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
     indoor: {
       list: async () => [{ file: "demo-hall.indoor.json", data: demoHall }],
       openFolder: async () => ({ ok: false, error: "Demo mode has no indoor folder." }),
+      photo: async (file) => {
+        const url = demoPhotos[`../demo/indoor/photos/${file}`];
+        return url ? { ok: true, url } : { ok: false };
+      },
     },
     /** Made-up events, already in the shape src/features/campus/campusEvents.js builds. Dates are days from today. */
     events: {

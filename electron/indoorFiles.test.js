@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-const { readIndoorFolder, registerIndoorHandlers, MAX_BYTES } = createRequire(import.meta.url)("./indoorFiles.cjs");
+const { readIndoorFolder, readIndoorPhoto, registerIndoorHandlers, MAX_BYTES } = createRequire(import.meta.url)("./indoorFiles.cjs");
 
 const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "indoor-"));
 
@@ -40,5 +40,15 @@ describe("indoor files on this computer (#63)", () => {
     expect(fs.existsSync(dir)).toBe(true);
     expect(opened).toEqual([dir]);
     expect(await handlers["indoor:list"]()).toEqual([]);
+  });
+
+  it("reads a photo by bare name only, as a data URL (#70)", () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "turn-1.JPG"), Buffer.from([1, 2, 3]));
+    fs.writeFileSync(path.join(dir, "draw.svg"), "<svg/>");
+    fs.mkdirSync(path.join(dir, "sub"));
+    fs.writeFileSync(path.join(dir, "sub", "x.png"), Buffer.from([1]));
+    expect(readIndoorPhoto(dir, "turn-1.JPG")).toEqual({ ok: true, url: "data:image/jpeg;base64,AQID" });
+    for (const bad of ["../turn-1.JPG", "sub/x.png", "sub\\x.png", "draw.svg", "missing.png", "", null]) expect(readIndoorPhoto(dir, bad)).toEqual({ ok: false });
   });
 });

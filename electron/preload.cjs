@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld("studyHub", {
   indoor: {
     list: () => ipcRenderer.invoke("indoor:list"),
     openFolder: () => ipcRenderer.invoke("indoor:openFolder"),
+    /** One photo from that folder by bare file name (#70): `{ ok, url }`. */
+    photo: (file) => ipcRenderer.invoke("indoor:photo", file),
   },
   /** Opt-in services with the student's own login (rule 5): `[{ id, name, reads, sends, ready, connected, connectedAt }]`. */
   connections: {

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" font-family="sans-serif">
+  <!-- Made up drawing for Demo Hall (rule 14): not a photo of a real building. -->
+  <rect width="320" height="240" fill="#EDE9E3"/>
+  <path d="M0 0 L110 70 L210 70 L320 0 Z" fill="#F7F5F2"/>
+  <path d="M0 240 L110 170 L210 170 L320 240 Z" fill="#D9D3CA"/>
+  <path d="M0 0 L110 70 L110 170 L0 240 Z" fill="#E3DED6"/>
+  <path d="M320 0 L210 70 L210 170 L320 240 Z" fill="#E3DED6"/>
+  <rect x="110" y="70" width="100" height="100" fill="#CFC8BD"/>
+  <rect x="122" y="96" width="76" height="54" fill="#FFFFFF" stroke="#6B6258" stroke-width="2"/>
+  <path d="M136 140 v-20 h8 v20 M156 140 v-30 h8 v30 M176 140 v-14 h8 v14" fill="#B08D57"/>
+  <text x="160" y="90" text-anchor="middle" font-size="11" fill="#2B2620">Vending machines</text>
+  <path d="M40 200 L80 176" stroke="#8C1D2E" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 200 L40 200 L52 184" fill="none" stroke="#8C1D2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M280 200 L240 176" stroke="#8C1D2E" stroke-width="5" stroke-linecap="round"/>
+  <path d="M260 200 L280 200 L268 184" fill="none" stroke="#8C1D2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="160" y="228" text-anchor="middle" font-size="12" fill="#2B2620">Drawing: the hall goes left and right</text>
+</svg>
