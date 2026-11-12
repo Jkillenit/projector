@@ -1,38 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
-import { extrudeRings, pathToRings } from "./extrude.js";
+import { pathToRings } from "./extrude.js";
 import { mergeBuildings, roadSegments } from "./campusMesh.js";
 import { flyPath, viewFor } from "./camera.js";
+import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
-const NO_WEBGL = "3D needs WebGL, and this browser has it turned off. Showing the 2D map.";
-const NO_LOAD = "3D did not load. Showing the 2D map.";
 const FLY_MS = 1500;
-
-function hasWebGL() {
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
-
-const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888";
+const TO_2D = " Showing the 2D map.";
 
 /** Builds the scene once. Returns { setPicked, setPins, fly, zoom, reset, dispose }. */
-function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  host.appendChild(renderer.domElement);
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 12000);
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.maxPolarAngle = Math.PI * 0.45; // never under the ground
+function setup(three, host, { buildings, center, onPick }) {
+  const stage = createStage(three, host, { theme: () => theme() });
+  const { THREE, camera, controls, render, add, geometry, solid, renderer } = stage;
   controls.minDistance = 60;
   controls.maxDistance = 5000;
-  controls.listenToKeyEvents(host);
   const home = () => {
     controls.target.set(center[0], 0, center[1]);
     camera.position.set(center[0], 700, center[1] + 800);
@@ -40,37 +23,13 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
   };
   home();
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, 2));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(-400, 900, 300);
-  scene.add(sun);
-
-  const owned = [];
-  const add = (obj) => { scene.add(obj); owned.push(obj); return obj; };
-  const geometry = (positions, indices) => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    if (indices) g.setIndex(indices);
-    g.computeVertexNormals();
-    return g;
-  };
-  const flat = (rings, h) => {
-    const p = [], ix = [];
-    for (const s of extrudeRings(rings, h)) {
-      const base = p.length / 3;
-      p.push(...s.positions);
-      ix.push(...s.indices.map((i) => base + i));
-    }
-    return geometry(p, ix);
-  };
-
   const [x0, y0, x1, y1] = campus.bounds;
   const ground = add(new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshLambertMaterial()));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set((x0 + x1) / 2, -0.1, (y0 + y1) / 2);
-  const areas = add(new THREE.Mesh(flat(campus.areas.flatMap((a) => pathToRings(a.path)), 0.3), new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.25 })));
+  const areas = add(new THREE.Mesh(solid(campus.areas.flatMap((a) => pathToRings(a.path)), 0.3), new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.25 })));
   const roads = add(new THREE.LineSegments(geometry(roadSegments(campus.roads, 0.5)), new THREE.LineBasicMaterial()));
-  const context = add(new THREE.Mesh(flat(pathToRings(campus.context), 3), new THREE.MeshLambertMaterial()));
+  const context = add(new THREE.Mesh(solid(pathToRings(campus.context), 3), new THREE.MeshLambertMaterial()));
 
   // Named buildings: one mesh, colored per vertex so one building can light up.
   const merged = mergeBuildings(buildings);
@@ -97,8 +56,7 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
     }
     named.attributes.color.needsUpdate = true;
   };
-  const theme = () => {
-    renderer.setClearColor(new THREE.Color(token("--surface-2")));
+  function theme() {
     ground.material.color.set(token("--surface-2"));
     areas.material.color.set(token("--good"));
     roads.material.color.set(token("--border-strong"));
@@ -108,27 +66,7 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
     sessionMat.color.set(token("--support-fill"));
     eventMat.color.set(token("--accent"));
     paint();
-    render();
-  };
-
-  const render = () => renderer.render(scene, camera);
-  controls.addEventListener("change", render);
-  const fit = () => {
-    const w = host.clientWidth || 1;
-    const h = host.clientHeight || 1;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    render();
-  };
-  const resize = new ResizeObserver(fit);
-  resize.observe(host);
-
-  // Theme: data-theme on <html>, or the system setting.
-  const themeWatch = new MutationObserver(theme);
-  themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
-  const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-  media?.addEventListener?.("change", theme);
+  }
 
   // Tap (not drag) picks a pin or a building.
   const ray = new THREE.Raycaster();
@@ -180,8 +118,7 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
     flight = requestAnimationFrame(step);
   };
 
-  theme();
-  fit();
+  stage.start();
 
   return {
     setPicked(id) {
@@ -211,18 +148,9 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
     reset: () => { stop(); home(); },
     dispose() {
       stop();
-      resize.disconnect();
-      themeWatch.disconnect();
-      media?.removeEventListener?.("change", theme);
       host.removeEventListener("keydown", onKey);
-      controls.dispose();
-      for (const o of owned) {
-        o.geometry?.dispose();
-        o.material?.dispose();
-      }
       for (const x of [classShape, eventShape, classMat, sessionMat, eventMat]) x.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
+      stage.dispose();
     },
   };
 }
@@ -242,16 +170,16 @@ export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, o
   useEffect(() => {
     let gone = false;
     if (!hasWebGL()) {
-      onFail(NO_WEBGL);
+      onFail(NO_WEBGL + TO_2D);
       return undefined;
     }
-    Promise.all([import("three"), import("three/addons/controls/OrbitControls.js")])
-      .then(([THREE, { OrbitControls }]) => {
+    loadThree()
+      .then((three) => {
         if (gone) return;
-        scene.current = setup(THREE, OrbitControls, host.current, { buildings, center, onPick: pick });
+        scene.current = setup(three, host.current, { buildings, center, onPick: pick });
         setReady(true);
       })
-      .catch(() => !gone && onFail(NO_LOAD));
+      .catch(() => !gone && onFail(NO_LOAD + TO_2D));
     return () => {
       gone = true;
       scene.current?.dispose();

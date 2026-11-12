@@ -5,7 +5,7 @@ import { routeHref } from "../../shell/useRoute.js";
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import campus from "./campus.json";
 import { findBuilding, placeParts, project } from "./campusMap.js";
-import { BUILDINGS, PLACES } from "./places.js";
+import { BUILDINGS, INDOOR, PLACES } from "./places.js";
 import { PlacePanel } from "./PlacePanel.jsx";
 import { MyClasses } from "./MyClasses.jsx";
 import { classPins, classesInRange } from "./classLayer.js";
@@ -15,6 +15,7 @@ import { asMeeting, upcomingSessions } from "./mySessions.js";
 import { useMySessions } from "./useMySessions.js";
 import { localDayKey } from "../../lib/dates.js";
 import { Campus3D } from "./three/Campus3D.jsx";
+import { Walkthrough } from "./three/Walkthrough.jsx";
 
 const QUAD = campus.areas.find((a) => a.name === "The Quad")?.c || [0, 0];
 const START = { cx: QUAD[0], cy: QUAD[1], w: 1800 };
@@ -37,7 +38,7 @@ function spotOf(e) {
 }
 
 /** Our own campus map: OpenStreetMap buildings, with today's (or this week's) events pinned where they happen. */
-export function MapScreen({ query, placeId, addKind, addTitle }) {
+export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
   const [view, setView] = useState(START);
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
@@ -45,6 +46,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
   const [is3d, setIs3d] = useState(false);
   const [note3d, setNote3d] = useState(""); // why 3D is off, when it could not run
   const [flyTo, setFlyTo] = useState(null); // { place }: a new object each time, so 3D flies even to the same place
+  const walking = (walk && room && INDOOR.find((b) => b.building === walk)) || null;
   const svgRef = useRef(null);
   const drag = useRef(null);
   const { status, events } = useCampusEvents();
@@ -153,6 +155,13 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
   const placeClasses = (place && classSpots.find((p) => p.place.id === place.id)?.classes) || [];
   const r = view.w / 110; // pin radius that stays the same size on screen
 
+  // Back from a walkthrough: the 3D campus, at that building.
+  const closeWalk = () => {
+    window.location.hash = routeHref("map");
+    setIs3d(true);
+    focus(BUILDINGS.find((b) => b.id === walking.building));
+  };
+
   return (
     <div className="page map-page">
       <header className="page-head">
@@ -171,7 +180,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
             <Chip key={id} filter pressed={range === id} onClick={() => setRange(id)}>{label}</Chip>
           ))}
         </div>
-        <Segmented label="Map view" options={[["2d", "2D"], ["3d", "3D"]]} value={is3d ? "3d" : "2d"} onChange={(v) => { setNote3d(""); setIs3d(v === "3d"); }} />
+        {walking ? null : <Segmented label="Map view" options={[["2d", "2D"], ["3d", "3D"]]} value={is3d ? "3d" : "2d"} onChange={(v) => { setNote3d(""); setIs3d(v === "3d"); }} />}
       </div>
       {note3d ? <p className="t-small t-muted" role="status">{note3d}</p> : null}
       {results.length ? (
@@ -182,6 +191,9 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
         </div>
       ) : null}
 
+      {walking ? (
+        <Walkthrough key={`${walking.building}-${room}`} indoor={walking} roomId={room} onClose={closeWalk} />
+      ) : (
       <div className="map-body">
         <div className="map-frame">
           {is3d ? (
@@ -298,6 +310,7 @@ export function MapScreen({ query, placeId, addKind, addTitle }) {
           )}
         </Card>
       </div>
+      )}
     </div>
   );
 }
