@@ -7,6 +7,7 @@ import organizations from "../demo/organizations.json";
 import demoCards from "../demo/flashcards.json";
 import demoEvents from "../demo/events.json";
 import demoSchedule from "../demo/schedule.json";
+import demoHall from "../demo/indoor/demo-hall.indoor.json";
 import services from "../../electron/connections/services.json";
 import syllabusText from "../demo/syllabus.txt?raw";
 import { localDayKey } from "../lib/dates.js";
@@ -212,6 +213,11 @@ export function buildDemoBridge({ storage = globalThis.localStorage, now = () =>
           fetchedAt: now().getTime(),
         };
       },
+    },
+    /** Indoor maps (#63). Demo mode has Demo Hall only, a made-up building (rule 14). There is no folder to open. */
+    indoor: {
+      list: async () => [{ file: "demo-hall.indoor.json", data: demoHall }],
+      openFolder: async () => ({ ok: false, error: "Demo mode has no indoor folder." }),
     },
     /** Made-up events, already in the shape src/features/campus/campusEvents.js builds. Dates are days from today. */
     events: {

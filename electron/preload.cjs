@@ -55,6 +55,11 @@ contextBridge.exposeInMainWorld("studyHub", {
   events: {
     list: () => ipcRenderer.invoke("campus:events"),
   },
+  /** Indoor maps on this computer (#63), from <userData>/indoor: `[{ file, data } | { file, error }]`. No network. */
+  indoor: {
+    list: () => ipcRenderer.invoke("indoor:list"),
+    openFolder: () => ipcRenderer.invoke("indoor:openFolder"),
+  },
   /** Opt-in services with the student's own login (rule 5): `[{ id, name, reads, sends, ready, connected, connectedAt }]`. */
   connections: {
     list: () => ipcRenderer.invoke("connections:list"),

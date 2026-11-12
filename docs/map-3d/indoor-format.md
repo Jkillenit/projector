@@ -6,6 +6,10 @@ Run `checkIndoor(data)` from `src/features/map/indoor/indoorData.js` on any file
 
 **Rule 14:** real floor plans and real indoor files never go in the repo. Only made up buildings like Demo Hall do.
 
+## Where real files go (Live mode, #63)
+
+Put `<name>.indoor.json` in the `indoor` folder in the app's data folder. Settings, **Indoor maps on this computer**, has an **Open folder** button and lists the buildings it found. Files that fail `checkIndoor`, are not JSON, or are over 5 MB are skipped and listed there with the reason. A building's `name` should match its name on the campus map so classes find it. Nothing is sent anywhere. Demo mode only ever has Demo Hall.
+
 ## Units and placement
 
 - All numbers are **meters**, same as `campus.json`.

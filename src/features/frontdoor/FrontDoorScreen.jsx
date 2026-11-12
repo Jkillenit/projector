@@ -13,7 +13,7 @@ import { greeting } from "./dueSoon.js";
 
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import { tomorrowWalks } from "../map/classLayer.js";
-import { INDOOR } from "../map/indoor/indoorFiles.js";
+import { useIndoor } from "../map/useIndoor.js";
 import { useMyClasses } from "../map/useMyClasses.js";
 import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
 import { lastVisitOrDefault } from "./newGrades.js";
@@ -237,7 +237,8 @@ function EventsCard({ interests }) {
 /** "Tomorrow: MATH 125 in Demo Hall 216." with a link to the walk (#72). Nothing when there is nothing to preview. */
 function TomorrowWalk() {
   const { meetings } = useMyClasses();
-  const walks = useMemo(() => tomorrowWalks(meetings, INDOOR), [meetings]);
+  const { buildings } = useIndoor();
+  const walks = useMemo(() => tomorrowWalks(meetings, buildings), [meetings, buildings]);
   if (!walks.length) return null;
   return (
     <Card aria-labelledby="walk-h">

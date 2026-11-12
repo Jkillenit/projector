@@ -1,7 +1,6 @@
 import { Button, TextLink } from "../../components/ui/index.jsx";
 import { routeHref } from "../../shell/useRoute.js";
 import { classWhen, classWhere, walkTo } from "./classLayer.js";
-import { INDOOR } from "./places.js";
 import { KINDS } from "./mySessions.js";
 
 const kindLabel = (k) => KINDS.find(([id]) => id === k)?.[1] || "Session";
@@ -10,7 +9,7 @@ const kindLabel = (k) => KINDS.find(([id]) => id === k)?.[1] || "Session";
  * The map's default panel, top part: your day (or week). Classes from myBama and sessions you added, in time order.
  * Tap one to show its building. Sessions can be removed here.
  */
-export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemove }) {
+export function MyClasses({ week, indoor, spots, unplaced, range, onPick, onAdd, onRemove }) {
   const rows = spots
     .flatMap((s) => s.classes.map((m) => ({ m, key: s.key })))
     .concat(unplaced.map((m) => ({ m, key: null })))
@@ -37,7 +36,7 @@ export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemov
       {rows.length ? (
         <ul className="map-events">
           {rows.map(({ m, key }) => {
-            const walk = walkTo(m, INDOOR);
+            const walk = walkTo(m, indoor);
             return (
             <li key={m.id || `${m.course}-${m.date}-${m.start}`}>
               <span className="t-label t-faint">
