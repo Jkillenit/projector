@@ -76,6 +76,7 @@ const PATHS = new Set(["footway", "path", "pedestrian", "cycleway", "steps"]);
 /** Which campus-nature.json layer an OSM feature belongs in, or null. Buildings never go in one (a parking deck is a building, not a lot). */
 export function natureLayer(t = {}) {
   if (t.building) return null;
+  if (t.amenity === "university") return "campus"; // the campus edge, for green campus ground (#149)
   if (t.natural === "tree") return "trees";
   if (t.natural === "tree_row") return "treeRows";
   if (t.waterway === "river") return "river";
@@ -84,6 +85,7 @@ export function natureLayer(t = {}) {
   if (t.landuse === "grass" || t.landuse === "meadow" || t.leisure === "park") return "grass"; // parks like the Quad are lawns (#121)
   if (t.amenity === "parking") return "parking";
   if (t.leisure === "pitch") return "pitch";
+  if (t.leisure === "track") return "track";
   if (t.highway) return PATHS.has(t.highway) ? "paths" : "roads";
   return null;
 }

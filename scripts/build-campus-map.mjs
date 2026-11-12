@@ -6,7 +6,8 @@
  *    [out:json][timeout:180][bbox:33.198,-87.562,33.224,-87.522];(
  *    way["building"];relation["building"];
  *    way["highway"~"^(primary|secondary|tertiary|residential|unclassified|service|footway|path|pedestrian|cycleway|steps)$"];
- *    way["leisure"~"^(park|stadium)$"]["name"];way["leisure"="pitch"];
+ *    way["leisure"~"^(park|stadium)$"]["name"];way["leisure"~"^(pitch|track)$"];
+ *    way["amenity"="university"];relation["amenity"="university"];
  *    way["natural"~"^(water|wood|scrub|tree_row)$"];relation["natural"~"^(water|wood|scrub)$"];node["natural"="tree"];
  *    way["waterway"~"^(river|riverbank)$"];relation["waterway"="riverbank"];
  *    way["landuse"~"^(grass|forest|meadow)$"];relation["landuse"~"^(grass|forest|meadow)$"];
@@ -36,7 +37,7 @@ const buildings = [];
 const context = [];
 const roads = [];
 const areas = [];
-const nature = { water: [], river: [], wood: [], grass: [], parking: [], pitch: [], paths: [], treeRows: [], roads: {}, trees: [], outlines: [], looks: {} };
+const nature = { campus: [], track: [], water: [], river: [], wood: [], grass: [], parking: [], pitch: [], paths: [], treeRows: [], roads: {}, sports: {}, streets: {}, trees: [], outlines: [], looks: {} };
 for (const e of osm.elements) {
   const t = e.tags || {};
   const id = `${e.type[0]}${e.id}`;
@@ -50,6 +51,7 @@ for (const e of osm.elements) {
     if (d.length < 8) continue;
     if (layer === "roads") (nature.roads[t.highway] ||= []).push(d);
     else nature[layer].push(d);
+    if (layer === "roads" && t.name) (nature.streets[t.name.trim()] ||= []).push(d); // street labels (#152)
     if (MAIN_ROADS.test(t.highway)) roads.push(d);
     continue;
   }
@@ -57,6 +59,7 @@ for (const e of osm.elements) {
   if (!rings.length) continue;
   const path = rings.map((r) => toPath(r, true)).join("");
   if (layer) nature[layer].push(path);
+  if (layer === "pitch" && t.sport) (nature.sports[t.sport.split(";")[0].trim()] ||= []).push(path); // field markings (#150)
   const pts = rings.flat();
   const c = [Math.round(pts.reduce((s, p) => s + p[0], 0) / pts.length), Math.round(pts.reduce((s, p) => s + p[1], 0) / pts.length)];
   const look = buildingLook(t);
@@ -92,11 +95,11 @@ const save = (name, data) => {
 console.log(`campus.json: ${buildings.length} named buildings, ${context.length} other buildings, ${roads.length} roads, ${areas.length} areas, ${save("campus.json", out)}`);
 
 // Shapes of one layer join into one path string, like campus.json's roads and context.
-const SHAPES = ["water", "river", "wood", "grass", "parking", "pitch", "paths", "treeRows"];
+const SHAPES = ["campus", "water", "river", "wood", "grass", "parking", "pitch", "track", "paths", "treeRows"];
 const joined = { ...nature, ...Object.fromEntries(SHAPES.map((k) => [k, nature[k].join("")])) };
-joined.roads = Object.fromEntries(Object.entries(nature.roads).map(([k, v]) => [k, v.join("")]));
+for (const k of ["roads", "sports", "streets"]) joined[k] = Object.fromEntries(Object.entries(nature[k]).map(([g, v]) => [g, v.join("")]));
 const size = save("campus-nature.json", { ...credit, ...joined });
 const counts = [...SHAPES, "trees", "outlines"].map((k) => `${nature[k].length} ${k}`);
-const roadCounts = Object.entries(nature.roads).map(([k, v]) => `${v.length} ${k}`);
+const roadCounts = Object.entries({ ...nature.roads, ...nature.sports }).map(([k, v]) => `${v.length} ${k}`);
 const colored = [...Object.values(nature.looks), ...nature.outlines].filter((l) => l.colour || l.roof).length;
-console.log(`campus-nature.json: ${counts.join(", ")}; roads ${roadCounts.join(", ")}; ${Object.keys(nature.looks).length} named buildings with a look, ${colored} buildings with a color; ${size}`);
+console.log(`campus-nature.json: ${counts.join(", ")}; roads and sports ${roadCounts.join(", ")}; ${Object.keys(nature.streets).length} street names; ${Object.keys(nature.looks).length} named buildings with a look, ${colored} buildings with a color; ${size}`);
