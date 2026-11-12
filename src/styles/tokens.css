@@ -113,6 +113,8 @@
   --map-context: #E0DDD8; /* unnamed buildings: paler and closer to the ground than ones you can tap */
   --map-roof: #7D858D; /* roof edges */
   --map-brick: #C98F7A; /* walls: UA red brick, tinting the brick tile (#122) */
+  --map-tree: #6E9A52; /* tree crowns (#123); seasons (#128) turn this */
+  --map-trunk: #6B5442;
   --map-landmark: #A84A55; /* landmark walls: crimson brick, while a picked building turns crimson roof and all */
   --map-accent: var(--accent);
   --map-pick: #9E1B32;
@@ -210,6 +212,8 @@
   --map-context: #232120;
   --map-roof: #5A626B;
   --map-brick: #7A4C40;
+  --map-tree: #4A7340;
+  --map-trunk: #3D3029;
   --map-landmark: #8E3A48;
   --map-accent: var(--accent);
   --map-pick: #EC6F85;
