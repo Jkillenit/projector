@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
-import { pathToRings } from "./extrude.js";
+import { extrudeRings, pathToRings } from "./extrude.js";
+import { fieldUV, markedFields, stadiumBowl, underBowl } from "./fields.js";
 import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
-import { BRICK, textureCanvas, TILE, worldUV } from "./textures.js";
+import { BRICK, FIELD_LOOKS, fieldCanvas, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { placeTrees, seeded } from "./trees.js";
 import { shadowOffset } from "./quality.js";
@@ -17,6 +18,7 @@ const MODE_MS = 700;
 const TO_2D = " Showing the flat map instead.";
 const PIN = 28; // pin size on screen, px, as in ui.css
 const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class and an event in one building do not cover each other
+const STADIUM = { name: "Bryant-Denny Stadium", field: "Saban Field" }; // the one bowl (#150)
 
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
@@ -64,6 +66,50 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
     return m;
   });
+  // Bryant-Denny's own outline in OSM is replaced by the bowl below (#150).
+  const stadiumArea = campus.areas.find((a) => a.name === STADIUM.name);
+  const stadiumRing = stadiumArea && pathToRings(stadiumArea.path)[0];
+  const outlines = stadiumRing ? nature.outlines.filter((o) => !underBowl(o.path, stadiumRing)) : nature.outlines;
+
+  // Sports fields (#150): one mesh per look just over the plain pitch. Textures are painted in theme colors, in theme().
+  const fieldMeshes = [];
+  {
+    const order = GROUND_LAYERS.indexOf("pitch") + 0.5;
+    const all = markedFields(nature);
+    for (const look of FIELD_LOOKS) {
+      const s = { positions: [], indices: [], uvs: [] };
+      for (const f of all) {
+        if (f.look !== look) continue;
+        for (const shape of extrudeRings([f.ring], 0.01, { walls: false })) {
+          const base = s.positions.length / 3;
+          s.positions.push(...shape.positions);
+          s.indices.push(...shape.indices.map((i) => base + i));
+          s.uvs.push(...fieldUV(shape.positions, f.frame, look));
+        }
+      }
+      if (!s.indices.length) continue;
+      const geo = geometry(s.positions, s.indices);
+      geo.setAttribute("uv", new THREE.Float32BufferAttribute(s.uvs, 2));
+      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide })));
+      Object.assign(m, { renderOrder: order - 100, receiveShadow: true });
+      m.position.y = order * 0.05;
+      m.userData.look = look;
+      fieldMeshes.push(m);
+    }
+  }
+  // Bryant-Denny (#150): stands around the field, tappable as the stadium.
+  const bowl = (() => {
+    const [area, field] = [stadiumArea, campus.areas.find((a) => a.name === STADIUM.field)];
+    const shape = stadiumRing && field && stadiumBowl(stadiumRing, pathToRings(field.path)[0]);
+    if (!shape) return null;
+    const geo = geometry(shape.positions, shape.indices);
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(shape.positions.length), 3));
+    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+    m.castShadow = m.receiveShadow = true;
+    m.userData = { id: area.id, isSeat: shape.isSeat, merged: { triOwner: new Array(shape.indices.length / 3).fill(area.id) } };
+    return m;
+  })();
+
   // Buildings (#122): brick walls with a window per bay and floor, textured roofs. Walls and roofs are two groups of one mesh,
   // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
   const wallMat = new THREE.MeshLambertMaterial({ map: texture("brick"), vertexColors: true });
@@ -83,7 +129,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return mesh;
   };
   // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
-  const context = buildingMesh(nature.outlines.map((o, i) => {
+  const context = buildingMesh(outlines.map((o, i) => {
     looks.set(`o${i}`, o);
     return { id: `o${i}`, path: o.path, h: o.h };
   }));
@@ -143,7 +189,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     };
     const shadeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
     const rings = [];
-    for (const b of [...buildings, ...nature.outlines]) {
+    for (const b of [...buildings, ...outlines]) {
       const [dx, dz] = shadowOffset(Math.min(b.h || 0, 40) * 0.5);
       for (const r of pathToRings(b.path)) rings.push(r.map(([x, z]) => [x + dx, z + dz]));
     }
@@ -168,7 +214,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     mesh.userData.merged = merged;
     return mesh;
   };
-  const areas = tappable(campus.areas, 0.3, 4, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true }));
+  // The bowl stands in for the stadium (#150); its flat tint would fight the field's.
+  const areas = tappable(bowl ? campus.areas.filter((a) => a !== stadiumArea) : campus.areas, 0.3, 4, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true }));
   const edges = add(new THREE.LineSegments(new THREE.EdgesGeometry(town.geometry, 30), new THREE.LineBasicMaterial()));
 
   // Pins and names are HTML over the scene (#119): sharp text, a steady size on screen, buttons for keyboard and screen readers.
@@ -213,6 +260,14 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const near = new THREE.Color(token("--map-hover"));
     paintBuildings(town, on, near);
     if (all) paintBuildings(context);
+    if (bowl) {
+      const { id, isSeat } = bowl.userData;
+      const lit = id === picked ? on : id === hovered ? near : null;
+      const [seat, wall] = [lit || new THREE.Color(token("--map-landmark")), lit || new THREE.Color(token("--map-context"))];
+      const attr = bowl.geometry.attributes.color;
+      isSeat.forEach((yes, v) => (yes ? seat : wall).toArray(attr.array, v * 3));
+      attr.needsUpdate = true;
+    }
     for (const [mesh, base, alpha] of [[areas, new THREE.Color(token("--map-grass")), 0.25]]) {
       const attr = mesh.geometry.attributes.color;
       for (const o of mesh.userData.merged.owners) {
@@ -231,6 +286,18 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     for (const m of layers) m.material.color.set(token(m.userData.token));
     edges.material.color.set(token("--map-roof"));
     crownMat.color.set(token("--map-tree"));
+    const pitch = new THREE.Color(token("--map-pitch"));
+    const colors = { pitch: `#${pitch.getHexString()}`, stripe: `#${pitch.clone().offsetHSL(0, 0, 0.035).getHexString()}`, line: token("--map-line"), dirt: token("--map-dirt"), track: token("--map-track") };
+    for (const m of fieldMeshes) {
+      m.material.map?.dispose();
+      const t = new THREE.CanvasTexture(fieldCanvas(m.userData.look, colors));
+      const tiles = m.userData.look === "court" || m.userData.look === "track";
+      t.wrapS = t.wrapT = tiles ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      m.material.map = t;
+      m.material.needsUpdate = true;
+    }
     trunkMat.color.set(token("--map-trunk"));
     paint(true);
   }
@@ -269,7 +336,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const under = (e) => {
     const box = renderer.domElement.getBoundingClientRect();
     ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1), camera);
-    const hit = ray.intersectObjects([town, areas])[0];
+    const hit = ray.intersectObjects(bowl ? [town, areas, bowl] : [town, areas])[0];
     return hit ? hit.object.userData.merged.triOwner[hit.faceIndex] : null;
   };
   // Tap (not drag) picks.
@@ -425,7 +492,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
-      for (const t of [...Object.values(textures), wallMat, roofMat]) t.dispose();
+      for (const t of [...Object.values(textures), wallMat, roofMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean)]) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },

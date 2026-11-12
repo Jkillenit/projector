@@ -106,6 +106,9 @@
   --map-path: #F7F3EC;
   --map-parking: #DDD8D0;
   --map-pitch: #A6CF8A;
+  --map-line: #FBFAF6;
+  --map-dirt: #C9A47E;
+  --map-track: #B5534A;
   --map-slate-1: #A9B1B9; /* roofs you can tap: slate tones, one per building from its id (#149) */
   --map-slate-2: #B0B6BC;
   --map-slate-3: #BBBFC3;
@@ -205,6 +208,9 @@
   --map-path: #33302C;
   --map-parking: #2E2A27;
   --map-pitch: #33532F;
+  --map-line: #9DB59A;
+  --map-dirt: #6B5440;
+  --map-track: #7A3A34;
   --map-slate-1: #3A4048;
   --map-slate-2: #40444A;
   --map-slate-3: #444A52;
