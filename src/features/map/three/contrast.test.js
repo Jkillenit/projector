@@ -50,7 +50,9 @@ describe("3D map and walkthrough contrast", () => {
   }
 
   // #115: the picked place stands out on the map in both views (3 to 1, like any shape that carries meaning).
+  // #120: roads read at a glance on the ground, without being as loud as the pick.
   const MAP_PAIRS = [
+    ["map-road", "map-ground", 1.5],
     ["map-pick", "map-ground"],
     ["map-pick", "map-grass"],
     ["map-pick", "map-building"],
@@ -66,7 +68,7 @@ describe("3D map and walkthrough contrast", () => {
       const keys = Object.keys(t).filter((k) => k.startsWith("map-"));
       expect(keys.length).toBeGreaterThanOrEqual(13);
       for (const k of keys) expect(val(t, k), k).toMatch(/^#[0-9A-F]{6}$/i);
-      for (const [fg, bg] of MAP_PAIRS) expect(ratio(rgba(val(t, fg)), rgba(val(t, bg))), `${fg} on ${bg}`).toBeGreaterThanOrEqual(3);
+      for (const [fg, bg, min = 3] of MAP_PAIRS) expect(ratio(rgba(val(t, fg)), rgba(val(t, bg))), `${fg} on ${bg}`).toBeGreaterThanOrEqual(min);
     });
   }
 

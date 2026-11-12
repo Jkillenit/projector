@@ -4,6 +4,7 @@ export const STORAGE = {
   completed: "studyHub.v2.builtin.completedChapters",
   fontStep: "studyHub.v2.prefs.fontStep",
   comfortable: "studyHub.v2.prefs.comfortableReading",
+  mapView: "studyHub.v2.prefs.mapView",
   builtinChapterNotes: "studyHub.v2.builtin.chapterNotes",
   /** @type {string} Built-in course materials library JSON (Electron paths from pickers) */
   builtinMaterials: "studyHub.v2.builtin.materialsLibrary",
