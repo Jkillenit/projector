@@ -4,16 +4,19 @@ import campus from "../campus.json";
 import { pathToRings } from "./extrude.js";
 import { addRibbons, GROUND_LAYERS, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
+import { footprint, labelBox, thinLabels } from "./labels.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
 const FLY_MS = 1500;
 const MODE_MS = 700;
 const TO_2D = " Showing the 2D map.";
+const PIN = 28; // pin size on screen, px, as in ui.css
+const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class and an event in one building do not cover each other
 
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
-  const stage = createStage(three, host, { theme: () => theme() });
+  const stage = createStage(three, host, { theme: () => theme(), overlay: (size) => overlay(size) });
   const { THREE, camera, controls, render, add, geometry, solid, renderer } = stage;
   controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
   let mode = firstMode;
@@ -60,12 +63,19 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const town = tappable(buildings, null, 3, new THREE.MeshLambertMaterial({ vertexColors: true }));
   const edges = add(new THREE.LineSegments(new THREE.EdgesGeometry(town.geometry, 30), new THREE.LineBasicMaterial()));
 
+  // Pins and names are HTML over the scene (#119): sharp text, a steady size on screen, buttons for keyboard and screen readers.
+  const { CSS2DObject } = three;
   const pinGroup = add(new THREE.Group());
-  const classShape = new THREE.BoxGeometry(14, 14, 14);
-  const eventShape = new THREE.SphereGeometry(8, 16, 12);
-  const classMat = new THREE.MeshLambertMaterial();
-  const sessionMat = new THREE.MeshLambertMaterial();
-  const eventMat = new THREE.MeshLambertMaterial();
+  const labelGroup = add(new THREE.Group());
+  for (const p of [...buildings, ...campus.areas]) {
+    const el = document.createElement("div");
+    el.className = "map-3d-label";
+    el.textContent = p.name;
+    const o = new CSS2DObject(el);
+    o.position.set(p.c[0], (p.h || 0) + 2, p.c[1]);
+    o.userData = { id: p.id, name: p.name, rank: footprint(p.path) * (p.h ? 1 : 0.05) }; // areas give way to buildings
+    labelGroup.add(o);
+  }
 
   let picked = null;
   let hovered = null;
@@ -90,20 +100,45 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     for (const m of layers) m.material.color.set(token(m.userData.token));
     context.material.color.set(token("--map-context"));
     edges.material.color.set(token("--map-roof"));
-    classMat.color.set(token("--good"));
-    sessionMat.color.set(token("--support-fill"));
-    eventMat.color.set(token("--accent"));
     paint();
   }
 
-  // What is under the pointer: a pin key, a building or area id, or null. The nearest hit wins, so a building beats the area around it.
+  // Before each draw of the HTML layer: show the names that fit, never on a pin.
+  const v = new THREE.Vector3();
+  const onScreen = (o, size) => {
+    v.copy(o.position).project(camera);
+    return v.z > 1 ? null : [((v.x + 1) / 2) * size.w, ((1 - v.y) / 2) * size.h];
+  };
+  function overlay(size) {
+    // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
+    const box = host.getBoundingClientRect();
+    const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height };
+    });
+    for (const o of pinGroup.children) {
+      const at = onScreen(o, size);
+      if (at) pinBoxes.push({ x: at[0] + o.userData.shift - PIN / 2, y: at[1] + o.userData.shift - PIN / 2, w: PIN, h: PIN });
+    }
+    const items = [];
+    for (const o of labelGroup.children) {
+      const at = onScreen(o, size);
+      if (at) items.push({ id: o.userData.id, box: labelBox(o.userData.name, at[0], at[1]), rank: o.userData.id === picked ? Infinity : o.userData.rank });
+    }
+    const shown = thinLabels(items, pinBoxes, size);
+    for (const o of labelGroup.children) {
+      o.visible = shown.has(o.userData.id);
+      o.element.classList.toggle("is-on", o.userData.id === picked);
+    }
+  }
+
+  // What is under the pointer: a building or area id, or null. The nearest hit wins, so a building beats the area around it.
   const ray = new THREE.Raycaster();
   const under = (e) => {
     const box = renderer.domElement.getBoundingClientRect();
     ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1), camera);
-    const hit = ray.intersectObjects([...pinGroup.children, town, areas])[0];
-    if (!hit) return null;
-    return hit.object.userData.merged ? hit.object.userData.merged.triOwner[hit.faceIndex] : hit.object.userData.key;
+    const hit = ray.intersectObjects([town, areas])[0];
+    return hit ? hit.object.userData.merged.triOwner[hit.faceIndex] : null;
   };
   // Tap (not drag) picks.
   let down = null;
@@ -227,19 +262,27 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       render();
     },
     setPins(classSpots, pins) {
-      pinGroup.clear();
-      const top = (place) => (place?.h || 4) + 14;
+      pinGroup.clear(); // CSS2DObjects take their HTML with them
+      const put = (p, className, label, shift) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = className;
+        button.textContent = p.classes?.length || p.events.length;
+        button.setAttribute("aria-label", label);
+        button.style.margin = `${shift}px 0 0 ${shift}px`;
+        button.addEventListener("click", () => onPick.current(p.key));
+        const o = new CSS2DObject(button);
+        o.position.set(p.xy[0], p.place?.h || 0, p.xy[1]);
+        o.userData.shift = shift;
+        pinGroup.add(o);
+      };
       for (const p of classSpots) {
-        const m = new THREE.Mesh(classShape, p.classes.every((c) => c.session) ? sessionMat : classMat);
-        m.position.set(p.xy[0] - 10, top(p.place), p.xy[1] - 10);
-        m.userData.key = p.key;
-        pinGroup.add(m);
+        const n = p.classes.length;
+        put(p, `map-3d-pin is-class${p.classes.every((c) => c.session) ? " is-session" : ""}`, `Your ${n === 1 ? "class" : `${n} classes`} in ${p.place.name}`, CLASS_SHIFT);
       }
       for (const p of pins) {
-        const m = new THREE.Mesh(eventShape, eventMat);
-        m.position.set(p.xy[0], top(p.place), p.xy[1]);
-        m.userData.key = p.key;
-        pinGroup.add(m);
+        const n = p.events.length;
+        put(p, "map-3d-pin", `${n} ${n === 1 ? "event" : "events"} at ${p.place?.name || p.events[0].where}`, 0);
       }
       render();
     },
@@ -251,7 +294,6 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       stop();
       cancelAnimationFrame(hoverFrame);
       host.removeEventListener("keydown", onKey);
-      for (const x of [classShape, eventShape, classMat, sessionMat, eventMat]) x.dispose();
       stage.dispose();
     },
   };

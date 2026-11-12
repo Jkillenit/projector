@@ -14,20 +14,28 @@ export function hasWebGL() {
   }
 }
 
-/** three and its camera controls, loaded only when a 3D view opens (#53). */
+/** three, its camera controls and its HTML label layer, loaded only when a 3D view opens (#53). */
 export const loadThree = () =>
-  Promise.all([import("three"), import("three/addons/controls/OrbitControls.js")]).then(([THREE, { OrbitControls }]) => ({ THREE, OrbitControls }));
+  Promise.all([import("three"), import("three/addons/controls/OrbitControls.js"), import("three/addons/renderers/CSS2DRenderer.js")]).then(
+    ([THREE, { OrbitControls }, { CSS2DRenderer, CSS2DObject }]) => ({ THREE, OrbitControls, CSS2DRenderer, CSS2DObject }),
+  );
 
 export const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888";
 
 /**
  * A 3D stage in host. theme() is called now and whenever the theme changes, so colors follow our tokens.
+ * Pass overlay(size) to get an HTML layer over the scene (CSS2DObjects): it runs before each draw of that layer.
  * Returns { THREE, scene, camera, controls, render, add, geometry, solid, dispose }.
  */
-export function createStage({ THREE, OrbitControls }, host, { near = 1, far = 12000, theme = () => {} } = {}) {
+export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { near = 1, far = 12000, theme = () => {}, overlay = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   host.appendChild(renderer.domElement);
+  const html = overlay ? new CSS2DRenderer() : null;
+  if (html) {
+    html.domElement.className = "map-3d-html";
+    host.appendChild(html.domElement);
+  }
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 4 / 3, near, far);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -59,12 +67,20 @@ export function createStage({ THREE, OrbitControls }, host, { near = 1, far = 12
     return geometry(p, ix);
   };
 
-  const render = () => renderer.render(scene, camera);
+  const size = { w: 1, h: 1 };
+  const render = () => {
+    renderer.render(scene, camera);
+    if (!html) return;
+    overlay(size);
+    html.render(scene, camera);
+  };
   controls.addEventListener("change", render);
   const fit = () => {
     const w = host.clientWidth || 1;
     const h = host.clientHeight || 1;
     renderer.setSize(w, h, false);
+    html?.setSize(w, h);
+    Object.assign(size, { w, h });
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     render();
@@ -96,6 +112,7 @@ export function createStage({ THREE, OrbitControls }, host, { near = 1, far = 12
       }
       renderer.dispose();
       renderer.domElement.remove();
+      html?.domElement.remove();
     },
   };
 }
