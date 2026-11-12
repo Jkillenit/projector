@@ -3,9 +3,12 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { mergeBuildings, roadSegments } from "./campusMesh.js";
+import { flyPath, viewFor } from "./camera.js";
+import { isReducedMotion } from "../../../shell/motion.js";
 
 const NO_WEBGL = "3D needs WebGL, and this browser has it turned off. Showing the 2D map.";
 const NO_LOAD = "3D did not load. Showing the 2D map.";
+const FLY_MS = 1500;
 
 function hasWebGL() {
   try {
@@ -18,7 +21,7 @@ function hasWebGL() {
 
 const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888";
 
-/** Builds the scene once. Returns { setPicked, setPins, zoom, reset, dispose }. */
+/** Builds the scene once. Returns { setPicked, setPins, fly, zoom, reset, dispose }. */
 function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -154,6 +157,29 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
   };
   host.addEventListener("keydown", onKey);
 
+  // Fly to a place. A new flight starts from wherever the camera is; grabbing the map stops it.
+  let flight = 0;
+  const stop = () => cancelAnimationFrame(flight);
+  controls.addEventListener("start", stop);
+  const put = (v) => {
+    camera.position.set(...v.position);
+    controls.target.set(...v.target);
+    controls.update();
+  };
+  const fly = (place) => {
+    stop();
+    const to = viewFor(place);
+    if (isReducedMotion()) return put(to);
+    const from = { position: camera.position.toArray(), target: controls.target.toArray() };
+    const t0 = performance.now();
+    const step = (now) => {
+      const t = (now - t0) / FLY_MS;
+      put(flyPath(from, to, t));
+      if (t < 1) flight = requestAnimationFrame(step);
+    };
+    flight = requestAnimationFrame(step);
+  };
+
   theme();
   fit();
 
@@ -180,9 +206,11 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
       }
       render();
     },
+    fly,
     zoom,
-    reset: home,
+    reset: () => { stop(); home(); },
     dispose() {
+      stop();
       resize.disconnect();
       themeWatch.disconnect();
       media?.removeEventListener?.("change", theme);
@@ -202,8 +230,9 @@ function setup(THREE, OrbitControls, host, { buildings, center, onPick }) {
 /**
  * The campus in 3D. Loads three only when shown (#53). Tapping a building or pin calls onPick with the same
  * ids and keys as the 2D map, so the place panel works the same. Calls onFail(message) when 3D cannot run.
+ * flyTo: { place } flies the camera there (#59); pass a new object for each tap, even to the same place.
  */
-export function Campus3D({ buildings, center, picked, classSpots, pins, onPick, onFail }) {
+export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, onPick, onFail }) {
   const host = useRef(null);
   const scene = useRef(null);
   const pick = useRef(onPick);
@@ -234,6 +263,7 @@ export function Campus3D({ buildings, center, picked, classSpots, pins, onPick, 
 
   useEffect(() => { if (ready) scene.current?.setPicked(picked); }, [ready, picked]);
   useEffect(() => { if (ready) scene.current?.setPins(classSpots, pins); }, [ready, classSpots, pins]);
+  useEffect(() => { if (ready && flyTo?.place) scene.current?.fly(flyTo.place); }, [ready, flyTo]);
 
   return (
     <>
