@@ -26,6 +26,11 @@ const RANGES = [
   ["today", "Today"],
   ["week", "This week"],
 ];
+const VIEWS = [
+  ["map", "Map"],
+  ["tilt", "2.5D"],
+  ["3d", "3D"],
+];
 
 /** Where an event goes on the map: the calendar's own coordinates, else the building its place names. */
 function spotOf(e) {
@@ -44,8 +49,8 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
   const [search, setSearch] = useState("");
-  const [is3d, setIs3d] = useState(false);
-  const [note3d, setNote3d] = useState(""); // why 3D is off, when it could not run
+  const [mode, setMode] = useState("map"); // the scene's camera: map, tilt (2.5D) or 3d
+  const [note3d, setNote3d] = useState(""); // why the scene could not run; the flat SVG map shows instead
   const [flyTo, setFlyTo] = useState(null); // { place }: a new object each time, so 3D flies even to the same place
   const indoor = useIndoor();
   const walking = (walk && room && indoor.buildings.find((b) => b.building === walk)) || null;
@@ -123,7 +128,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
     };
     svg.addEventListener("wheel", onWheel, { passive: false });
     return () => svg.removeEventListener("wheel", onWheel);
-  }, [is3d]); // the svg comes back when 3D is turned off
+  }, [note3d]); // the svg shows only when the scene could not run
 
   const h = view.w * 0.75;
   const zoom = (f) => setView((v) => ({ ...v, w: Math.min(MAX_W, Math.max(MIN_W, v.w * f)) }));
@@ -160,7 +165,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
   // Back from a walkthrough: the 3D campus, at that building.
   const closeWalk = () => {
     window.location.hash = routeHref("map");
-    setIs3d(true);
+    setMode("3d");
     focus(BUILDINGS.find((b) => b.id === walking.building));
   };
 
@@ -182,7 +187,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
             <Chip key={id} filter pressed={range === id} onClick={() => setRange(id)}>{label}</Chip>
           ))}
         </div>
-        {walking ? null : <Segmented label="Map view" options={[["2d", "2D"], ["3d", "3D"]]} value={is3d ? "3d" : "2d"} onChange={(v) => { setNote3d(""); setIs3d(v === "3d"); }} />}
+        {walking || note3d ? null : <Segmented label="Map view" options={VIEWS} value={mode} onChange={setMode} />}
       </div>
       {note3d ? <p className="t-small t-muted" role="status">{note3d}</p> : null}
       {results.length ? (
@@ -198,16 +203,17 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
       ) : (
       <div className="map-body">
         <div className="map-frame">
-          {is3d ? (
+          {!note3d ? (
             <Campus3D
               buildings={BUILDINGS}
               center={place?.c || [view.cx, view.cy]}
+              mode={mode}
               picked={place?.id || null}
               flyTo={flyTo}
               classSpots={classSpots}
               pins={pins}
               onPick={setPicked}
-              onFail={(why) => { setIs3d(false); setNote3d(why); }}
+              onFail={setNote3d}
             />
           ) : (
           <>
@@ -299,9 +305,9 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
               <MyClasses week={week} indoor={indoor.buildings} spots={classSpots} unplaced={unplaced} range={range} onPick={(key) => { setPicked(key); const s = classSpots.find((p) => p.key === key); if (s) setFlyTo({ place: s.place }); }} onAdd={() => setAdding({})} onRemove={removeSession} />
               <h2 className="t-title">{status === "loading" ? "Getting events…" : `${pins.reduce((s, p) => s + p.events.length, 0)} events on the map`}</h2>
               <p className="t-small t-muted">
-                {is3d
-                  ? "Tap a pin or a building. Cubes are your classes and sessions, balls are events. Drag to turn, right drag to move, scroll or use + and − to zoom."
-                  : "Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom."}
+                {note3d
+                  ? "Tap a pin or a building. Squares are your classes and sessions, circles are events. Drag to move, scroll or use + and − to zoom."
+                  : `Tap a pin or a building. Cubes are your classes and sessions, balls are events. ${mode === "3d" ? "Drag to turn, right drag to move" : "Drag to move"}, scroll or use + and − to zoom.`}
               </p>
               {unpinned ? (
                 <p className="t-small t-faint">

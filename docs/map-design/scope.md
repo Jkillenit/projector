@@ -24,6 +24,7 @@ Switching views moves the camera. The scene is never rebuilt, so the three views
 | How 2D and 2.5D are drawn | One three.js scene, three cameras | Textures and light cannot match between SVG and WebGL. One scene cannot drift. |
 | The SVG map | Kept as the no-WebGL fallback and the text only base (#69) | Gets the new colors, not the realism. |
 | Textures and models | Mostly made in code, a few CC0 files | Grass, asphalt, concrete, water and roofs are canvas textures. Brick and 2 or 3 tree models are CC0 (Poly Haven, ambientCG, Kenney), loaded with three's built in GLTFLoader. About 1 to 2 MB. No new package (rule 8). |
+| Flat camera for Map and 2.5D (#117) | One perspective camera with a long 6° lens, not a separate orthographic camera | Looks flat (a 60 m wall leans about 3 m at the edge). One camera means the switch to 3D animates smoothly and the orbit controls, flights and tapping work the same in every view. |
 | "Alive" | Time of day and night, ambient motion, people and cars, seasons and game day | All four, in phase 4. |
 
 ## How it fits together
