@@ -10,7 +10,7 @@ import { isReducedMotion } from "../../../shell/motion.js";
 
 const FLY_MS = 1500;
 const MODE_MS = 700;
-const TO_2D = " Showing the 2D map.";
+const TO_2D = " Showing the flat map instead.";
 const PIN = 28; // pin size on screen, px, as in ui.css
 const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class and an event in one building do not cover each other
 

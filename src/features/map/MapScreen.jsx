@@ -15,6 +15,7 @@ import { AddSession } from "./AddSession.jsx";
 import { asMeeting, upcomingSessions } from "./mySessions.js";
 import { useMySessions } from "./useMySessions.js";
 import { localDayKey } from "../../lib/dates.js";
+import { loadJson, saveJson, STORAGE } from "../../lib/storage.js";
 import { Campus3D } from "./three/Campus3D.jsx";
 import { Walkthrough } from "./three/Walkthrough.jsx";
 
@@ -49,7 +50,15 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
   const [range, setRange] = useState("today");
   const [picked, setPicked] = useState(null); // a pin key or a place id
   const [search, setSearch] = useState("");
-  const [mode, setMode] = useState("map"); // the scene's camera: map, tilt (2.5D) or 3d
+  // The scene's camera: map, tilt (2.5D) or 3d. Opens in 2.5D, then in the view the student last chose (#120).
+  const [mode, setMode] = useState(() => {
+    const saved = loadJson(STORAGE.mapView, "tilt");
+    return VIEWS.some(([id]) => id === saved) ? saved : "tilt";
+  });
+  const chooseMode = (m) => {
+    setMode(m);
+    saveJson(STORAGE.mapView, m);
+  };
   const [note3d, setNote3d] = useState(""); // why the scene could not run; the flat SVG map shows instead
   const [flyTo, setFlyTo] = useState(null); // { place }: a new object each time, so 3D flies even to the same place
   const indoor = useIndoor();
@@ -187,7 +196,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
             <Chip key={id} filter pressed={range === id} onClick={() => setRange(id)}>{label}</Chip>
           ))}
         </div>
-        {walking || note3d ? null : <Segmented label="Map view" options={VIEWS} value={mode} onChange={setMode} />}
+        {walking || note3d ? null : <Segmented label="Map view" options={VIEWS} value={mode} onChange={chooseMode} />}
       </div>
       {note3d ? <p className="t-small t-muted" role="status">{note3d}</p> : null}
       {results.length ? (
