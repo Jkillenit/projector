@@ -17,6 +17,19 @@ export function walkTo(m, indoor) {
   return { building: found.building.building, room: found.room.id, label: `Walk me to ${found.room.name || `Room ${found.room.id}`}` };
 }
 
+/** Tomorrow's classes we can walk to (#72): [{ m, walk }], soonest first, one per room. */
+export function tomorrowWalks(meetings, indoor, now = new Date()) {
+  const next = new Date(now);
+  next.setDate(next.getDate() + 1);
+  const day = localDayKey(next);
+  const rooms = new Set();
+  return (meetings || [])
+    .filter((m) => m.date === day)
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map((m) => ({ m, walk: walkTo(m, indoor) }))
+    .filter(({ walk }) => walk.room && !rooms.has(`${walk.building}/${walk.room}`) && rooms.add(`${walk.building}/${walk.room}`));
+}
+
 /** Today's meetings, or the rest of this week's from today on. Soonest first. */
 export function classesInRange(meetings, range, now = new Date()) {
   const today = localDayKey(now);
