@@ -43,18 +43,22 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
     return m;
   });
-  const areas = add(new THREE.Mesh(solid(campus.areas.flatMap((a) => pathToRings(a.path)), 0.3), new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.25 })));
-  // Unnamed buildings at their own heights, one mesh.
+  // Unnamed buildings at their own heights, one mesh. Not tappable, so a grayer color.
   const others = mergeBuildings(nature.outlines);
   const context = add(new THREE.Mesh(geometry(others.positions, others.indices), new THREE.MeshLambertMaterial()));
 
-  // Named buildings: one mesh, colored per vertex so one building can light up.
-  const merged = mergeBuildings(buildings);
-  const named = geometry(merged.positions, merged.indices);
-  const colors = new Float32Array(merged.positions.length);
-  named.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const town = add(new THREE.Mesh(named, new THREE.MeshLambertMaterial({ vertexColors: true })));
-  const edges = add(new THREE.LineSegments(new THREE.EdgesGeometry(named, 30), new THREE.LineBasicMaterial()));
+  // Tappable shapes: one mesh each, colored per vertex (RGBA) so one place can light up. Areas are a thin see-through tint.
+  const tappable = (places, h, size, material) => {
+    const merged = mergeBuildings(places.map((p) => ({ id: p.id, path: p.path, h: h ?? p.h })));
+    const geo = geometry(merged.positions, merged.indices);
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array((merged.positions.length / 3) * size), size));
+    const mesh = add(new THREE.Mesh(geo, material));
+    mesh.userData.merged = merged;
+    return mesh;
+  };
+  const areas = tappable(campus.areas, 0.3, 4, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true }));
+  const town = tappable(buildings, null, 3, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const edges = add(new THREE.LineSegments(new THREE.EdgesGeometry(town.geometry, 30), new THREE.LineBasicMaterial()));
 
   const pinGroup = add(new THREE.Group());
   const classShape = new THREE.BoxGeometry(14, 14, 14);
@@ -64,20 +68,27 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const eventMat = new THREE.MeshLambertMaterial();
 
   let picked = null;
+  let hovered = null;
   const paint = () => {
-    const base = new THREE.Color(token("--map-building"));
     const on = new THREE.Color(token("--map-pick"));
-    for (const o of merged.owners) {
-      const c = o.id === picked ? on : base;
-      for (let v = o.start; v < o.end; v++) c.toArray(colors, v * 3);
+    const near = new THREE.Color(token("--map-hover"));
+    for (const [mesh, base, alpha] of [[town, new THREE.Color(token("--map-building")), 1], [areas, new THREE.Color(token("--map-grass")), 0.25]]) {
+      const attr = mesh.geometry.attributes.color;
+      for (const o of mesh.userData.merged.owners) {
+        const lit = o.id === picked || o.id === hovered;
+        const c = o.id === picked ? on : o.id === hovered ? near : base;
+        for (let v = o.start; v < o.end; v++) {
+          c.toArray(attr.array, v * attr.itemSize);
+          if (attr.itemSize === 4) attr.array[v * 4 + 3] = lit ? 0.5 : alpha;
+        }
+      }
+      attr.needsUpdate = true;
     }
-    named.attributes.color.needsUpdate = true;
   };
   function theme() {
     ground.material.color.set(token("--map-ground"));
-    areas.material.color.set(token("--map-grass"));
     for (const m of layers) m.material.color.set(token(m.userData.token));
-    context.material.color.set(token("--map-building"));
+    context.material.color.set(token("--map-context"));
     edges.material.color.set(token("--map-roof"));
     classMat.color.set(token("--good"));
     sessionMat.color.set(token("--support-fill"));
@@ -85,20 +96,44 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     paint();
   }
 
-  // Tap (not drag) picks a pin or a building.
+  // What is under the pointer: a pin key, a building or area id, or null. The nearest hit wins, so a building beats the area around it.
   const ray = new THREE.Raycaster();
+  const under = (e) => {
+    const box = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1), camera);
+    const hit = ray.intersectObjects([...pinGroup.children, town, areas])[0];
+    if (!hit) return null;
+    return hit.object.userData.merged ? hit.object.userData.merged.triOwner[hit.faceIndex] : hit.object.userData.key;
+  };
+  // Tap (not drag) picks.
   let down = null;
   const onDown = (e) => { down = [e.clientX, e.clientY]; };
   const onUp = (e) => {
     if (!down || Math.abs(e.clientX - down[0]) + Math.abs(e.clientY - down[1]) > 4) return;
-    const box = renderer.domElement.getBoundingClientRect();
-    ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1), camera);
-    const hit = ray.intersectObjects([...pinGroup.children, town])[0];
-    if (!hit) return;
-    onPick.current(hit.object === town ? merged.triOwner[hit.faceIndex] : hit.object.userData.key);
+    const id = under(e);
+    if (id) onPick.current(id);
   };
+  // Hover tints a place on desktop: a mouse with no button held, checked once a frame.
+  let hoverFrame = 0;
+  const hover = (id) => {
+    renderer.domElement.style.cursor = id ? "pointer" : "";
+    if (id === hovered) return;
+    hovered = id;
+    paint();
+    render();
+  };
+  const onMove = (e) => {
+    if (e.pointerType !== "mouse" || e.buttons || hoverFrame) return;
+    hoverFrame = requestAnimationFrame(() => {
+      hoverFrame = 0;
+      hover(under(e));
+    });
+  };
+  const onLeave = () => hover(null);
   renderer.domElement.addEventListener("pointerdown", onDown);
   renderer.domElement.addEventListener("pointerup", onUp);
+  renderer.domElement.addEventListener("pointermove", onMove);
+  renderer.domElement.addEventListener("pointerleave", onLeave);
 
   const zoom = (f) => {
     const offset = camera.position.clone().sub(controls.target);
@@ -214,6 +249,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     reset: () => { stop(); home(); },
     dispose() {
       stop();
+      cancelAnimationFrame(hoverFrame);
       host.removeEventListener("keydown", onKey);
       for (const x of [classShape, eventShape, classMat, sessionMat, eventMat]) x.dispose();
       stage.dispose();
