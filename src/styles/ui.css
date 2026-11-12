@@ -1172,6 +1172,16 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
 .map-credit { position: absolute; right: 8px; bottom: 6px; font-size: 12px; color: var(--muted); background: var(--surface); padding: 1px 6px; border-radius: var(--r-sm); }
 .map-side { gap: 10px; max-height: 70vh; overflow: auto; }
+/* Wide screens: the map fills the window's width and height, not a 4:3 box in a 1240 px column. */
+@media (min-width: 900px) {
+  .ui-fade:has(> .map-page) { height: 100%; } /* the route wrapper, so the page's 100% means the window */
+  .map-page { max-width: none; min-height: 100%; padding-bottom: 24px; }
+  .map-page > .map-body { flex: 1; min-height: 480px; align-items: stretch; }
+  .map-page > .map-body > .map-frame { display: flex; flex-direction: column; }
+  .map-page > .map-body > .map-frame > .map-3d, .map-page > .map-body > .map-frame > .map-svg { flex: 1; min-height: 0; aspect-ratio: auto; }
+  .map-page > .map-body > .map-side { align-self: start; max-height: 100%; }
+}
+@media (min-width: 1600px) { .map-body { grid-template-columns: minmax(0, 1fr) 400px; } }
 .map-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .map-events li { display: flex; flex-direction: column; gap: 4px; padding: 12px 0; border-top: 1px solid var(--divider); }
 .map-events li:first-child { border-top: 0; padding-top: 0; }
