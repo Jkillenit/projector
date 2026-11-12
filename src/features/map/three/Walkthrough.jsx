@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card, Chip } from "../../../components/ui/index.jsx";
+import { Button, Card, Chip, Segmented } from "../../../components/ui/index.jsx";
+import { loadJson, saveJson } from "../../../lib/storage.js";
 import { buildGraph, route } from "../indoor/route.js";
 import { feet, steps as stepsOf } from "../indoor/steps.js";
 import { toCampus } from "../indoor/indoorData.js";
@@ -10,6 +11,8 @@ import { isReducedMotion } from "../../../shell/motion.js";
 const WALL = 1.2; // low cut away walls, so you can see into rooms
 const SPEED = 9; // meters per second the marker moves
 const PAUSE_MS = 700; // between steps while playing
+const READ_MS = 2500; // between steps while playing with steps only, time to read
+const STEPS_ONLY = "studyHub.v2.prefs.walkStepsOnly";
 
 /** The building's floors, the goal room and the route. Returns { setLine, goTo, dispose }. */
 function setup(three, host, { indoor, roomId }) {
@@ -126,7 +129,8 @@ function setup(three, host, { indoor, roomId }) {
 
 /**
  * Walk from a door to a room in 3D (#67): floors pulled apart, low walls, the route and a marker that follows the steps.
- * Without WebGL the steps still work. Esc or "Back to map" calls onClose.
+ * "Steps only" (#69) shows the plain steps with no 3D: anyone can pick it, and it is the only view without WebGL.
+ * Esc or "Back to map" calls onClose.
  */
 export function Walkthrough({ indoor, roomId, onClose }) {
   const graph = useMemo(() => buildGraph(indoor), [indoor]);
@@ -144,45 +148,55 @@ export function Walkthrough({ indoor, roomId, onClose }) {
   const scene = useRef(null);
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState("");
+  const [noGL] = useState(() => !hasWebGL());
+  const [picked, setPicked] = useState(() => loadJson(STEPS_ONLY, false) === true);
+  const stepsOnly = picked || noGL || !!note;
+  const pickView = (v) => {
+    setPicked(v === "steps");
+    saveJson(STEPS_ONLY, v === "steps");
+  };
 
   useEffect(() => {
     let gone = false;
-    if (!hasWebGL()) {
-      setNote(NO_WEBGL + " Here are the steps.");
-      return undefined;
-    }
+    setReady(false);
+    if (stepsOnly) return undefined;
     loadThree()
       .then((three) => {
         if (gone) return;
         scene.current = setup(three, host.current, { indoor, roomId });
         setReady(true);
       })
-      .catch(() => !gone && setNote(NO_LOAD + " Here are the steps."));
+      .catch(() => !gone && setNote(`${NO_LOAD} Here are the steps.`));
     return () => {
       gone = true;
       scene.current?.dispose();
       scene.current = null;
     };
-  }, [indoor, roomId]);
+    // stepsOnly is in the deps: switching back to 3D builds the scene again.
+  }, [indoor, roomId, stepsOnly]);
 
-  // A new route starts over at its first step.
+  // A new route starts over at its first step. Switching views keeps your place.
   useEffect(() => {
     setAt(0);
     setPlaying(false);
+  }, [line]);
+  useEffect(() => {
     if (ready) scene.current?.setLine(line);
   }, [ready, line]);
 
-  // Move to the current step; while playing, go on to the next one.
+  // Move to the current step; while playing, go on to the next one. Steps only has no marker, so it just waits.
   useEffect(() => {
-    if (!ready || !line) return undefined;
+    if (!line || (!ready && !stepsOnly)) return undefined;
     let timer;
-    scene.current?.goTo(line.stepEnds[at] ?? 0, () => {
+    const next = () => {
       if (!playingRef.current) return;
-      if (at < list.length - 1) timer = setTimeout(() => setAt((a) => Math.min(a + 1, list.length - 1)), PAUSE_MS);
+      if (at < list.length - 1) timer = setTimeout(() => setAt((a) => Math.min(a + 1, list.length - 1)), stepsOnly ? READ_MS : PAUSE_MS);
       else setPlaying(false);
-    });
+    };
+    if (stepsOnly) next();
+    else scene.current?.goTo(line.stepEnds[at] ?? 0, next);
     return () => clearTimeout(timer);
-  }, [ready, line, at, list.length, playing]);
+  }, [ready, stepsOnly, line, at, list.length, playing]);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -196,12 +210,14 @@ export function Walkthrough({ indoor, roomId, onClose }) {
   const entrances = indoor.floors.flatMap((f) => f.entrances || []);
 
   return (
-    <div className="map-body">
-      <div className="map-frame">
-        <div ref={host} className="map-3d" tabIndex={0} role="application" aria-label={`3D walk to ${room} in ${indoor.name}. Drag to turn, scroll to zoom.`}>
-          {note ? <p className="map-3d-wait t-small t-muted">{note}</p> : ready ? null : <p className="map-3d-wait t-small t-muted">Loading 3D…</p>}
+    <div className={`map-body${stepsOnly ? " is-steps" : ""}`}>
+      {stepsOnly ? null : (
+        <div className="map-frame">
+          <div ref={host} className="map-3d" tabIndex={0} role="application" aria-label={`3D walk to ${room} in ${indoor.name}. Drag to turn, scroll to zoom.`}>
+            {ready ? null : <p className="map-3d-wait t-small t-muted">Loading 3D…</p>}
+          </div>
         </div>
-      </div>
+      )}
 
       <Card className="map-side walk-side">
         <div className="walk-head">
@@ -209,6 +225,11 @@ export function Walkthrough({ indoor, roomId, onClose }) {
           <Button size="sm" onClick={onClose}>Back to map</Button>
         </div>
         <p className="t-small t-muted">{indoor.name}</p>
+        {noGL || note ? (
+          <p className="t-small t-muted" role="status">{note || `${NO_WEBGL} Here are the steps.`}</p>
+        ) : (
+          <Segmented label="View" options={[["3d", "3D"], ["steps", "Steps only"]]} value={picked ? "steps" : "3d"} onChange={pickView} />
+        )}
 
         <div className="ui-chips" role="group" aria-label="How to get in">
           <Chip filter pressed={stepFree} onClick={() => setStepFree((v) => !v)}>Step free</Chip>
