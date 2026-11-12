@@ -8,6 +8,7 @@ import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { placeTrees, seeded } from "./trees.js";
+import { shadowOffset } from "./quality.js";
 import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
@@ -19,8 +20,8 @@ const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class a
 
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
-  const stage = createStage(three, host, { theme: () => theme(), overlay: (size) => overlay(size) });
-  const { THREE, camera, controls, render, add, geometry, solid, renderer } = stage;
+  const stage = createStage(three, host, { outdoor: true, theme: () => theme(), overlay: (size) => overlay(size) });
+  const { THREE, camera, controls, render, add, geometry, solid, renderer, shadows } = stage;
   controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
   let mode = firstMode;
 
@@ -44,6 +45,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide })));
     m.renderOrder = order - 100;
     m.position.y = order * 0.05;
+    m.receiveShadow = true;
     return m;
   };
   const [x0, y0, x1, y1] = campus.bounds;
@@ -76,6 +78,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     geo.addGroup(0, merged.wallIndices, 0);
     geo.addGroup(merged.wallIndices, merged.indices.length - merged.wallIndices, 1);
     const mesh = add(new THREE.Mesh(geo, [wallMat, roofMat]));
+    mesh.castShadow = mesh.receiveShadow = true;
     mesh.userData.merged = merged;
     return mesh;
   };
@@ -127,6 +130,32 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       o.updateMatrix();
       crowns[i % 2].setMatrixAt(i >> 1, o.matrix);
       crowns[i % 2].setColorAt(i >> 1, shade.setScalar(0.85 + r() * 0.25));
+    });
+  }
+  for (const m of [...crowns, trunks]) m.castShadow = true;
+
+  // Low tier (phones, #124): no shadow map, a soft dark patch under each building and tree, pushed the way shadows fall.
+  if (!shadows) {
+    const patch = (mesh) => {
+      mesh.renderOrder = GROUND_LAYERS.length - 100;
+      mesh.position.y = GROUND_LAYERS.length * 0.05;
+      return add(mesh);
+    };
+    const shadeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
+    const rings = [];
+    for (const b of [...buildings, ...nature.outlines]) {
+      const [dx, dz] = shadowOffset(Math.min(b.h || 0, 40) * 0.5);
+      for (const r of pathToRings(b.path)) rings.push(r.map(([x, z]) => [x + dx, z + dz]));
+    }
+    patch(new THREE.Mesh(solid(rings, 0.01, { walls: false }), shadeMat));
+    const blobs = patch(new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2), shadeMat, trees.length));
+    const o = new THREE.Object3D();
+    trees.forEach(([x, z, s], i) => {
+      const [dx, dz] = shadowOffset(TRUNK[s] + CROWN[s] * 0.6);
+      o.position.set(x + dx * 0.5, 0, z + dz * 0.5);
+      o.scale.setScalar(CROWN[s] * 0.9);
+      o.updateMatrix();
+      blobs.setMatrixAt(i, o.matrix);
     });
   }
 
