@@ -83,6 +83,16 @@ describe("checkIndoor", () => {
     expect(problemsOf((d) => { d.floors[0].landmarks[0].name = ""; })).toEqual(["A landmark on Floor 1 has no name"]);
   });
 
+  it("checks photos: on a walk line, a plain image file name, and alt text (#70)", () => {
+    const add = (photo) => (d) => { d.floors[0].photos = [photo]; };
+    const good = { at: [30, 15], file: "junction-1.jpg", alt: "Trophy case straight ahead" };
+    expect(problemsOf(add(good))).toEqual([]);
+    expect(problemsOf(add({ ...good, at: [30, 25] }))).toEqual(["Photo junction-1.jpg on Floor 1 is not on a walk line"]);
+    expect(problemsOf(add({ ...good, file: "../secret/plan.jpg" }))).toEqual(["Photo ../secret/plan.jpg on Floor 1 needs a plain image file name, like turn-1.jpg"]);
+    expect(problemsOf(add({ ...good, file: "notes.txt" }))).toEqual(["Photo notes.txt on Floor 1 needs a plain image file name, like turn-1.jpg"]);
+    expect(problemsOf(add({ ...good, alt: " " }))).toEqual(["Photo junction-1.jpg on Floor 1 has no alt text"]);
+  });
+
   it("does not crash on missing lists", () => {
     const d = hall();
     for (const f of d.floors) for (const k of ["rooms", "walk", "entrances", "links", "landmarks"]) delete f[k];

@@ -127,6 +127,24 @@ function setup(three, host, { indoor, roomId }) {
   };
 }
 
+/** The photo for the current step (#70): from the indoor folder in Live mode, Demo Hall's drawings in Demo mode. */
+function StepPhoto({ photo }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let live = true;
+    setUrl(null);
+    if (photo) {
+      Promise.resolve(window.studyHub?.indoor?.photo?.(photo.file))
+        .then((r) => live && r?.ok && setUrl(r.url))
+        .catch(() => {});
+    }
+    return () => {
+      live = false;
+    };
+  }, [photo]);
+  return url ? <img className="walk-photo" src={url} alt={photo.alt} /> : null;
+}
+
 /**
  * Walk from a door to a room in 3D (#67): floors pulled apart, low walls, the route and a marker that follows the steps.
  * "Steps only" (#69) shows the plain steps with no 3D: anyone can pick it, and it is the only view without WebGL.
@@ -252,6 +270,7 @@ export function Walkthrough({ indoor, roomId, onClose }) {
               <Button size="sm" aria-label="Next step" disabled={at >= last} onClick={() => jump(at + 1)}>Next</Button>
             </div>
             <p className="vh" aria-live="polite">{list[at]?.text}</p>
+            <StepPhoto photo={list[at]?.photo} />
             <ol className="walk-steps">
               {list.map((s, i) => (
                 <li key={i}>

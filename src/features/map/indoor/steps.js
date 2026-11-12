@@ -4,6 +4,7 @@ const TURN_DEGREES = 30; // bends smaller than this are "straight"
 const SHORT_METERS = 3; // walks shorter than this are not worth a step
 const NEAR_METERS = 3; // landmarks this close to the walk are "past"
 const DOOR_METERS = 4; // doors this close to the hall count when we say "the second door"
+const PHOTO_METERS = 3; // a photo this close to where a step starts goes with that step (#70)
 const ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -41,7 +42,7 @@ function runs(points) {
 }
 
 /**
- * Steps for a route: [{ text, points }]. Short sentences (rule 12).
+ * Steps for a route: [{ text, points, photo? }]. Short sentences (rule 12).
  * Example: "Go in the North door." "Walk straight about 40 feet." "Turn right." "Take Stairs A up to Floor 2."
  */
 export function steps(route, indoor) {
@@ -109,6 +110,17 @@ export function steps(route, indoor) {
     say(`Take ${what} ${up} to ${floorName(points[end].floor)}.`, points.slice(i - 1, end + 1));
     start = end;
     i = end;
+  }
+
+  // Each photo goes with the first step that starts near it, on the same floor.
+  const shown = new Set();
+  for (const s of out) {
+    const start = s.points[0];
+    const photo = start && (floorOf(start.floor)?.photos || []).find((p) => !shown.has(p) && dist(p.at, start.at) <= PHOTO_METERS);
+    if (photo) {
+      shown.add(photo);
+      s.photo = photo;
+    }
   }
   return out;
 }

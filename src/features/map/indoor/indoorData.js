@@ -4,6 +4,9 @@ import { findBuilding, isOnline, roomOf, toPath } from "../campusMap.js";
 // shortcut: entrances and links count as on a walk line within 0.5 m; loosen it if real plans need more.
 const ON_WALK_METERS = 0.5;
 
+// A bare file name in the indoor folder: no folders, so a file can never point outside it (#70).
+export const PHOTO_FILE = /^[\w-]+\.(jpe?g|png|webp|svg)$/i;
+
 const isPoint = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
 const isRing = (r) => Array.isArray(r) && r.length >= 3 && r.every(isPoint);
 const list = (v) => (Array.isArray(v) ? v : []);
@@ -73,6 +76,14 @@ export function checkIndoor(data) {
       const seen = links.get(link?.id) || { label, floors: 0 };
       seen.floors++;
       links.set(link?.id, seen);
+    }
+
+    for (const photo of list(floor?.photos)) {
+      const label = `Photo ${photo?.file || "with no file"} on ${where}`;
+      if (!isPoint(photo?.at)) say(`${label} has no place`);
+      else if (!onWalk(photo.at, walk)) say(`${label} is not on a walk line`);
+      if (!PHOTO_FILE.test(String(photo?.file || ""))) say(`${label} needs a plain image file name, like turn-1.jpg`);
+      if (!String(photo?.alt || "").trim()) say(`${label} has no alt text`);
     }
 
     for (const mark of list(floor?.landmarks)) {

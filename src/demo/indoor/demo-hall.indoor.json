@@ -241,6 +241,24 @@
             11
           ]
         }
+      ],
+      "photos": [
+        {
+          "at": [
+            24,
+            12
+          ],
+          "file": "junction.svg",
+          "alt": "The hall splits left and right. Vending machines are just ahead."
+        },
+        {
+          "at": [
+            4,
+            12
+          ],
+          "file": "stairs-a.svg",
+          "alt": "At the end of the hall, a door with a blue Stairs A sign above it."
+        }
       ]
     },
     {
