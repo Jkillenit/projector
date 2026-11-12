@@ -33,6 +33,12 @@ The goal is to beat UA's official online campus map in 2.5D and 3D. It is a hand
 | The stadium bowl, striped fields, a red track, a baseball diamond | #150 |
 | Parking lots with stall lines | #151 |
 | Street names off campus | #152 |
+| Hipped, gabled and barrel roofs; white flat roofs with units | #166 |
+| White trim, cornices and columned fronts on the landmark halls | #167 |
+| Dense, varied trees on the Quad and along streets | #168 |
+| A quiet town around campus: plain, low, no windows | #165 |
+| Bryant-Denny as it looks from the air: gray decks, crimson blocks, white rim | #164 |
+| Pools, fountains, plazas and courts | #170 |
 
 **Where we go past it:** real 3D you can turn, three views of one scene, your classes and sessions pinned, walk me to my classroom, tap and search any place, keyboard and screen reader use, dark mode, and in phase 4 the sun, night lights, people and seasons following the real clock.
 
