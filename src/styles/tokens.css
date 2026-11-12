@@ -95,6 +95,21 @@
   /* focus and motion */
   --ring: 0 0 0 4px var(--good-ring);
   --ease: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  /* campus map, shared by the SVG map and the 3D scene (solid hex: three's Color takes no alpha) */
+  --map-ground: #ECE8E1;
+  --map-grass: #B9D49A;
+  --map-wood: #8FB47A;
+  --map-water: #9CC3DE;
+  --map-road: #CFCAC2;
+  --map-path: #F7F3EC;
+  --map-parking: #DDD8D0;
+  --map-pitch: #A6CF8A;
+  --map-building: #DCCFC4;
+  --map-roof: #CFC2B6;
+  --map-accent: var(--accent);
+  --map-pick: #9E1B32;
+  --map-hover: #C4485E;
 }
 
 :root[data-theme="dark"] {
@@ -170,4 +185,19 @@
   --shadow-1: 0 0 0 1px var(--border);
   --shadow-2: 0 0 0 1px var(--border-strong);
   --shadow-3: 0 16px 40px rgba(0, 0, 0, 0.5);
+
+  /* campus map, shared by the SVG map and the 3D scene (solid hex: three's Color takes no alpha) */
+  --map-ground: #1F1C1A;
+  --map-grass: #2F4A2C;
+  --map-wood: #283F27;
+  --map-water: #22384A;
+  --map-road: #3A3632;
+  --map-path: #4A453F;
+  --map-parking: #2E2A27;
+  --map-pitch: #33532F;
+  --map-building: #3D3631;
+  --map-roof: #47403A;
+  --map-accent: var(--accent);
+  --map-pick: #EC6F85;
+  --map-hover: #B83A52;
 }

@@ -1121,15 +1121,15 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
 @media (max-width: 899px) { .map-body { grid-template-columns: 1fr; } }
 .map-frame { position: relative; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface-2); box-shadow: var(--shadow-1); }
-.map-svg { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; cursor: grab; user-select: none; }
+.map-svg { display: block; background: var(--map-ground); width: 100%; aspect-ratio: 4 / 3; touch-action: none; cursor: grab; user-select: none; }
 .map-svg:active { cursor: grabbing; }
-.map-area { fill: var(--good-tint); stroke: none; cursor: pointer; }
-.map-area.is-on { fill: var(--good-panel); }
-.map-road { fill: none; stroke: var(--border-strong); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.map-context { fill: var(--track); stroke: none; pointer-events: none; }
-.map-bldg { fill: var(--surface-hover); stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
-.map-bldg:hover { fill: var(--accent-tint); }
-.map-bldg.is-on { fill: var(--accent-panel); stroke: var(--accent); }
+.map-area { fill: var(--map-grass); stroke: none; cursor: pointer; }
+.map-area.is-on { fill: var(--map-pick); }
+.map-road { fill: none; stroke: var(--map-road); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.map-context { fill: var(--map-building); stroke: none; pointer-events: none; }
+.map-bldg { fill: var(--map-building); stroke: var(--map-roof); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+.map-bldg:hover { fill: var(--map-hover); }
+.map-bldg.is-on { fill: var(--map-pick); stroke: var(--map-accent); }
 .map-pin { cursor: pointer; }
 .map-pin circle { fill: var(--accent); stroke: var(--bg); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .map-pin text { fill: var(--on-fill); font-weight: 600; pointer-events: none; }
