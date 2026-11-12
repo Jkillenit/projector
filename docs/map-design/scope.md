@@ -16,6 +16,28 @@ One campus scene that looks semi-realistic and feels alive, seen three ways:
 
 Switching views moves the camera. The scene is never rebuilt, so the three views always match.
 
+## The bar: UA's official campus map
+
+The goal is to beat UA's official online campus map in 2.5D and 3D. It is a hand made illustration, and it does a lot well. We use it as the bar to clear, not as a template: we do not trace or copy its art. Our shapes come from OpenStreetMap and our look is made in code.
+
+**What it does well, and we must match:**
+
+| It has | Issue |
+|---|---|
+| Campus ground is green; the town outside campus is plain and quiet | #149 |
+| Dark roads and white sidewalks that read at a glance | #149 |
+| Slate and gray roofs that vary from building to building | #149 |
+| Trees everywhere: rows along streets, clusters on lawns, fall color | #123, #128 |
+| A soft shadow under every building and tree | #124 |
+| Buildings of clearly different sizes | #142 |
+| The stadium bowl, striped fields, a red track, a baseball diamond | #150 |
+| Parking lots with stall lines | #151 |
+| Street names off campus | #152 |
+
+**Where we go past it:** real 3D you can turn, three views of one scene, your classes and sessions pinned, walk me to my classroom, tap and search any place, keyboard and screen reader use, dark mode, and in phase 4 the sun, night lights, people and seasons following the real clock.
+
+**How we check:** at the end of phase 3, take screenshots of our 2.5D and 3D views at the same framing as UA's map, light and dark, and go through the table above. Keep them out of git if they show UA's map (it is not ours to publish).
+
 ## Decisions
 
 | Decision | Choice | Why |
@@ -26,6 +48,7 @@ Switching views moves the camera. The scene is never rebuilt, so the three views
 | Textures and models | Mostly made in code, a few CC0 files | Grass, asphalt, concrete, water and roofs are canvas textures. Brick and 2 or 3 tree models are CC0 (Poly Haven, ambientCG, Kenney), loaded with three's built in GLTFLoader. About 1 to 2 MB. No new package (rule 8). |
 | Flat camera for Map and 2.5D (#117) | One perspective camera with a long 6° lens, not a separate orthographic camera | Looks flat (a 60 m wall leans about 3 m at the edge). One camera means the switch to 3D animates smoothly and the orbit controls, flights and tapping work the same in every view. |
 | Brick made in code, not a CC0 file (#122) | One canvas tile: brick courses plus one window per 4 m bay and 3.5 m floor, tinted by `--map-brick` or OSM `building:colour` | Windows line up with floors for free, no download or credits to track, same look offline. Tree models may still be CC0 files. Landmarks get crimson brick (`--map-landmark`), not a crimson roof, so they never look picked. |
+| Campus ground (#149) | Green inside the campus edge (OSM `amenity=university`), plain light ground outside | Matches how students see campus: lawns everywhere, town in the background. Keeps the eye on campus. |
 | Tappable vs background buildings (#118) | Named buildings warm tan (`--map-building`), unnamed ones light gray (`--map-context`) | You can see what you can tap, in the scene and the SVG map. |
 | "Alive" | Time of day and night, ambient motion, people and cars, seasons and game day | All four, in phase 4. |
 
@@ -47,9 +70,9 @@ Switching views moves the camera. The scene is never rebuilt, so the three views
 
 1. **Fill it in**: more OSM layers, map colors, ground in the scene (D01 to D03).
 2. **One scene, three cameras**: camera modes, tapping, pins and labels, the scene becomes the map (D04 to D07).
-3. **Semi-realistic look**: textures, buildings, trees, light and shadows (D08 to D11).
+3. **Semi-realistic look, and clear the bar**: one OSM rebuild, the campus palette, textures, buildings, heights, trees, shadows, sports fields, parking, street names (D08 to D11, D18 to D20, D24 to D27). Ends with the side by side check against UA's map.
 4. **Alive**: time of day, ambient motion, people and cars, seasons and game day (D12 to D15).
-5. **Finish**: phone performance pass, optional landmarks (D16, D17).
+5. **Finish**: phone performance pass, labels and texture polish, optional landmarks (D16, D17, D19, D21 to D23).
 
 Demo cut line: end of phase 3. Phase 4 is what makes it feel alive.
 
