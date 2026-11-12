@@ -5,6 +5,7 @@ import { pathToRings } from "./extrude.js";
 import { addRibbons, GROUND_LAYERS, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
+import { textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
@@ -21,28 +22,41 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
   let mode = firstMode;
 
+  // Textures made in code (#121), one per kind for this scene, tinted by each layer's token.
+  const textures = {};
+  const texture = (kind) => {
+    if (!textures[kind]) {
+      const t = new THREE.CanvasTexture(textureCanvas(kind));
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy(); // stays crisp when 2.5D tilts it away
+      textures[kind] = t;
+    }
+    return textures[kind];
+  };
+
   // The ground: flat layers drawn bottom first, without depth, so they never flicker against each other.
   // shortcut: the river line is left out, the water outlines already cover it; draw it if a gap shows.
-  const flat = (geo, order) => {
-    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide })));
+  const flat = (geo, order, kind) => {
+    geo.setAttribute("uv", new THREE.BufferAttribute(worldUV(geo.attributes.position.array, TILE[kind]), 2));
+    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide })));
     m.renderOrder = order - 100;
     m.position.y = order * 0.05;
     return m;
   };
   const [x0, y0, x1, y1] = campus.bounds;
-  const ground = flat(new THREE.PlaneGeometry(20000, 20000), -1);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.x = (x0 + x1) / 2;
-  ground.position.z = (y0 + y1) / 2;
+  const [cx, cz, far] = [(x0 + x1) / 2, (y0 + y1) / 2, 10000];
+  const ground = flat(geometry([cx - far, 0, cz - far, cx + far, 0, cz - far, cx + far, 0, cz + far, cx - far, 0, cz + far], [0, 2, 1, 0, 3, 2]), -1, "asphalt");
   const ribbons = (name) => {
     const s = { positions: [], indices: [] };
     if (name === "paths") addRibbons(s, nature.paths, PATH_WIDTH);
     else for (const [type, d] of Object.entries(nature.roads)) addRibbons(s, d, roadWidth(type));
     return geometry(s.positions, s.indices);
   };
+  const SKIN = { wood: "grass", grass: "grass", pitch: "grass", water: "water", parking: "asphalt", roads: "asphalt", paths: "concrete" };
   const layers = GROUND_LAYERS.map((name, i) => {
     const geo = name === "roads" || name === "paths" ? ribbons(name) : solid(pathToRings(nature[name]), 0.01, { walls: false });
-    const m = flat(geo, i);
+    const m = flat(geo, i, SKIN[name]);
     m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
     return m;
   });
@@ -293,6 +307,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
+      for (const t of Object.values(textures)) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },

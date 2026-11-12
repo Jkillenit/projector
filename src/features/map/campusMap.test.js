@@ -60,6 +60,7 @@ describe("campus map math", () => {
     expect(natureLayer({ landuse: "forest" })).toBe("wood");
     expect(natureLayer({ natural: "scrub" })).toBe("wood");
     expect(natureLayer({ landuse: "meadow" })).toBe("grass");
+    expect(natureLayer({ leisure: "park", name: "The Quad" })).toBe("grass");
     expect(natureLayer({ amenity: "parking" })).toBe("parking");
     expect(natureLayer({ leisure: "pitch", name: "Sewell-Thomas" })).toBe("pitch");
     expect(natureLayer({ highway: "footway" })).toBe("paths");
