@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { courtFrame, COURT, fieldLook, fieldUV, longAxis, markedFields, stadiumBowl, underBowl } from "./fields.js";
+import { BOWL, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, rayOut, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
+import { inRing } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import nature from "../campus-nature.json";
 import campus from "../campus.json";
@@ -84,9 +85,74 @@ describe("markedFields", () => {
     const marked = new Set(fields.map((f) => JSON.stringify(f.ring)));
     for (const ring of pathToRings(nature.sports.four_square)) expect(marked.has(JSON.stringify(ring))).toBe(false);
   });
-  it("gives a diamond's inner ring dirt", () => {
+  it("uses a diamond's inner ring to place home plate, not as a field of its own", () => {
     const fake = { sports: { baseball: "M0 0L100 0L100 100L0 100ZM10 10L30 10L30 30L10 30Z" } };
-    expect(markedFields(fake).map((f) => f.look)).toEqual(["diamond", "dirt"]);
+    const out = markedFields(fake);
+    expect(out.filter((f) => f.look === "diamond").length).toBe(1);
+    expect(out.filter((f) => f.look === "dirt" && f.shape).length).toBe(1); // the warning track
+  });
+  it("gives the football field inside the stadium its own look", () => {
+    const stadium = pathToRings(campus.areas.find((a) => a.name === "Bryant-Denny Stadium").path)[0];
+    const looks = markedFields(nature, { stadium }).map((f) => f.look);
+    expect(looks.filter((l) => l === "stadium").length).toBe(1);
+    expect(looks).toContain("football");
+  });
+});
+
+describe("diamondFrame", () => {
+  // A quarter circle fan: home at the corner (0, 0), the outfield toward +x +z.
+  const fan = [[0, 0], ...Array.from({ length: 9 }, (_, i) => [100 * Math.cos((i * Math.PI) / 16), 100 * Math.sin((i * Math.PI) / 16)])];
+  it("finds home where the foul lines meet, in from the backstop, facing the outfield", () => {
+    const f = diamondFrame(fan, null, "softball");
+    expect(f.toward[0]).toBeCloseTo(Math.SQRT1_2, 1);
+    expect(f.toward[1]).toBeCloseTo(Math.SQRT1_2, 1);
+    expect(Math.hypot(...f.home)).toBeCloseTo(8, 0);
+  });
+  it("puts home behind the infield ring when OSM has one", () => {
+    const infield = [[20, 20], [35, 20], [35, 35], [20, 35]];
+    const f = diamondFrame(fan, infield);
+    expect(f.toward[0]).toBeGreaterThan(0.5);
+    expect(f.toward[1]).toBeGreaterThan(0.5);
+    expect(Math.hypot(f.home[0] - 27.5, f.home[1] - 27.5)).toBeCloseTo(27.43 / Math.SQRT2, 1);
+  });
+  it("gives up on a plain box", () => {
+    expect(diamondFrame([[0, 0], [100, 0], [100, 40], [0, 40]])).toBe(null);
+  });
+  it("faces Sewell-Thomas toward its outfield, away from the stands", () => {
+    const d = markedFields(nature).filter((f) => f.look === "diamond" && f.frame.home);
+    expect(d.length).toBe(2);
+    const sewell = d.find((f) => f.ring.some(([x]) => x > 250 && x < 400));
+    expect(sewell.frame.toward[1]).toBeGreaterThan(0.9); // the stands are on the north side
+  });
+  it("lays the texture from home plate at real size", () => {
+    const frame = { home: [10, 10], toward: [0, 1], tile: 130 };
+    const uv = fieldUV([10, 0, 10, 10, 0, 140], frame, "diamond");
+    expect(uv[0]).toBeCloseTo(HOME_U);
+    expect(uv[1]).toBeCloseTo(0.5);
+    expect(uv[2]).toBeCloseTo(HOME_U + 1);
+  });
+});
+
+describe("insetBand", () => {
+  it("lays a band just inside the ring, any way the ring turns", () => {
+    for (const ring of [[[0, 0], [50, 0], [50, 50], [0, 50]], [[0, 50], [50, 50], [50, 0], [0, 0]]]) {
+      const { positions, indices } = insetBand(ring, WARNING_TRACK);
+      expect(indices.length).toBe(ring.length * 6);
+      for (let i = 3; i < positions.length; i += 6) {
+        const p = [positions[i], positions[i + 2]];
+        expect(inRing(p, ring)).toBe(true);
+        expect(Math.min(p[0], p[1], 50 - p[0], 50 - p[1])).toBeCloseTo(WARNING_TRACK);
+      }
+    }
+  });
+});
+
+describe("hull and rayOut", () => {
+  it("drops notches and finds where a ray leaves", () => {
+    const notched = [[0, 0], [10, 0], [10, 10], [5, 6], [0, 10]];
+    expect(hull(notched).length).toBe(4);
+    expect(rayOut(hull(notched), [5, 5], [1, 0])).toBeCloseTo(5);
+    expect(rayOut(hull(notched), [5, 5], [0, 1])).toBeCloseTo(5);
   });
 });
 
@@ -94,30 +160,35 @@ describe("stadiumBowl", () => {
   const stadium = pathToRings(campus.areas.find((a) => a.name === "Bryant-Denny Stadium").path)[0];
   const field = pathToRings(campus.areas.find((a) => a.name === "Saban Field").path)[0];
   const bowl = stadiumBowl(stadium, field);
-  it("builds stands around Bryant-Denny's field, up to the top", () => {
+  const ys = (part) => bowl.groups[part].map((i) => bowl.positions[i * 3 + 1]);
+  it("builds every part of Bryant-Denny", () => {
     expect(bowl).not.toBe(null);
-    const ys = bowl.positions.filter((_, i) => i % 3 === 1);
-    expect(Math.max(...ys)).toBe(42);
-    expect(Math.min(...ys)).toBe(0);
-    expect(bowl.isSeat.length).toBe(bowl.positions.length / 3);
-    expect(bowl.isSeat.some(Boolean)).toBe(true);
-    expect(Math.max(...bowl.indices)).toBe(bowl.positions.length / 3 - 1);
+    for (const part of ["seat", "suite", "wall", "pad", "roof", "board"]) expect(bowl.groups[part].length).toBeGreaterThan(0);
+    expect(Math.max(...ys("seat"))).toBe(BOWL.top);
+    expect(Math.max(...ys("board"))).toBeGreaterThan(BOWL.top);
+    expect(bowl.uvs.length).toBe((bowl.positions.length / 3) * 2);
   });
-  it("keeps the stands off the field", () => {
-    // Every low point (the bottom row) is outside the field.
-    const xs = field.map((p) => p[0]);
-    const zs = field.map((p) => p[1]);
-    for (let i = 0; i < bowl.positions.length; i += 3) {
-      if (bowl.positions[i + 1] !== 3) continue;
-      const [x, z] = [bowl.positions[i], bowl.positions[i + 2]];
-      expect(x < Math.min(...xs) || x > Math.max(...xs) || z < Math.min(...zs) || z > Math.max(...zs)).toBe(true);
+  it("hugs the field: the first row is close to it, but never on it", () => {
+    const f = longAxis(field);
+    for (const i of bowl.groups.pad) {
+      const [x, z] = [bowl.positions[i * 3] - f.center[0], bowl.positions[i * 3 + 2] - f.center[1]];
+      const [a, c] = [Math.abs(x * f.along[0] + z * f.along[1]), Math.abs(-x * f.along[1] + z * f.along[0])];
+      expect(a > f.length / 2 || c > f.width / 2).toBe(true);
+      expect(Math.min(Math.abs(a - f.length / 2), Math.abs(c - f.width / 2))).toBeLessThan(BOWL.end + 1);
     }
   });
-  it("gives up when the field does not fit", () => {
-    expect(stadiumBowl(rect(0, 0, 10, 10), rect(-50, -50, 200, 200))).toBe(null);
+  it("stays inside the stadium's outline", () => {
+    const edge = hull(stadium);
+    for (let i = 0; i < bowl.positions.length; i += 3) {
+      const p = [bowl.positions[i], bowl.positions[i + 2]];
+      const [cx, cz] = longAxis(field).center;
+      expect(inRing([cx + (p[0] - cx) * 0.99, cz + (p[1] - cz) * 0.99], edge)).toBe(true);
+    }
+  });
+  it("gives up when there is no room for stands", () => {
+    expect(stadiumBowl(rect(0, 0, 130, 70), rect(10, 10, 110, 49))).toBe(null);
   });
 });
-
 describe("underBowl", () => {
   const stadium = pathToRings(campus.areas.find((a) => a.name === "Bryant-Denny Stadium").path)[0];
   it("finds OSM's stadium building, so it does not cover the field", () => {
