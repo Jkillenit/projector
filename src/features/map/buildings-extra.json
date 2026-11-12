@@ -3,5 +3,6 @@
   { "name": "The Quad", "alt": ["University of Alabama Quad", "The University of Alabama Quad", "Main Quad"] },
   { "name": "B.B. Comer Hall", "alt": ["BB Comer", "BB Comer Hall"] },
   { "name": "H.M. Comer Hall", "alt": ["HM Comer", "HM Comer Hall"] },
-  { "name": "Moody Music Building", "alt": ["Frank Moody Music Building", "Moody Music"] }
+  { "name": "Moody Music Building", "alt": ["Frank Moody Music Building", "Moody Music"] },
+  { "name": "Denny Chimes", "h": 35 }
 ]
