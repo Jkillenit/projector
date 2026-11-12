@@ -1123,6 +1123,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-frame { position: relative; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface-2); box-shadow: var(--shadow-1); }
 .map-svg { display: block; background: var(--map-ground); width: 100%; aspect-ratio: 4 / 3; touch-action: none; cursor: grab; user-select: none; }
 .map-svg:active { cursor: grabbing; }
+.map-campus { fill: var(--map-campus); stroke: none; pointer-events: none; }
 .map-area { fill: var(--map-grass); stroke: none; cursor: pointer; }
 .map-area.is-on { fill: var(--map-pick); }
 .map-road { fill: none; stroke: var(--map-road); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }

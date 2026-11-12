@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addRibbons, GROUND_LAYERS, isLandmark, lineToRibbon, mergeBuildings, roadWidth } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, isLandmark, lineToRibbon, mergeBuildings, roadWidth, roofTone } from "./campusMesh.js";
 import nature from "../campus-nature.json";
 import campus from "../campus.json";
 
@@ -123,6 +123,14 @@ describe("addRibbons", () => {
   });
 });
 
+describe("roofTone", () => {
+  it("gives a building the same tone every time, and spreads tones across buildings", () => {
+    expect(roofTone("w123", 3)).toBe(roofTone("w123", 3));
+    const tones = campus.buildings.map((b) => roofTone(b.id, 3));
+    for (const t of [0, 1, 2]) expect(tones.filter((x) => x === t).length).toBeGreaterThan(campus.buildings.length / 5);
+  });
+});
+
 describe("ground layers", () => {
   const at = (k) => GROUND_LAYERS.indexOf(k);
   it("draws water over grass and woods, roads over lots and water, paths on top", () => {
@@ -131,6 +139,7 @@ describe("ground layers", () => {
     expect(at("roads")).toBeGreaterThan(at("parking"));
     expect(at("roads")).toBeGreaterThan(at("water"));
     expect(GROUND_LAYERS.at(-1)).toBe("paths");
+    expect(GROUND_LAYERS[0]).toBe("campus"); // campus lawn under everything
   });
   it("has a layer in campus-nature.json for every name", () => {
     for (const k of GROUND_LAYERS) expect(nature[k]).toBeTruthy();

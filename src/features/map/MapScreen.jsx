@@ -238,6 +238,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
             onPointerUp={onUp}
             onPointerCancel={onUp}
           >
+            {campus.campus && <path className="map-campus" d={campus.campus} />}
             {campus.areas.map((a) => (
               <path key={a.id} className={`map-area${picked === a.id ? " is-on" : ""}`} d={a.path} onClick={tap(() => setPicked(a.id))}>
                 <title>{a.name}</title>

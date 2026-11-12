@@ -87,7 +87,7 @@ const xs = all.map((p) => p[0]);
 const ys = all.map((p) => p[1]);
 buildings.sort((a, b) => a.name.localeCompare(b.name));
 const credit = { credit: "Map data © OpenStreetMap contributors", creditUrl: "https://www.openstreetmap.org/copyright", built: new Date().toISOString().slice(0, 10) };
-const out = { ...credit, bounds: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], areas, roads: roads.join(""), context: context.join(""), buildings };
+const out = { ...credit, bounds: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], areas, campus: nature.campus.join(""), roads: roads.join(""), context: context.join(""), buildings };
 const save = (name, data) => {
   writeFileSync(new URL(`../src/features/map/${name}`, import.meta.url), JSON.stringify(data));
   return `${(JSON.stringify(data).length / 1024).toFixed(0)} KB`;

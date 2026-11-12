@@ -49,7 +49,8 @@ The goal is to beat UA's official online campus map in 2.5D and 3D. It is a hand
 | Flat camera for Map and 2.5D (#117) | One perspective camera with a long 6° lens, not a separate orthographic camera | Looks flat (a 60 m wall leans about 3 m at the edge). One camera means the switch to 3D animates smoothly and the orbit controls, flights and tapping work the same in every view. |
 | Brick made in code, not a CC0 file (#122) | One canvas tile: brick courses plus one window per 4 m bay and 3.5 m floor, tinted by `--map-brick` or OSM `building:colour` | Windows line up with floors for free, no download or credits to track, same look offline. Tree models may still be CC0 files. Landmarks get crimson brick (`--map-landmark`), not a crimson roof, so they never look picked. |
 | Campus ground (#149) | Green inside the campus edge (OSM `amenity=university`), plain light ground outside | Matches how students see campus: lawns everywhere, town in the background. Keeps the eye on campus. |
-| Tappable vs background buildings (#118) | Named buildings warm tan (`--map-building`), unnamed ones light gray (`--map-context`) | You can see what you can tap, in the scene and the SVG map. |
+| Tappable vs background buildings (#118, #149) | Named buildings get one of three slate roofs (`--map-slate-1` to `-3`, fixed per building), unnamed ones pale gray (`--map-context`) | You can see what you can tap, in the scene and the SVG map. Slate matches UA's roofs. |
+| Pick color on roads (#149) | Crimson pick clears 3 to 1 on ground, lawns, lots, sidewalks and every roof, not on roads | Charcoal roads and UA crimson are both dark, so no crimson can clear 3 to 1 on them. No building sits on a road. |
 | "Alive" | Time of day and night, ambient motion, people and cars, seasons and game day | All four, in phase 4. |
 
 ## How it fits together
