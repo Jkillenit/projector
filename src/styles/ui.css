@@ -1126,7 +1126,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .map-area { fill: var(--map-grass); stroke: none; cursor: pointer; }
 .map-area.is-on { fill: var(--map-pick); }
 .map-road { fill: none; stroke: var(--map-road); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.map-context { fill: var(--map-building); stroke: none; pointer-events: none; }
+.map-context { fill: var(--map-context); stroke: none; pointer-events: none; }
 .map-bldg { fill: var(--map-building); stroke: var(--map-roof); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
 .map-bldg:hover { fill: var(--map-hover); }
 .map-bldg.is-on { fill: var(--map-pick); stroke: var(--map-accent); }

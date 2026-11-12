@@ -28,6 +28,13 @@ describe("mergeBuildings", () => {
     expect(mergeBuildings(undefined).positions).toEqual([]);
   });
 
+  it("finds the area under a triangle, like it does for buildings (#118)", () => {
+    const m = mergeBuildings(campus.areas.map((a) => ({ id: a.id, path: a.path, h: 0.3 })));
+    expect(m.owners.length).toBe(campus.areas.length);
+    expect(m.triOwner).toHaveLength(m.indices.length / 3);
+    expect(new Set(m.triOwner)).toEqual(new Set(campus.areas.map((a) => a.id)));
+  });
+
   it("handles the whole campus", () => {
     const m = mergeBuildings(campus.buildings);
     expect(m.owners.length).toBeGreaterThan(campus.buildings.length * 0.95);
