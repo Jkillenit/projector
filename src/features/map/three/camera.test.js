@@ -1,24 +1,77 @@
 import { describe, expect, it } from "vitest";
-import { ease, flyPath, viewFor } from "./camera.js";
+import { blend, cameraFrom, clipFor, distanceFor, ease, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 
-const from = { position: [0, 100, 100], target: [0, 0, 0] };
-const to = { position: [200, 300, 500], target: [200, 0, 400] };
+const close = (a, b) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i], 6));
 
-describe("flyPath", () => {
-  it("starts where the camera is and ends at the place", () => {
-    expect(flyPath(from, to, 0)).toEqual(from);
-    expect(flyPath(from, to, 1)).toEqual(to);
+describe("poseFor and cameraFrom", () => {
+  it("Map looks straight down at the spot", () => {
+    const c = cameraFrom(poseFor("map", [100, 200]));
+    expect(c.target).toEqual([100, 0, 200]);
+    close([c.position[0], c.position[2]], [100, 200]);
+    expect(c.position[1]).toBeCloseTo(distanceFor(MODES.map.size, MODES.map.fov));
   });
 
-  it("is halfway in the middle, and eased on the way", () => {
-    expect(flyPath(from, to, 0.5)).toEqual({ position: [100, 200, 300], target: [100, 0, 200] });
-    expect(flyPath(from, to, 0.1).target[0]).toBeLessThan(20); // slow start
-    expect(flyPath(from, to, 0.9).target[0]).toBeGreaterThan(180); // slow end
+  it("2.5D is the same lens tilted 35 degrees, from the south", () => {
+    const p = poseFor("tilt", [0, 0]);
+    expect(p.fov).toBe(MODES.map.fov);
+    const c = cameraFrom(p);
+    expect(c.position[0]).toBeCloseTo(0);
+    expect(Math.atan2(c.position[2], c.position[1]) * (180 / Math.PI)).toBeCloseTo(35);
   });
 
-  it("clamps t", () => {
-    expect(flyPath(from, to, -1)).toEqual(from);
-    expect(flyPath(from, to, 2)).toEqual(to);
+  it("shows the same meters whatever the lens", () => {
+    for (const mode of Object.keys(MODES)) {
+      const c = cameraFrom(poseFor(mode, [0, 0], 500));
+      const d = Math.hypot(...c.position);
+      expect(2 * d * Math.tan((c.fov * Math.PI) / 360)).toBeCloseTo(500);
+    }
+  });
+
+  it("clips nothing at any zoom", () => {
+    for (const { fov } of Object.values(MODES)) {
+      const { near, far } = clipFor(fov);
+      expect(near).toBeLessThan(distanceFor(SIZE_RANGE[0], fov) - 100); // tall buildings stay in front of the near plane
+      expect(far).toBeGreaterThan(distanceFor(SIZE_RANGE[1], fov) + 5000); // the ground behind stays drawn
+    }
+  });
+
+  it("round trips through poseOf", () => {
+    const p = { target: [30, -40], size: 700, tilt: 50, azimuth: 1.2, fov: 45 };
+    const back = poseOf(cameraFrom(p), 45);
+    close(back.target, p.target);
+    for (const k of ["size", "tilt", "azimuth"]) expect(back[k]).toBeCloseTo(p[k], 6);
+  });
+});
+
+describe("blend", () => {
+  const a = { target: [0, 0], size: 1000, tilt: 0, azimuth: 0, fov: 6 };
+  const b = { target: [200, 400], size: 250, tilt: 50, azimuth: 0, fov: 45 };
+
+  it("starts at a, ends at b, and clamps t", () => {
+    expect(blend(a, b, -1)).toEqual(a);
+    expect(blend(a, b, 0)).toEqual(a);
+    const end = blend(a, b, 2);
+    close(end.target, b.target);
+    expect(end.size).toBeCloseTo(b.size);
+    expect(end.tilt).toBe(b.tilt);
+  });
+
+  it("is halfway in the middle, with zoom by ratio", () => {
+    const mid = blend(a, b, 0.5);
+    expect(mid.target).toEqual([100, 200]);
+    expect(mid.tilt).toBe(25);
+    expect(mid.size).toBeCloseTo(500); // halfway between 1000 and 250 by ratio
+  });
+
+  it("keeps the same spot in view while switching modes", () => {
+    const from = poseFor("map", [50, 60], 900);
+    const to = poseFor("3d", [50, 60], 900);
+    for (const t of [0.25, 0.5, 0.75]) expect(blend(from, to, t).target).toEqual([50, 60]);
+  });
+
+  it("turns the short way round", () => {
+    const mid = blend({ ...a, azimuth: 3 }, { ...a, azimuth: -3 }, 0.5);
+    expect(Math.abs(mid.azimuth)).toBeGreaterThan(3); // through pi, not through 0
   });
 });
 

@@ -3,25 +3,20 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { pathToRings } from "./extrude.js";
 import { addRibbons, GROUND_LAYERS, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
-import { flyPath, viewFor } from "./camera.js";
+import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
 const FLY_MS = 1500;
+const MODE_MS = 700;
 const TO_2D = " Showing the 2D map.";
 
-/** Builds the scene once. Returns { setPicked, setPins, fly, zoom, reset, dispose }. */
-function setup(three, host, { buildings, center, nature, onPick }) {
+/** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
+function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
   const stage = createStage(three, host, { theme: () => theme() });
   const { THREE, camera, controls, render, add, geometry, solid, renderer } = stage;
-  controls.minDistance = 60;
-  controls.maxDistance = 5000;
-  const home = () => {
-    controls.target.set(center[0], 0, center[1]);
-    camera.position.set(center[0], 700, center[1] + 800);
-    controls.update();
-  };
-  home();
+  controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
+  let mode = firstMode;
 
   // The ground: flat layers drawn bottom first, without depth, so they never flicker against each other.
   // shortcut: the river line is left out, the water outlines already cover it; draw it if a gap shows.
@@ -117,28 +112,76 @@ function setup(three, host, { buildings, center, nature, onPick }) {
   };
   host.addEventListener("keydown", onKey);
 
-  // Fly to a place. A new flight starts from wherever the camera is; grabbing the map stops it.
-  let flight = 0;
-  const stop = () => cancelAnimationFrame(flight);
-  controls.addEventListener("start", stop);
-  const put = (v) => {
-    camera.position.set(...v.position);
-    controls.target.set(...v.target);
+  // Map and 2.5D: fixed tilt, north up, left drag pans. 3D: free orbit. Set once the camera has arrived.
+  const settle = () => {
+    const m = MODES[mode];
+    const tilt = (m.tilt * Math.PI) / 180;
+    controls.minPolarAngle = m.locked ? tilt : 0;
+    controls.maxPolarAngle = m.locked ? tilt : Math.PI * 0.45; // never under the ground
+    controls.minAzimuthAngle = m.locked ? 0 : -Infinity;
+    controls.maxAzimuthAngle = m.locked ? 0 : Infinity;
+    controls.enableRotate = !m.locked;
+    controls.mouseButtons.LEFT = m.locked ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+    controls.touches.ONE = m.locked ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
+    controls.minDistance = distanceFor(SIZE_RANGE[0], m.fov);
+    controls.maxDistance = distanceFor(SIZE_RANGE[1], m.fov);
     controls.update();
+    render();
   };
-  const fly = (place) => {
+  const put = (pose) => {
+    const c = cameraFrom(pose);
+    Object.assign(camera, { fov: c.fov }, clipFor(c.fov));
+    camera.updateProjectionMatrix();
+    camera.position.set(...c.position);
+    controls.target.set(...c.target);
+    camera.lookAt(controls.target);
+    render();
+  };
+  const now = () => poseOf({ position: camera.position.toArray(), target: controls.target.toArray() }, camera.fov);
+
+  // Move the camera to a pose. A new move starts from wherever the camera is; grabbing the map stops it.
+  let flight = 0;
+  const stop = () => {
+    if (!flight) return;
+    cancelAnimationFrame(flight);
+    flight = 0;
+    settle();
+  };
+  controls.addEventListener("start", stop);
+  const go = (to, ms) => {
     stop();
-    const to = viewFor(place);
-    if (isReducedMotion()) return put(to);
-    const from = { position: camera.position.toArray(), target: controls.target.toArray() };
+    if (isReducedMotion()) {
+      put(to);
+      return settle();
+    }
+    const from = now();
     const t0 = performance.now();
-    const step = (now) => {
-      const t = (now - t0) / FLY_MS;
-      put(flyPath(from, to, t));
+    const step = (time) => {
+      const t = (time - t0) / ms;
+      put(blend(from, to, t));
       if (t < 1) flight = requestAnimationFrame(step);
+      else {
+        flight = 0;
+        settle();
+      }
     };
     flight = requestAnimationFrame(step);
   };
+  const fly = (place) => {
+    const here = now();
+    go(mode === "3d" ? poseOf(viewFor(place), MODES["3d"].fov) : { ...here, target: place.c, size: Math.min(here.size, 600) }, FLY_MS);
+  };
+  const setMode = (next) => {
+    if (next === mode) return;
+    mode = next;
+    const here = now();
+    go({ ...poseFor(mode, here.target, here.size), azimuth: MODES[mode].locked ? 0 : here.azimuth }, MODE_MS);
+  };
+  const home = () => {
+    put(poseFor(mode, center));
+    settle();
+  };
+  home();
 
   stage.start();
 
@@ -166,6 +209,7 @@ function setup(three, host, { buildings, center, nature, onPick }) {
       render();
     },
     fly,
+    setMode,
     zoom,
     reset: () => { stop(); home(); },
     dispose() {
@@ -181,8 +225,9 @@ function setup(three, host, { buildings, center, nature, onPick }) {
  * The campus in 3D. Loads three only when shown (#53). Tapping a building or pin calls onPick with the same
  * ids and keys as the 2D map, so the place panel works the same. Calls onFail(message) when 3D cannot run.
  * flyTo: { place } flies the camera there (#59); pass a new object for each tap, even to the same place.
+ * mode: "map" (flat, from above), "tilt" (2.5D) or "3d" (free orbit). Changing it moves the camera, the scene stays (#117).
  */
-export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, onPick, onFail }) {
+export function Campus3D({ buildings, center, mode, picked, flyTo, classSpots, pins, onPick, onFail }) {
   const host = useRef(null);
   const scene = useRef(null);
   const pick = useRef(onPick);
@@ -199,7 +244,7 @@ export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, o
     Promise.all([loadThree(), import("../campus-nature.json")])
       .then(([three, { default: nature }]) => {
         if (gone) return;
-        scene.current = setup(three, host.current, { buildings, center, nature, onPick: pick });
+        scene.current = setup(three, host.current, { buildings, center, mode, nature, onPick: pick });
         setReady(true);
       })
       .catch(() => !gone && onFail(NO_LOAD + TO_2D));
@@ -214,6 +259,7 @@ export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, o
 
   useEffect(() => { if (ready) scene.current?.setPicked(picked); }, [ready, picked]);
   useEffect(() => { if (ready) scene.current?.setPins(classSpots, pins); }, [ready, classSpots, pins]);
+  useEffect(() => { if (ready) scene.current?.setMode(mode); }, [ready, mode]);
   useEffect(() => { if (ready && flyTo?.place) scene.current?.fly(flyTo.place); }, [ready, flyTo]);
 
   return (
@@ -223,9 +269,11 @@ export function Campus3D({ buildings, center, picked, flyTo, classSpots, pins, o
         className="map-3d"
         tabIndex={0}
         role="application"
-        aria-label="Campus map in 3D. Drag to turn, scroll to zoom. Arrow keys move, Shift and arrows turn, plus and minus zoom."
+        aria-label={MODES[mode].locked
+          ? "Campus map. Drag or arrow keys move, scroll or plus and minus zoom."
+          : "Campus map in 3D. Drag to turn, scroll to zoom. Arrow keys move, Shift and arrows turn, plus and minus zoom."}
       >
-        {ready ? null : <p className="map-3d-wait t-small t-muted">Loading 3D…</p>}
+        {ready ? null : <p className="map-3d-wait t-small t-muted">Loading the map…</p>}
       </div>
       <div className="map-zoom">
         <Button size="sm" aria-label="Zoom in" onClick={() => scene.current?.zoom(1 / 1.5)}>+</Button>
