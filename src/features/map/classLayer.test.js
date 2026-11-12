@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { classPins, classWhen, classWhere, classesInRange } from "./classLayer.js";
+import { classPins, classWhen, classWhere, classesInRange, walkTo } from "./classLayer.js";
+import demoHall from "../../demo/indoor/demo-hall.indoor.json";
 
 const places = [...campus.buildings, ...campus.areas];
 const NOW = new Date(2026, 10, 4, 8, 0); // Wed Nov 4, 2026, 8 AM local
@@ -33,5 +34,18 @@ describe("classes on the map", () => {
     expect(classWhen(meetings[0], "today")).toBe("9:00 AM to 9:50 AM");
     expect(classWhen(meetings[3], "week")).toBe("Fri 2:00 PM to 3:15 PM");
     expect(classWhere(meetings[0])).toBe("GBA 490 · Bidgood Hall 116");
+  });
+});
+
+describe("walkTo", () => {
+  const indoor = [demoHall];
+  it("goes to the room when we have the inside of the building", () => {
+    expect(walkTo({ building: "Demo Hall", room: "216" }, indoor)).toEqual({ building: "demo-hall", room: "216", label: "Walk me to Room 216" });
+    expect(walkTo({ building: "Demo Hall 105" }, indoor)).toEqual({ building: "demo-hall", room: "105", label: "Walk me to Room 105" });
+  });
+  it("says why when it cannot", () => {
+    expect(walkTo({ building: "Bidgood Hall", room: "116" }, indoor)).toEqual({ reason: "We don't have the inside of this building yet" });
+    expect(walkTo({ building: "Demo Hall", room: "999" }, indoor).reason).toBe("We can't find room 999 in Demo Hall");
+    expect(walkTo({ building: "Online", room: "" }, indoor).reason).toBe("This class has no room to walk to");
   });
 });

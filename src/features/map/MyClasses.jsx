@@ -1,6 +1,7 @@
 import { Button, TextLink } from "../../components/ui/index.jsx";
 import { routeHref } from "../../shell/useRoute.js";
-import { classWhen, classWhere } from "./classLayer.js";
+import { classWhen, classWhere, walkTo } from "./classLayer.js";
+import { INDOOR } from "./places.js";
 import { KINDS } from "./mySessions.js";
 
 const kindLabel = (k) => KINDS.find(([id]) => id === k)?.[1] || "Session";
@@ -35,7 +36,9 @@ export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemov
       ) : null}
       {rows.length ? (
         <ul className="map-events">
-          {rows.map(({ m, key }) => (
+          {rows.map(({ m, key }) => {
+            const walk = walkTo(m, INDOOR);
+            return (
             <li key={m.id || `${m.course}-${m.date}-${m.start}`}>
               <span className="t-label t-faint">
                 {classWhen(m, range)}
@@ -47,11 +50,13 @@ export function MyClasses({ week, spots, unplaced, range, onPick, onAdd, onRemov
                 <span className="t-heading">{classWhere(m)}</span>
               )}
               {!key && !/online/i.test(m.building) ? <span className="t-small t-faint">Not on the map yet: we could not find this building.</span> : null}
+              {walk.room ? <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })} arrow>{walk.label}</TextLink> : null}
               {m.session ? (
                 <Button size="sm" variant="quiet" onClick={() => onRemove(m.id)} aria-label={`Remove ${m.title}`}>Remove</Button>
               ) : null}
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : week.status === "ready" || week.status === "syllabus" ? (
         <p className="t-small t-muted">Nothing on your schedule {when}.</p>

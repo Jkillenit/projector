@@ -1,10 +1,21 @@
 import { localDayKey } from "../../lib/dates.js";
 import { findBuilding } from "./campusMap.js";
+import { findRoom } from "./indoor/indoorData.js";
 
 /**
  * Class meetings (from myBama, src/features/connections) on the map. A meeting is
  * { course, title, date: "2026-11-02", start: "09:00", end: "09:50", building, room }.
  */
+
+/**
+ * Where "Walk me there" goes for a meeting (#68): { building, room, label } when we have the inside of its building
+ * and find the room, else { reason } in plain words. The meeting's own room (myBama) comes first.
+ */
+export function walkTo(m, indoor) {
+  const found = findRoom([m.building, m.room].filter(Boolean).join(" "), indoor, m.room);
+  if (!found.room) return { reason: found.reason };
+  return { building: found.building.building, room: found.room.id, label: `Walk me to ${found.room.name || `Room ${found.room.id}`}` };
+}
 
 /** Today's meetings, or the rest of this week's from today on. Soonest first. */
 export function classesInRange(meetings, range, now = new Date()) {
