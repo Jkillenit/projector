@@ -19,7 +19,7 @@
  * Add h (meters) to an entry to fix a height OSM has wrong.
  */
 import { readFileSync, writeFileSync } from "fs";
-import { buildingLook, heightOf, natureLayer, project, simplify, toPath } from "../src/features/map/campusMap.js";
+import { buildingLook, heightOf, natureLayer, project, ringsArea, simplify, toPath } from "../src/features/map/campusMap.js";
 
 const [input] = process.argv.slice(2);
 if (!input) throw new Error("Usage: node scripts/build-campus-map.mjs osm.json");
@@ -65,11 +65,11 @@ for (const e of osm.elements) {
   const look = buildingLook(t);
   if (t.leisure && t.name) areas.push({ id, name: t.name.trim(), alt: aliases(t), c, path });
   else if (t.building && t.name) {
-    buildings.push({ id, name: t.name.trim(), alt: aliases(t), c, h: heightOf(t), path });
+    buildings.push({ id, name: t.name.trim(), alt: aliases(t), c, h: heightOf(t, ringsArea(rings), id), path });
     if (look) nature.looks[id] = look;
   } else if (t.building) {
     context.push(path);
-    nature.outlines.push({ h: heightOf(t), path, ...look });
+    nature.outlines.push({ h: heightOf(t, ringsArea(rings), id), path, ...look });
   }
 }
 
