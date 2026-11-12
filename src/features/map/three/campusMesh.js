@@ -1,5 +1,6 @@
 // Pure: campus.json shapes as flat arrays the 3D view hands to three. Does not import three.
 import { extrudeRings, pathToRings } from "./extrude.js";
+import { seedOf } from "../campusMap.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
@@ -45,11 +46,7 @@ export const isLandmark = (name) => LANDMARKS.has(name);
 export const GROUND_LAYERS = ["campus", "wood", "grass", "pitch", "water", "parking", "roads", "paths"];
 
 /** Which of n roof tones a building gets: fixed by its id, so it never changes between visits (#149). */
-export function roofTone(id, n) {
-  let h = 0;
-  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return h % n;
-}
+export const roofTone = (id, n) => seedOf(id) % n;
 
 /** Road width in meters by OSM highway type. Paths are narrow. */
 export const ROAD_WIDTH = { primary: 14, secondary: 12, tertiary: 10, unclassified: 8, residential: 8, service: 5 };

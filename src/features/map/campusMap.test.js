@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
-import { ORIGIN, buildingLook, directionLinks, findBuilding, heightOf, natureLayer, placeParts, project, roomOf, simplify, toPath, unproject } from "./campusMap.js";
+import { ORIGIN, buildingLook, directionLinks, findBuilding, heightOf, natureLayer, placeParts, project, ringsArea, roomOf, simplify, toPath, unproject } from "./campusMap.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const nameOf = (where) => findBuilding(where, places)?.name ?? null;
@@ -45,6 +45,25 @@ describe("campus map math", () => {
     expect(heightOf({ height: "tall", "building:levels": "3" })).toBe(11);
     expect(heightOf({ height: "-5", "building:levels": "0" })).toBe(11);
     expect(heightOf({ height: "900" })).toBe(11);
+  });
+
+  it("guesses untagged heights from footprint and type, the same every time (#142)", () => {
+    expect(heightOf({ height: "30", building: "house" }, 100, "w1")).toBe(30); // tags still win
+    expect(heightOf({ building: "parking", "building:levels": "4" }, 5000, "w1")).toBe(12); // decks are 3 m each
+    expect(heightOf({ building: "shed" }, 20, "w1")).toBe(4);
+    expect(heightOf({ building: "house" }, 180, "w1")).toBe(7);
+    expect(heightOf({ building: "parking" }, 2000, "w1")).toBe(9);
+    expect(heightOf({ building: "parking" }, 12000, "w1")).toBe(15);
+    expect(heightOf({ building: "yes" }, 100, "w1")).toBe(4);
+    const hall = (id) => heightOf({ building: "university" }, 8000, id);
+    expect(hall("w7")).toBe(hall("w7"));
+    expect(new Set(["w1", "w2", "w3", "w4", "w5", "w6"].map(hall))).toEqual(new Set([18, 21]));
+    expect(heightOf({ building: "yes" }, 1000, "w2")).toBeLessThan(hall("w2"));
+  });
+
+  it("measures a footprint in square meters", () => {
+    expect(ringsArea([[[0, 0], [10, 0], [10, 20], [0, 20]]])).toBe(200);
+    expect(ringsArea([[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]], [[20, 0], [24, 0], [24, 5], [20, 5]]])).toBe(120);
   });
 
   it("keeps a whole-meter height on every named building", () => {

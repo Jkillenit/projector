@@ -60,15 +60,42 @@ export function toPath(points, closed) {
   return points.map(([x, y], i) => `${i ? "L" : "M"}${r(x)} ${r(y)}`).join("") + (closed ? "Z" : "");
 }
 
+/** A stable number from an id, so anything "random" per building is the same every visit. */
+export function seedOf(id) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h;
+}
+
+const FLOOR = 3.5; // meters per level; the brick texture puts one row of windows per FLOOR (#122)
+const DECK = 3; // meters per parking deck
+const SMALL = new Set(["house", "detached", "semidetached_house", "bungalow", "shed", "garage", "garages", "hut", "kiosk", "cabin", "carport", "roof", "toilets", "service"]);
+
 /**
- * A building's height in whole meters from its OSM tags: `height`, else `building:levels` × 3.5 m, else 3 levels.
- * Bad values (not a number, zero, negative, over 200 m) are skipped.
+ * A building's height in whole meters: OSM `height`, else `building:levels` (× 3 m for parking decks, × 3.5 m otherwise).
+ * Untagged, it guesses from `area` (footprint in m²) and type: sheds 1 level, houses 2, parking decks 3 to 5 decks,
+ * other buildings 1 to 5 levels by footprint, plus a level on about half of them (seeded by `id`) so the skyline varies.
+ * No footprint means 3 levels. Bad values (not a number, zero, negative, over 200 m) are skipped.
  */
-export function heightOf(tags = {}) {
+export function heightOf(tags = {}, area = 0, id = "") {
   const ok = (n) => (Number.isFinite(n) && n > 0 && n < 200 ? n : null);
   const raw = String(tags.height ?? "");
-  const h = ok(parseFloat(raw) * (/ft|'/.test(raw) ? 0.3048 : 1)) ?? ok(parseFloat(tags["building:levels"]) * 3.5) ?? 10.5;
-  return Math.round(h);
+  const deck = tags.building === "parking" || tags.parking === "multi-storey";
+  const tagged = ok(parseFloat(raw) * (/ft|'/.test(raw) ? 0.3048 : 1)) ?? ok(parseFloat(tags["building:levels"]) * (deck ? DECK : FLOOR));
+  return Math.round(tagged ?? guessHeight(tags.building, area, id, deck));
+}
+
+function guessHeight(type, area, id, deck) {
+  if (!(area > 0)) return 3 * FLOOR;
+  if (deck) return (area < 3000 ? 3 : area < 8000 ? 4 : 5) * DECK;
+  if (SMALL.has(type)) return (/house|detached|bungalow|cabin/.test(type) ? 2 : 1) * FLOOR;
+  const levels = area < 150 ? 1 : area < 600 ? 2 : area < 2500 ? 3 : area < 6000 ? 4 : 5;
+  return (levels + (area >= 150 ? seedOf(id) % 2 : 0)) * FLOOR;
+}
+
+/** Area in m² of SVG path outlines in meters (outer rings, shoelace). */
+export function ringsArea(rings) {
+  return rings.reduce((sum, r) => sum + Math.abs(r.reduce((s, [x, y], i) => s + x * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * y, 0)) / 2, 0);
 }
 
 const PATHS = new Set(["footway", "path", "pedestrian", "cycleway", "steps"]);

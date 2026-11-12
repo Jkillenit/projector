@@ -51,6 +51,7 @@ The goal is to beat UA's official online campus map in 2.5D and 3D. It is a hand
 | Campus ground (#149) | Green inside the campus edge (OSM `amenity=university`), plain light ground outside | Matches how students see campus: lawns everywhere, town in the background. Keeps the eye on campus. |
 | Tappable vs background buildings (#118, #149) | Named buildings get one of three slate roofs (`--map-slate-1` to `-3`, fixed per building), unnamed ones pale gray (`--map-context`) | You can see what you can tap, in the scene and the SVG map. Slate matches UA's roofs. |
 | Pick color on roads (#149) | Crimson pick clears 3 to 1 on ground, lawns, lots, sidewalks and every roof, not on roads | Charcoal roads and UA crimson are both dark, so no crimson can clear 3 to 1 on them. No building sits on a road. |
+| Untagged heights (#142) | Guessed at build time from footprint and type: sheds 1 level, houses 2, parking decks 3 to 5 decks of 3 m, others 1 to 5 levels by footprint plus one more on about half (seeded by OSM id). OSM `height` and `building:levels` still win. | Most UA buildings have no height tag, so every one was 11 m. A level is 3.5 m, so brick windows still line up by floor. |
 | "Alive" | Time of day and night, ambient motion, people and cars, seasons and game day | All four, in phase 4. |
 
 ## How it fits together
