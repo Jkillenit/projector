@@ -48,8 +48,8 @@ function setup(three, host, { buildings, center, onPick }) {
 
   let picked = null;
   const paint = () => {
-    const base = new THREE.Color(token("--surface-hover"));
-    const on = new THREE.Color(token("--accent"));
+    const base = new THREE.Color(token("--map-building"));
+    const on = new THREE.Color(token("--map-pick"));
     for (const o of merged.owners) {
       const c = o.id === picked ? on : base;
       for (let v = o.start; v < o.end; v++) c.toArray(colors, v * 3);
@@ -57,11 +57,11 @@ function setup(three, host, { buildings, center, onPick }) {
     named.attributes.color.needsUpdate = true;
   };
   function theme() {
-    ground.material.color.set(token("--surface-2"));
-    areas.material.color.set(token("--good"));
-    roads.material.color.set(token("--border-strong"));
-    context.material.color.set(token("--track"));
-    edges.material.color.set(token("--border-strong"));
+    ground.material.color.set(token("--map-ground"));
+    areas.material.color.set(token("--map-grass"));
+    roads.material.color.set(token("--map-road"));
+    context.material.color.set(token("--map-building"));
+    edges.material.color.set(token("--map-roof"));
     classMat.color.set(token("--good"));
     sessionMat.color.set(token("--support-fill"));
     eventMat.color.set(token("--accent"));

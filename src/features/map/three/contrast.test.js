@@ -49,6 +49,27 @@ describe("3D map and walkthrough contrast", () => {
     });
   }
 
+  // #115: the picked place stands out on the map in both views (3 to 1, like any shape that carries meaning).
+  const MAP_PAIRS = [
+    ["map-pick", "map-ground"],
+    ["map-pick", "map-grass"],
+    ["map-pick", "map-building"],
+    ["map-pick", "map-road"],
+    ["map-hover", "map-ground"],
+  ];
+  const val = (t, k) => {
+    const ref = t[k]?.match(/^var\(--([\w-]+)\)$/);
+    return ref ? val(t, ref[1]) : t[k];
+  };
+  for (const [name, t] of Object.entries(themes)) {
+    it(`keeps map colors solid and the pick color clear in ${name}`, () => {
+      const keys = Object.keys(t).filter((k) => k.startsWith("map-"));
+      expect(keys.length).toBeGreaterThanOrEqual(13);
+      for (const k of keys) expect(val(t, k), k).toMatch(/^#[0-9A-F]{6}$/i);
+      for (const [fg, bg] of MAP_PAIRS) expect(ratio(rgba(val(t, fg)), rgba(val(t, bg))), `${fg} on ${bg}`).toBeGreaterThanOrEqual(3);
+    });
+  }
+
   it("catches a pair that fails", () => {
     expect(ratio(rgba("#777777"), rgba("#888888"))).toBeLessThan(1.5);
     expect(ratio(rgba("#000000"), rgba("#FFFFFF"))).toBeCloseTo(21);
