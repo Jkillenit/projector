@@ -3,7 +3,8 @@ import { TextLink } from "../../components/ui/index.jsx";
 import { routeHref } from "../../shell/useRoute.js";
 import { directionLinks, unproject } from "./campusMap.js";
 import { resourcesAt, whenAt } from "./placeInfo.js";
-import { classWhen, classWhere } from "./classLayer.js";
+import { classWhen, classWhere, walkTo } from "./classLayer.js";
+import { INDOOR } from "./places.js";
 
 /*
  * The side panel for one place. Each section gets the same `ctx` and returns null when it has nothing to show.
@@ -29,6 +30,22 @@ function YourClasses({ classes, range }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** "Walk me to Room 216" for your classes here (#68). No inside, no button: we say so instead. */
+function WalkHere({ classes }) {
+  if (!classes?.length) return null;
+  const walks = classes.map((m) => walkTo(m, INDOOR));
+  const links = [...new Map(walks.filter((w) => w.room).map((w) => [w.room, w])).values()];
+  return (
+    <section className="map-section ui-chips" aria-label="Walk me there">
+      {links.length ? (
+        links.map((w) => <TextLink key={w.room} href={routeHref("map", [], { walk: w.building, room: w.room })} arrow>{w.label}</TextLink>)
+      ) : (
+        <p className="t-small t-muted">{walks[0].reason}.</p>
+      )}
     </section>
   );
 }
@@ -86,7 +103,7 @@ function Directions({ place, xy }) {
   );
 }
 
-const SECTIONS = [About, Directions, YourClasses, ComingUp, ResourcesHere];
+const SECTIONS = [About, Directions, YourClasses, WalkHere, ComingUp, ResourcesHere];
 
 export function PlacePanel(ctx) {
   return (
