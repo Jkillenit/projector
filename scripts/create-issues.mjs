@@ -17,6 +17,7 @@ import { fileURLToPath } from "url";
 const REPO = process.env.REPO || "Jkillenit/projector";
 const LABELS = {
   "map-3d": ["8a1538", "Map 3D: walk me to my classroom"],
+  "map-design": ["2e7d32", "Map design: a campus that looks alive"],
   rename: ["6f42c1", "Rename to AL"],
   companion: ["e99695", "AL campus guide companion"],
   epic: ["5319e7", "Tracks a group of issues"],
