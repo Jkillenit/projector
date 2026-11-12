@@ -42,7 +42,14 @@ const LANDMARKS = new Set(["Amelia Gayle Gorgas Library", "Denny Chimes", "Unive
 export const isLandmark = (name) => LANDMARKS.has(name);
 
 /** Flat ground layers, bottom first. Each one draws over the ones before it. */
-export const GROUND_LAYERS = ["wood", "grass", "pitch", "water", "parking", "roads", "paths"];
+export const GROUND_LAYERS = ["campus", "wood", "grass", "pitch", "water", "parking", "roads", "paths"];
+
+/** Which of n roof tones a building gets: fixed by its id, so it never changes between visits (#149). */
+export function roofTone(id, n) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % n;
+}
 
 /** Road width in meters by OSM highway type. Paths are narrow. */
 export const ROAD_WIDTH = { primary: 14, secondary: 12, tertiary: 10, unclassified: 8, residential: 8, service: 5 };

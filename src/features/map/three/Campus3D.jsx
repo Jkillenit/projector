@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { pathToRings } from "./extrude.js";
-import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, textureCanvas, TILE, worldUV } from "./textures.js";
@@ -53,7 +53,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     else for (const [type, d] of Object.entries(nature.roads)) addRibbons(s, d, roadWidth(type));
     return geometry(s.positions, s.indices);
   };
-  const SKIN = { wood: "grass", grass: "grass", pitch: "grass", water: "water", parking: "asphalt", roads: "asphalt", paths: "concrete" };
+  const SKIN = { campus: "grass", wood: "grass", grass: "grass", pitch: "grass", water: "water", parking: "asphalt", roads: "asphalt", paths: "concrete" };
   const layers = GROUND_LAYERS.map((name, i) => {
     const geo = name === "roads" || name === "paths" ? ribbons(name) : solid(pathToRings(nature[name]), 0.01, { walls: false });
     const m = flat(geo, i, SKIN[name]);
@@ -123,12 +123,13 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const paintBuildings = (mesh, on, near) => {
     const attr = mesh.geometry.attributes.color;
     const { owners, isRoof } = mesh.userData.merged;
-    const [brick, top, landmark] = [token("--map-brick"), token(mesh === town ? "--map-building" : "--map-context"), token("--map-landmark")];
+    const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
+    const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
     for (const o of owners) {
       const look = looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : null;
       const wall = lit || color(look.colour, look.landmark ? landmark : brick);
-      const roof = lit || color(look.roof, top);
+      const roof = lit || color(look.roof, slates[roofTone(o.id, slates.length)]);
       for (let v = o.start; v < o.end; v++) (isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
     }
     attr.needsUpdate = true;

@@ -49,14 +49,16 @@ describe("3D map and walkthrough contrast", () => {
     });
   }
 
-  // #115: the picked place stands out on the map in both views (3 to 1, like any shape that carries meaning).
-  // #120: roads read at a glance on the ground, without being as loud as the pick.
+  // #115: the picked place stands out on the map in both views (3 to 1, like any shape that carries meaning),
+  // on everything a building sits on and every roof. #149: not on roads. Charcoal roads and UA crimson are both dark,
+  // and no building sits on a road.
+  // #120, #149: roads read at a glance on plain ground, campus lawn and parks, and apart from sidewalks.
   const MAP_PAIRS = [
     ["map-road", "map-ground", 1.5],
-    ["map-pick", "map-ground"],
-    ["map-pick", "map-grass"],
-    ["map-pick", "map-building"],
-    ["map-pick", "map-road"],
+    ["map-road", "map-campus", 1.5],
+    ["map-road", "map-grass", 1.5],
+    ["map-road", "map-path", 1.5],
+    ...["ground", "campus", "grass", "parking", "path", "building", "context", "slate-1", "slate-2", "slate-3"].map((k) => ["map-pick", `map-${k}`]),
     ["map-hover", "map-ground"],
   ];
   const val = (t, k) => {
