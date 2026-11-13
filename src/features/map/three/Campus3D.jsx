@@ -75,7 +75,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const fieldMeshes = [];
   {
     const order = GROUND_LAYERS.indexOf("pitch") + 0.5;
-    const all = markedFields(nature, { stadium: stadiumRing });
+    const tracks = campus.areas.filter((a) => /track/i.test(a.name)).map((a) => pathToRings(a.path)[0]);
+    const all = markedFields(nature, { stadium: stadiumRing, tracks });
     for (const look of FIELD_LOOKS) {
       const s = { positions: [], indices: [], uvs: [] };
       for (const f of all) {
@@ -84,7 +85,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
           const base = s.positions.length / 3;
           s.positions.push(...shape.positions);
           s.indices.push(...shape.indices.map((i) => base + i));
-          s.uvs.push(...(f.frame ? fieldUV(shape.positions, f.frame, look) : new Array((shape.positions.length / 3) * 2).fill(0)));
+          s.uvs.push(...(f.uv || (f.frame ? fieldUV(shape.positions, f.frame, look) : new Array((shape.positions.length / 3) * 2).fill(0))));
         }
       }
       if (!s.indices.length) continue;

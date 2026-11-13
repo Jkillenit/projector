@@ -127,12 +127,48 @@ export function insetBand(ring, w) {
 /** The warning track along a diamond's outfield wall, meters. */
 export const WARNING_TRACK = 4.6;
 
+/** A 400 m track: the inner lane's straights and curve radius, meters. Its 8 lanes are TRACK.lanes wide. */
+export const OVAL = { straight: 84.39, radius: 36.5, samples: 24 };
+/** Smaller OSM track and athletics pieces are runways, lanes and jump pits, not a track: they stay plain pitch (#163). */
+export const MIN_TRACK = 2000;
+
+/** A track oval around a frame's middle, along its long axis: { shape: { positions, indices }, uv }, flat at y = 0. One tile per TRACK.along meters of lane. */
+export function trackOval({ center: [cx, cz], along: [ux, uz] }) {
+  const { straight: L, radius: r, samples: n } = OVAL;
+  const positions = [];
+  const indices = [];
+  const uv = [];
+  const at = (a, c) => [cx + a * ux - c * uz, 0, cz + a * uz + c * ux];
+  let run = 0;
+  let last = null;
+  for (const side of [1, -1]) {
+    for (let i = 0; i <= n; i++) {
+      const t = ((i / n - 0.5) * Math.PI) + (side < 0 ? Math.PI : 0); // the far curve, then the near one
+      const [ca, cs] = [Math.cos(t), Math.sin(t)];
+      const inner = [(side * L) / 2 + r * ca, r * cs];
+      if (last) run += Math.hypot(inner[0] - last[0], inner[1] - last[1]);
+      last = inner;
+      const k = positions.length / 3;
+      positions.push(...at(...inner), ...at(inner[0] + TRACK.lanes * ca, inner[1] + TRACK.lanes * cs));
+      uv.push(run / TRACK.along, 0, run / TRACK.along, 1);
+      if (k) indices.push(k - 2, k, k - 1, k - 1, k, k + 1);
+    }
+  }
+  const k = positions.length / 3; // close the loop on the first pair, with the lane run carried on
+  positions.push(...positions.slice(0, 6));
+  run += Math.hypot(positions[0] - positions[(k - 2) * 3], positions[2] - positions[(k - 2) * 3 + 2]);
+  uv.push(run / TRACK.along, 0, run / TRACK.along, 1);
+  indices.push(k - 2, k, k - 1, k - 1, k, k + 1);
+  return { shape: { positions, indices }, uv };
+}
+
 /**
- * Every marked field: [{ look, ring, frame }], or [{ look, shape }] for bands. nature: campus-nature.json (sports by tag, and the track).
+ * Every marked field: [{ look, ring, frame }], or [{ look, shape, uv? }] for bands. nature: campus-nature.json (sports by tag, and the track).
  * stadium: a ring; a football field inside it is the stadium's own field (look "stadium").
+ * tracks: rings of track complexes. OSM often draws only a track's pieces; a complex with no whole track gets an oval around its infield (#163).
  * A diamond's inner ring is its infield: it places home plate, and the texture draws the infield.
  */
-export function markedFields(nature, { stadium = null } = {}) {
+export function markedFields(nature, { stadium = null, tracks = [] } = {}) {
   const out = [];
   const add = (look, ring) => {
     const frame = longAxis(ring);
@@ -143,6 +179,7 @@ export function markedFields(nature, { stadium = null } = {}) {
     if (!look) continue;
     const rings = pathToRings(d);
     for (const ring of rings) {
+      if (look === "track" && ringArea(ring) < MIN_TRACK) continue;
       if (look === "diamond") {
         if (rings.some((o) => o !== ring && ringArea(o) > ringArea(ring) && ring.every((p) => inRing(p, o)))) continue; // an infield
         const infield = rings.find((o) => o !== ring && ringArea(o) < ringArea(ring) && o.every((p) => inRing(p, ring)));
@@ -156,7 +193,13 @@ export function markedFields(nature, { stadium = null } = {}) {
       add(look === "football" && stadium && inRing(centroid(ring), stadium) ? "stadium" : look, ring);
     }
   }
-  for (const ring of pathToRings(nature.track)) add("track", ring);
+  for (const ring of pathToRings(nature.track)) if (ringArea(ring) >= MIN_TRACK) add("track", ring);
+  for (const complex of tracks) {
+    if (out.some((f) => f.look === "track" && f.ring && inRing(centroid(f.ring), complex))) continue;
+    const infield = pathToRings(nature.pitch).filter((r) => inRing(centroid(r), complex)).sort((a, b) => ringArea(b) - ringArea(a))[0];
+    const frame = longAxis(infield || complex);
+    if (frame) out.push({ look: "track", ...trackOval(frame) });
+  }
   return out;
 }
 

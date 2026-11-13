@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOWL, BOWL_PARTS, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, rayOut, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
+import { BOWL, BOWL_PARTS, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, MIN_TRACK, OVAL, rayOut, trackOval, TRACK, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
 import { inRing } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import nature from "../campus-nature.json";
@@ -96,6 +96,32 @@ describe("markedFields", () => {
     const looks = markedFields(nature, { stadium }).map((f) => f.look);
     expect(looks.filter((l) => l === "stadium").length).toBe(1);
     expect(looks).toContain("football");
+  });
+});
+
+describe("track ovals (#163)", () => {
+  const complex = pathToRings(campus.areas.find((a) => /Sam Bailey/.test(a.name)).path)[0];
+  const tracks = markedFields(nature, { tracks: [complex] }).filter((f) => f.look === "track");
+  const xz = (p) => Array.from({ length: p.length / 3 }, (_, i) => [p[i * 3], p[i * 3 + 2]]);
+  it("gives Sam Bailey one oval, not its runways and pits", () => {
+    const here = tracks.filter((f) => (f.ring || xz(f.shape.positions)).some((p) => inRing(p, complex)));
+    expect(here.length).toBe(1);
+    expect(here[0].ring).toBe(undefined);
+    for (const p of xz(here[0].shape.positions)) expect(inRing(p, complex)).toBe(true);
+  });
+  it("keeps whole tracks from OSM and drops small pieces", () => {
+    const fake = { sports: { athletics: "M0 0L10 0L10 10L0 10Z" }, track: "M0 0L200 0L200 100L0 100ZM300 0L310 0L310 5L300 5Z" };
+    const out = markedFields(fake);
+    expect(out.length).toBe(1);
+    expect(MIN_TRACK).toBeLessThan(200 * 100);
+  });
+  it("lays a 400 m inner lane, 8 lanes wide, tiled along the lanes", () => {
+    const { shape, uv } = trackOval({ center: [5, 7], along: [0, 1] });
+    expect(uv.length).toBe((shape.positions.length / 3) * 2);
+    expect(uv[uv.length - 2] * TRACK.along).toBeCloseTo(2 * OVAL.straight + 2 * Math.PI * OVAL.radius, -1);
+    const pts = xz(shape.positions);
+    expect(Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1])).toBeCloseTo(TRACK.lanes);
+    expect(Math.max(...pts.map(([, z]) => z)) - 7).toBeCloseTo(OVAL.straight / 2 + OVAL.radius + TRACK.lanes);
   });
 });
 
