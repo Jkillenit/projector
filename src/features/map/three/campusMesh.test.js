@@ -172,3 +172,24 @@ describe("isLandmark", () => {
     for (const n of ["Amelia Gayle Gorgas Library", "Denny Chimes", "University of Alabama Student Center"]) expect(names.has(n), n).toBe(true);
   });
 });
+
+describe("addDashes", () => {
+  it("dashes a straight road down its middle", async () => {
+    const { addDashes, CENTER_LINE } = await import("./campusMesh.js");
+    const s = addDashes({ positions: [], indices: [] }, "M0 0L90 0");
+    expect(s.positions.length / 12).toBe(10); // 3 m on, 6 m off
+    expect(s.indices.length).toBe(60);
+    for (let i = 0; i < s.positions.length; i += 3) {
+      expect(s.positions[i + 1]).toBe(0);
+      expect(Math.abs(s.positions[i + 2])).toBeCloseTo(CENTER_LINE.width / 2);
+    }
+    expect(s.positions[6] - s.positions[0]).toBeCloseTo(CENTER_LINE.dash);
+  });
+  it("keeps the pattern around a corner and skips empty paths", async () => {
+    const { addDashes } = await import("./campusMesh.js");
+    const bent = addDashes({ positions: [], indices: [] }, "M0 0L10 0L10 80");
+    expect(bent.positions.length / 12).toBeGreaterThanOrEqual(10);
+    expect(bent.positions.every(Number.isFinite)).toBe(true);
+    expect(addDashes({ positions: [], indices: [] }, "").indices).toEqual([]);
+  });
+});

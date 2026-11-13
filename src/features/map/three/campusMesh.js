@@ -114,3 +114,36 @@ export function addRibbons(shape, d, width) {
   }
   return shape;
 }
+
+/** Roads with a curb and a center line (#169): the ones people drive along, not driveways. Curb: meters of light edge on each side. */
+export const MAIN_ROADS = ["primary", "secondary", "tertiary"];
+export const CURB = 1.1;
+export const CENTER_LINE = { width: 0.4, dash: 3, gap: 6 };
+
+/**
+ * Dashes down the middle of every line in path data, added to shape { positions, indices }: flat at y = 0, faces up.
+ * The pattern runs on around corners; a dash that meets a corner stops there.
+ */
+export function addDashes(shape, d, { width, dash, gap } = CENTER_LINE) {
+  for (const seg of String(d || "").split("M").slice(1)) {
+    const nums = (seg.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    let at = 0; // meters into the dash and gap pattern
+    for (let i = 0; i + 3 < nums.length; i += 2) {
+      const [ax, az, bx, bz] = nums.slice(i, i + 4);
+      const len = Math.hypot(bx - ax, bz - az);
+      if (!len) continue;
+      const [ux, uz] = [(bx - ax) / len, (bz - az) / len];
+      const [nx, nz] = [(-uz * width) / 2, (ux * width) / 2];
+      for (let t = -at; t < len; t += dash + gap) {
+        const [t0, t1] = [Math.max(t, 0), Math.min(t + dash, len)];
+        if (t1 - t0 < 0.5) continue;
+        const v = shape.positions.length / 3;
+        const [x0, z0, x1, z1] = [ax + ux * t0, az + uz * t0, ax + ux * t1, az + uz * t1];
+        shape.positions.push(x0 + nx, 0, z0 + nz, x0 - nx, 0, z0 - nz, x1 + nx, 0, z1 + nz, x1 - nx, 0, z1 - nz);
+        shape.indices.push(v, v + 2, v + 1, v + 1, v + 2, v + 3);
+      }
+      at = (at + len) % (dash + gap);
+    }
+  }
+  return shape;
+}

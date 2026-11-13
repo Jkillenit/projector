@@ -3,7 +3,7 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stallFade, underBowl } from "./fields.js";
-import { addRibbons, GROUND_LAYERS, isDeck, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
+import { addDashes, addRibbons, CURB, GROUND_LAYERS, isDeck, isLandmark, MAIN_ROADS, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, FIELD_LOOKS, fieldCanvas, meanTone, textureCanvas, TILE, worldUV } from "./textures.js";
@@ -74,6 +74,22 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     m.userData.token = `--map-${{ roads: "road", paths: "path" }[name] || name}`;
     return m;
   });
+  // Main roads (#169): a light curb edge under the road, and a dashed center line on it that fades out from far away (with the stalls).
+  const centerLine = (() => {
+    const [curb, dash] = [{ positions: [], indices: [] }, { positions: [], indices: [] }];
+    for (const type of MAIN_ROADS) {
+      addRibbons(curb, nature.roads[type], roadWidth(type) + CURB * 2);
+      addDashes(dash, nature.roads[type]);
+    }
+    const edge = flat(geometry(curb.positions, curb.indices), GROUND_LAYERS.indexOf("roads") - 0.5, "concrete");
+    edge.userData.token = "--map-path";
+    layers.push(edge);
+    const line = flat(geometry(dash.positions, dash.indices), GROUND_LAYERS.indexOf("roads") + 0.5, "concrete");
+    line.userData.token = "--map-line";
+    line.material.transparent = true;
+    layers.push(line);
+    return line;
+  })();
   // Bryant-Denny's own outline in OSM is replaced by the bowl below (#150).
   const stadiumArea = campus.areas.find((a) => a.name === STADIUM.name);
   const stadiumRing = stadiumArea && pathToRings(stadiumArea.path)[0];
@@ -374,6 +390,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const view = poseOf({ position: camera.position.toArray(), target: controls.target.toArray() }, camera.fov).size;
     const stalls = fieldMeshes.find((m) => m.userData.look === "stalls");
     if (stalls) stalls.material.opacity = stallFade(view);
+    centerLine.material.opacity = stallFade(view) * 0.8;
     // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
     const box = host.getBoundingClientRect();
     const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
