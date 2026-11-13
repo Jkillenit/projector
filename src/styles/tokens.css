@@ -98,24 +98,24 @@
 
   /* campus map, shared by the SVG map and the 3D scene (solid hex: three's Color takes no alpha) */
   --map-ground: #ECE8E1; /* outside campus: plain and quiet (#149) */
-  --map-campus: #CADDB2; /* lawn inside the campus edge; parks a shade deeper so they still show */
-  --map-grass: #B9D49A;
-  --map-wood: #8FB47A;
-  --map-water: #9CC3DE;
-  --map-road: #4A4D52; /* charcoal roads, light sidewalks, like a finished map (#149) */
+  --map-campus: #A6C06C; /* lawn inside the campus edge; parks a shade deeper so they still show */
+  --map-grass: #97B65C;
+  --map-wood: #7BA052;
+  --map-water: #77B3DC;
+  --map-road: #44474C; /* charcoal roads, light sidewalks, like a finished map (#149) */
   --map-path: #F7F3EC;
-  --map-parking: #DDD8D0;
-  --map-pitch: #A6CF8A;
+  --map-parking: #ABADAE;
+  --map-pitch: #8CC168;
   --map-line: #FBFAF6;
   --map-dirt: #BF8460;
   --map-track: #B5534A;
-  --map-slate-1: #A9B1B9; /* roofs you can tap: slate tones, one per building from its id (#149) */
-  --map-slate-2: #B0B6BC;
-  --map-slate-3: #BBBFC3;
+  --map-slate-1: #93A5B9; /* roofs you can tap, one per building from its id (#149): blue slate, gray, warm shingle (#178) */
+  --map-slate-2: #A6ADB6;
+  --map-slate-3: #B5A99C;
   --map-building: var(--map-slate-2); /* the flat SVG map's buildings */
   --map-context: #E0DDD8; /* unnamed buildings: paler and closer to the ground than ones you can tap */
-  --map-roof: #7D858D; /* roof edges */
-  --map-brick: #C98F7A; /* walls: UA red brick, tinting the brick tile (#122) */
+  --map-roof: #68717B; /* roof edges */
+  --map-brick: #BC7A62; /* walls: UA red brick, tinting the brick tile (#122) */
   --map-tree: #6E9A52; /* tree crowns (#123); seasons (#128) turn this */
   --map-trunk: #6B5442;
   --map-landmark: #A84A55; /* landmark walls: crimson brick, while a picked building turns crimson roof and all */
