@@ -6,7 +6,8 @@ import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stal
 import { addRibbons, GROUND_LAYERS, isDeck, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
-import { BRICK, FIELD_LOOKS, fieldCanvas, textureCanvas, TILE, worldUV } from "./textures.js";
+import { BRICK, FIELD_LOOKS, fieldCanvas, meanTone, textureCanvas, TILE, worldUV } from "./textures.js";
+import { groundShade, shaded } from "./shade.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { insideOf, placeTrees, seeded } from "./trees.js";
 import { roofOf } from "./roofs.js";
@@ -20,6 +21,9 @@ const TO_2D = " Showing the flat map instead.";
 const PIN = 28; // pin size on screen, px, as in ui.css
 const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class and an event in one building do not cover each other
 const STADIUM = { name: "Bryant-Denny Stadium", field: "Saban Field" }; // the one bowl (#150)
+const FADE = { near: 0.3, far: 1.1 }; // #179: texture detail fades out as a pixel grows from near to far meters
+const MACRO = { grass: 0.09, water: 0.07, asphalt: 0.05, concrete: 0.03 }; // big soft patches on the ground, by texture
+const BASE = { dark: 0.72, height: 7 }; // walls are darker where they meet the ground
 const QUIET = { h: 8, labels: 800 }; // #165: the town outside campus: walls no taller than this (m); names only when the view is this narrow (m)
 
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
@@ -46,7 +50,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   // shortcut: the river line is left out, the water outlines already cover it; draw it if a gap shows.
   const flat = (geo, order, kind) => {
     geo.setAttribute("uv", new THREE.BufferAttribute(worldUV(geo.attributes.position.array, TILE[kind]), 2));
-    const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide })));
+    // #179: grain fades to the tile's flat tone from far away, and big soft patches keep lawns and lots from looking tiled.
+    const mat = shaded(new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide }), { detail: { mean: meanTone(textureCanvas(kind)), ...FADE }, macro: MACRO[kind] });
+    const m = add(new THREE.Mesh(geo, mat));
     m.renderOrder = order - 100;
     m.position.y = order * 0.05;
     m.receiveShadow = true;
@@ -128,9 +134,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
 
   // Buildings (#122): brick walls with a window per bay and floor, textured roofs. Walls and roofs are two groups of one mesh,
   // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
-  const wallMat = new THREE.MeshLambertMaterial({ map: texture("brick"), vertexColors: true });
-  const roofMat = new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true });
-  const deckMat = new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }); // #146: concrete bands
+  // #179, #143: from far away windows fade into plain brick (not the muddy brown their dark glass averages to) and roof seams into the roof.
+  const wallMat = shaded(new THREE.MeshLambertMaterial({ map: texture("brick"), vertexColors: true }), { detail: { mean: 0.72, near: 0.6, far: 1.8 }, base: BASE });
+  const roofMat = shaded(new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true }), { detail: { mean: meanTone(textureCanvas("roof")), ...FADE } });
+  const deckMat = shaded(new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }), { base: BASE }); // #146: concrete bands
   const looks = new Map();
   const buildingMesh = (list, mats = [wallMat, roofMat, deckMat]) => {
     const merged = mergeBuildings(list);
@@ -155,7 +162,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const context = buildingMesh(unnamed.filter((b) => !b.quiet));
   const town = buildingMesh(buildings.filter((b) => !b.quiet));
   // Off campus: no brick or windows, no cast shadow, one plain material. Named ones are still tappable.
-  const plainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const plainMat = shaded(new THREE.MeshLambertMaterial({ vertexColors: true }), { base: BASE });
   const quiet = buildingMesh([...unnamed, ...buildings].filter((b) => b.quiet).map((b) => ({ ...b, name: "" })), [plainMat, plainMat, plainMat]);
   quiet.castShadow = false;
 
@@ -165,7 +172,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const trees = placeTrees(nature, buildings, campus.bounds);
   const CROWN = [3.5, 5, 6.5]; // crown radius by size, meters
   const TRUNK = [3, 4, 5];
-  const crownMat = new THREE.MeshLambertMaterial({ flatShading: true });
+  const crownMat = shaded(new THREE.MeshLambertMaterial({ flatShading: true }), { crown: { dark: 0.62, light: 1.1 } }); // #179: darker underneath
   const trunkMat = new THREE.MeshLambertMaterial();
   const crownShape = (k) => {
     const geo = new THREE.IcosahedronGeometry(1, 1);
@@ -200,6 +207,16 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     });
   }
   for (const m of [...crowns, trunks]) m.castShadow = true;
+
+  // Ambient shade (#179): a soft dark edge on the ground around every building, in every view and on both tiers.
+  {
+    const s = groundShade([...buildings, ...outlines, ...(bowl ? [{ path: stadiumArea.path }] : [])].flatMap((b) => pathToRings(b.path)));
+    const geo = geometry(s.positions, s.indices);
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(s.colors, 4));
+    const m = add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide })));
+    m.renderOrder = GROUND_LAYERS.length - 100;
+    m.position.y = GROUND_LAYERS.length * 0.05;
+  }
 
   // Low tier (phones, #124): no shadow map, a soft dark patch under each building and tree, pushed the way shadows fall.
   if (!shadows) {
@@ -324,7 +341,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     }
     if (bowl) {
       // Crimson chairbacks and grey aluminum bleachers: one seat tile, two colors.
-      for (const [part, seat] of [["seat", colors.seat], ["bench", token("--map-slate-1")]]) {
+      for (const [part, seat] of [["seat", colors.seat], ["bench", token("--map-slate-2")]]) { // gray, not the blue slate
         const seats = bowl.material[BOWL_PARTS.indexOf(part)];
         seats.map?.dispose();
         seats.map = new THREE.CanvasTexture(fieldCanvas("seats", { ...colors, seat }));
