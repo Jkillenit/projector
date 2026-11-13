@@ -1,11 +1,11 @@
 // Pure: campus.json shapes as flat arrays the 3D view hands to three. Does not import three.
-import { extrudeRings, pathToRings } from "./extrude.js";
 import { seedOf } from "../campusMap.js";
 import { landmarkShapes } from "./landmarks.js";
+import { roofedShapes } from "./roofs.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
- * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim.
+ * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim. Roofs come from roofs.js (#166).
  * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: brick walls, then deck walls, then roofs,
  * wallIndices: how many indices are walls (both kinds), deckIndices: how many of those are deck walls (the last ones),
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
@@ -22,7 +22,8 @@ export function mergeBuildings(buildings) {
   for (const b of buildings || []) {
     const wallPart = isDeck(b.name) ? decks : walls;
     const start = positions.length / 3;
-    for (const s of landmarkShapes(b) || extrudeRings(pathToRings(b.path), b.h)) {
+    const roofed = { ...b, plain: b.plain ?? (b.quiet || isDeck(b.name)) }; // #166: decks and the quiet town keep a flat top
+    for (const s of landmarkShapes(roofed) || roofedShapes(roofed)) {
       const base = positions.length / 3;
       for (const v of s.positions) positions.push(v);
       for (const v of s.uvs) uvs.push(v);

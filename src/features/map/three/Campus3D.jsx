@@ -9,6 +9,7 @@ import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, FIELD_LOOKS, fieldCanvas, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
 import { insideOf, placeTrees, seeded } from "./trees.js";
+import { roofOf } from "./roofs.js";
 import { shadowOffset } from "./quality.js";
 import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
@@ -75,7 +76,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const low = (b) => (b.quiet ? { ...b, h: Math.min(b.h || 0, QUIET.h) } : b);
   const outlines = (stadiumRing ? nature.outlines.filter((o) => !underBowl(o.path, stadiumRing)) : nature.outlines)
     .map((o) => low({ ...o, quiet: !onCampus(pathToRings(o.path)[0]?.[0] || []) }));
-  buildings = buildings.map((b) => low({ ...b, quiet: !onCampus(b.c) }));
+  buildings = buildings.map((b) => low({ ...b, quiet: !onCampus(b.c), roofShape: nature.looks?.[b.id]?.roofShape }));
 
   // Sports fields (#150): one mesh per look just over the plain pitch. Textures are painted in theme colors, in theme().
   const fieldMeshes = [];
@@ -148,9 +149,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
   const unnamed = outlines.map((o, i) => {
     looks.set(`o${i}`, o);
-    return { id: `o${i}`, path: o.path, h: o.h, quiet: o.quiet };
+    return { id: `o${i}`, path: o.path, h: o.h, quiet: o.quiet, roofShape: o.roofShape };
   });
-  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name) });
+  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name), flat: roofOf({ ...b, plain: b.quiet || isDeck(b.name) }) === "flat" });
   const context = buildingMesh(unnamed.filter((b) => !b.quiet));
   const town = buildingMesh(buildings.filter((b) => !b.quiet));
   // Off campus: no brick or windows, no cast shadow, one plain material. Named ones are still tappable.
@@ -271,7 +272,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       const look = mesh === quiet ? {} : looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : mesh === quiet ? pale : null;
       const wall = lit || color(look.colour, look.landmark ? landmark : look.deck ? stone : brick);
-      const roof = lit || color(look.roof, slates[roofTone(o.id, slates.length)]);
+      const roof = lit || color(look.roof, look.flat ? pale.getStyle() : slates[roofTone(o.id, slates.length)]); // #166: big flat roofs are a light membrane
       const trim = lit || stone;
       for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
     }

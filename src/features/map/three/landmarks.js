@@ -1,6 +1,7 @@
 // Pure: simple shapes made in code for the landmarks students find their way by (#130). Does not import three.
 // Shapes use extrudeRings' format, so mergeBuildings can use them in place of a plain block and tapping still works.
 import { extrudeRings, pathToRings } from "./extrude.js";
+import { roofedShapes } from "./roofs.js";
 
 const PLAIN_U = 0.4; // meters into the brick tile: a strip with bricks and no window, for walls with no windows
 const COLUMN = { r: 0.5, every: 3.2, out: 2.6, beam: 2.2, sides: 16 }; // 16 sides: no outline down each column
@@ -64,9 +65,9 @@ function chimes([ring], h) {
 }
 
 /** Gorgas Library: the building, and a row of light columns under a beam along its front. */
-function colonnade(rings, h) {
+function colonnade(rings, h, place) {
   const front = frontEdge(rings.reduce((big, r) => (Math.abs(area(r)) > Math.abs(area(big)) ? r : big)));
-  const shapes = extrudeRings(rings, h);
+  const shapes = roofedShapes(place);
   if (!front) return shapes;
   const { a, b, out, len } = front;
   const at = (t, o) => [a[0] + ((b[0] - a[0]) * t) / len + out[0] * o, a[1] + ((b[1] - a[1]) * t) / len + out[1] * o];
@@ -84,5 +85,5 @@ const MODELS = { "Denny Chimes": chimes, "Amelia Gayle Gorgas Library": colonnad
 export function landmarkShapes(b) {
   const model = MODELS[b?.name];
   const rings = pathToRings(b?.path);
-  return model && rings.length && b.h > 0 ? model(rings, b.h) : null;
+  return model && rings.length && b.h > 0 ? model(rings, b.h, b) : null;
 }
