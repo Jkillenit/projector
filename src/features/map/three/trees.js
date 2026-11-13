@@ -24,6 +24,12 @@ export function seeded(seed) {
   };
 }
 
+/** Is a point inside any ring of path `d`? Used for the campus edge. */
+export const insideOf = (d) => {
+  const rings = pathToRings(d);
+  return (p) => rings.some((r) => inRing(p, r));
+};
+
 /** Is [x, y] inside the ring (even-odd)? */
 export function inRing([x, y], ring) {
   let inside = false;
@@ -133,8 +139,7 @@ export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinit
   for (const p of nature.trees || []) plant(p, rand);
   for (const l of lines(nature.treeRows)) along(l, ROW_EVERY, rand, (p) => plant(p, rand));
 
-  const campus = pathToRings(nature.campus);
-  const onCampus = (p) => campus.some((r) => inRing(p, r));
+  const onCampus = insideOf(nature.campus);
   for (const [type, d] of Object.entries(nature.roads || {})) {
     if (NO_STREET_TREES.has(type)) continue;
     const off = roadWidth(type) / 2 + STREET.setback;
@@ -169,6 +174,6 @@ export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinit
     });
     fill(ring, LAWN.middleEvery, 0.6);
   }
-  for (const ring of campus) fill(ring, LAWN.middleEvery, 0.5);
+  for (const ring of pathToRings(nature.campus)) fill(ring, LAWN.middleEvery, 0.5);
   return trees;
 }
