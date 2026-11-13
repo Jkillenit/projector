@@ -205,9 +205,9 @@ export function markedFields(nature, { stadium = null, tracks = [] } = {}) {
 }
 
 /** Bryant-Denny's levels, meters: the wall around the field, lower bowl, suites, upper deck, canopies; and the room around the field. */
-export const BOWL = { pad: 2.5, mid: 19, suite: 25, top: 44, roof: 50, end: 22, side: 15, samples: 144 };
-/** Parts of the bowl, in the order of its index groups. Bench: the lower bowl's grey aluminum bleachers. */
-export const BOWL_PARTS = ["seat", "bench", "suite", "wall", "pad", "roof", "board"];
+export const BOWL = { pad: 2.5, mid: 19, suite: 25, top: 44, roof: 50, base: 9, end: 22, side: 15, samples: 144 };
+/** Parts of the bowl, in the order of its index groups. Seat: crimson; bench: grey stands; wall: the light outside wall over a brick base. */
+export const BOWL_PARTS = ["seat", "bench", "suite", "wall", "base", "pad", "roof", "board"];
 /** Seat texture tile, meters: along the rows, and up the stands. */
 export const SEATS = { along: 16, up: 8 };
 
@@ -242,8 +242,8 @@ export function rayOut(ring, [ox, oz], [dx, dz]) {
  * A stadium bowl that hugs its field, like Bryant-Denny: rays from the field's middle, from a rounded box around the field
  * (`end` meters past the end lines, `side` past the sidelines) out to the stadium's outline.
  * Along each ray: a wall around the field, the lower bowl, a band of suites, the upper deck, the outside wall.
- * Like the real one: the lower bowl is grey bleachers but for crimson chairbacks between the 20s; the upper decks are crimson.
- * Canopies over the sideline upper decks, and a video board at each end.
+ * Like the aerial (#164): grey stands, crimson only on the west lower sideline and the north upper deck's middle.
+ * A white canopy ring all the way around, a light outside wall on a brick base, and a video board at each end.
  * Returns { positions, uvs (seat tiles), groups: { part: indices } } or null when there is no room for stands.
  */
 export function stadiumBowl(outer, field, opts = {}) {
@@ -253,7 +253,7 @@ export function stadiumBowl(outer, field, opts = {}) {
   if (!f || !inRing(f.center, edge)) return null;
   const [ux, uz] = f.along;
   const [A, B] = [f.length / 2 + b.end, f.width / 2 + b.side];
-  const ring = { in: [], mid: [], out: [], side: [], end: [], chair: [] };
+  const ring = { in: [], mid: [], out: [], end: [], low: [], high: [] };
   for (let i = 0; i < b.samples; i++) {
     const t = (i / b.samples) * Math.PI * 2;
     const [ca, cs] = [Math.cos(t), Math.sin(t)]; // in the field's frame
@@ -265,9 +265,9 @@ export function stadiumBowl(outer, field, opts = {}) {
     ring.in.push(at(rIn));
     ring.mid.push(at(rIn + (rOut - rIn) * 0.45));
     ring.out.push(at(rOut));
-    ring.side.push(Math.abs(cs) > Math.cos((35 * Math.PI) / 180));
     ring.end.push(ca);
-    ring.chair.push(Math.abs(cs) > 0.5 && Math.abs(ca * rIn) < 28); // sideline, within 30 yards of midfield
+    ring.low.push(d[0] < 0 && Math.abs(cs) > 0.5 && Math.abs(ca * rIn) < 28); // west sideline, within 30 yards of midfield
+    ring.high.push(d[1] < 0 && Math.abs(ca) > 0.5 && Math.abs(cs * rOut) < 35); // north end, the middle of the upper deck
   }
   const positions = [];
   const uvs = [];
@@ -290,15 +290,14 @@ export function stadiumBowl(outer, field, opts = {}) {
     run += step;
     quad("pad", [y(I0, 0), y(I1, 0), y(I1, b.pad), y(I0, b.pad)]);
     const lo = slope(I0, M0, b.pad, b.mid);
-    quad(ring.chair[i] && ring.chair[j] ? "seat" : "bench", [y(I0, b.pad), y(I1, b.pad), y(M1, b.mid), y(M0, b.mid)], [u0, 0, u1, 0, u1, lo, u0, lo]);
+    quad(ring.low[i] && ring.low[j] ? "seat" : "bench", [y(I0, b.pad), y(I1, b.pad), y(M1, b.mid), y(M0, b.mid)], [u0, 0, u1, 0, u1, lo, u0, lo]);
     quad("suite", [y(M0, b.mid), y(M1, b.mid), y(M1, b.suite), y(M0, b.suite)]);
     const hi = slope(M0, O0, b.suite, b.top);
-    quad("seat", [y(M0, b.suite), y(M1, b.suite), y(O1, b.top), y(O0, b.top)], [u0, 0, u1, 0, u1, hi, u0, hi]);
-    quad("wall", [y(O0, b.top), y(O1, b.top), y(O1, 0), y(O0, 0)]);
-    if (ring.side[i] && ring.side[j]) {
-      const k = (p, q) => [p[0] + (q[0] - p[0]) * 0.6, p[1] + (q[1] - p[1]) * 0.6]; // over the top rows only
-      quad("roof", [y(k(M0, O0), b.roof), y(k(M1, O1), b.roof), y(O1, b.roof), y(O0, b.roof)]);
-    }
+    quad(ring.high[i] && ring.high[j] ? "seat" : "bench", [y(M0, b.suite), y(M1, b.suite), y(O1, b.top), y(O0, b.top)], [u0, 0, u1, 0, u1, hi, u0, hi]);
+    quad("wall", [y(O0, b.top), y(O1, b.top), y(O1, b.base), y(O0, b.base)]);
+    quad("base", [y(O0, b.base), y(O1, b.base), y(O1, 0), y(O0, 0)]);
+    const k = (p, q) => [p[0] + (q[0] - p[0]) * 0.6, p[1] + (q[1] - p[1]) * 0.6]; // over the top rows only
+    quad("roof", [y(k(M0, O0), b.roof), y(k(M1, O1), b.roof), y(O1, b.roof), y(O0, b.roof)]);
   }
   // Video boards: on the rim at each end, across the field.
   for (const sign of [1, -1]) {

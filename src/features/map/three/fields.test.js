@@ -194,10 +194,19 @@ describe("stadiumBowl", () => {
     expect(Math.max(...ys("board"))).toBeGreaterThan(BOWL.top);
     expect(bowl.uvs.length).toBe((bowl.positions.length / 3) * 2);
   });
-  it("keeps crimson chairbacks to the lower sidelines; the rest of the lower bowl is bleachers", () => {
-    expect(Math.max(...ys("bench"))).toBe(BOWL.mid);
-    expect(Math.min(...ys("seat"))).toBe(BOWL.pad); // some lower bowl is still crimson
-    expect(bowl.groups.bench.length).toBeGreaterThan(bowl.groups.seat.length / 4);
+  it("is mostly grey: crimson only on the west lower sideline and the north upper deck (#164)", () => {
+    const [cx, cz] = longAxis(field).center;
+    expect(Math.min(...ys("seat"))).toBe(BOWL.pad); // some lower bowl is crimson
+    for (const i of bowl.groups.seat) {
+      const [x, h, z] = bowl.positions.slice(i * 3, i * 3 + 3);
+      expect(h <= BOWL.mid ? x < cx : z < cz).toBe(true);
+    }
+    expect(bowl.groups.bench.length).toBeGreaterThan(bowl.groups.seat.length * 3);
+  });
+  it("rings the top with a canopy, and the outside wall sits on a brick base", () => {
+    expect(bowl.groups.roof.length).toBe(BOWL.samples * 6);
+    expect(Math.max(...ys("base"))).toBe(BOWL.base);
+    expect(Math.min(...ys("wall"))).toBe(BOWL.base);
   });
   it("hugs the field: the first row is close to it, but never on it", () => {
     const f = longAxis(field);
