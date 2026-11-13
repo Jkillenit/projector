@@ -140,6 +140,14 @@ const PAINT = {
   },
 };
 
+/** A canvas tile's flat tone, 0 to 1 in linear light: what it looks like from far away. The shader fades to it (#179). */
+export function meanTone(canvas) {
+  const { data } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 4) sum += (data[i] / 255) ** 2.2;
+  return sum / (data.length / 4);
+}
+
 const canvases = {};
 /** The tile for one kind, painted once and kept for every later scene. */
 export function textureCanvas(kind) {

@@ -47,9 +47,10 @@ export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { nea
   controls.maxPolarAngle = Math.PI * 0.45; // never under the ground
   controls.listenToKeyEvents(host);
 
-  // Outdoors (#124): more sun and less sky, so the shade side of a building and its shadow read clearly.
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, outdoor ? 1.5 : 2));
-  const sun = new THREE.DirectionalLight(0xffffff, outdoor ? 1.9 : 1.2);
+  // Outdoors (#124, #179): a warm sun over a cool sky, with more sun than sky, so the sunny and shaded sides of a roof differ
+  // and shadows read clearly. Flat ground in the sun still comes out close to its token.
+  scene.add(outdoor ? new THREE.HemisphereLight(0xdfeaff, 0xb9ad9a, 1.2) : new THREE.HemisphereLight(0xffffff, 0x888888, 2));
+  const sun = new THREE.DirectionalLight(outdoor ? 0xfff0dc : 0xffffff, outdoor ? 2.5 : 1.2);
   sun.position.set(...SUN);
   scene.add(sun, sun.target);
   // Real shadows on High: the shadow map follows the view, so it stays sharp at every zoom.
@@ -76,7 +77,7 @@ export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { nea
   if (outdoor) scene.fog = new THREE.Fog(0xffffff, 1, 2);
   const haze = () => {
     const [d, size] = [camera.position.distanceTo(controls.target), viewSize()];
-    Object.assign(scene.fog, { near: d, far: d + size * 1.1 });
+    Object.assign(scene.fog, { near: d, far: d + size * 2.4 }); // light, so the far edge keeps its color (#179)
   };
 
   const owned = [];
