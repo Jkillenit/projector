@@ -198,9 +198,21 @@ const PAINT_FIELD = {
   football(ctx, w, h, c) {
     gridiron(ctx, w, h, c, c.stripe);
   },
-  // Saban Field: crimson end zones (#150).
+  // Saban Field: crimson end zones (#150) with white words across them, read from the field (#164).
   stadium(ctx, w, h, c) {
     gridiron(ctx, w, h, c, c.endzone);
+    const yd = w / 120;
+    ctx.fillStyle = c.line;
+    ctx.font = `bold ${Math.round(5 * yd)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const [x, turn, word] of [[5 * yd, -Math.PI / 2, "ALABAMA"], [115 * yd, Math.PI / 2, "CRIMSON TIDE"]]) {
+      ctx.save();
+      ctx.translate(x, h / 2);
+      ctx.rotate(turn);
+      ctx.fillText(word, 0, 0, h * 0.85);
+      ctx.restore();
+    }
   },
   soccer(ctx, w, h, c) {
     for (let i = 0; i < 12; i++) {

@@ -117,7 +117,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     m.userData = { id: stadiumArea.id, merged: { triOwner: new Array(indices.length / 3).fill(stadiumArea.id) } };
     return m;
   })();
-  const BOWL_TOKENS = { suite: "--map-road", wall: "--map-brick", pad: "--map-landmark", roof: "--map-slate-3", board: "--map-road" };
+  const BOWL_TOKENS = { suite: "--map-road", wall: "--map-context", base: "--map-brick", pad: "--map-landmark", roof: "--map-path", board: "--map-road" }; // #164: light wall, white rim
 
   // Buildings (#122): brick walls with a window per bay and floor, textured roofs. Walls and roofs are two groups of one mesh,
   // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
