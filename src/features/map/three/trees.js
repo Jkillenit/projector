@@ -25,6 +25,20 @@ export function seeded(seed) {
   };
 }
 
+/** The season the trees show for a date (#185): "fall" from October 15 to December 5, else "green". Winter is #128. */
+export function seasonOf(date = new Date()) {
+  const day = (date.getMonth() + 1) * 100 + date.getDate();
+  return day >= 1015 && day <= 1205 ? "fall" : "green";
+}
+
+/** A tree's fall color as [hue, saturation, lightness], or null for one that stays green. pick: 0 to 1, the tree's own seeded number. */
+export function fallLeaf(pick) {
+  if (pick < 0.24) return [0.13, 0.82, 0.56]; // gold
+  if (pick < 0.42) return [0.085, 0.85, 0.53]; // orange
+  if (pick < 0.52) return [0.035, 0.68, 0.44]; // rust
+  return null;
+}
+
 /** Is a point inside any ring of path `d`? Used for the campus edge. */
 export const insideOf = (d) => {
   const rings = pathToRings(d);

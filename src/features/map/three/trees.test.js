@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { insideOf, inRing, lines, placeTrees, seeded } from "./trees.js";
+import { fallLeaf, insideOf, inRing, lines, placeTrees, seasonOf, seeded } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import { roadWidth } from "./campusMesh.js";
 import nature from "../campus-nature.json";
@@ -105,5 +105,28 @@ describe("placeTrees on the real campus data", () => {
       expect(rings.some((r) => inRing(p, r))).toBe(false);
       expect(roads.some(({ pts, half }) => pts.some((a, i) => i > 0 && segDist(p, pts[i - 1], a) < half))).toBe(false);
     }
+  });
+});
+
+describe("fall color", () => {
+  it("knows the season for a date", () => {
+    expect(seasonOf(new Date(2026, 10, 12))).toBe("fall");
+    expect(seasonOf(new Date(2026, 9, 15))).toBe("fall");
+    expect(seasonOf(new Date(2026, 11, 5))).toBe("fall");
+    expect(seasonOf(new Date(2026, 9, 14))).toBe("green");
+    expect(seasonOf(new Date(2026, 11, 6))).toBe("green");
+    expect(seasonOf(new Date(2026, 3, 1))).toBe("green");
+  });
+  it("turns about half the trees, in warm colors", () => {
+    const picks = Array.from({ length: 1000 }, (_, i) => fallLeaf(i / 1000));
+    const turned = picks.filter(Boolean);
+    expect(turned.length).toBeGreaterThan(400);
+    expect(turned.length).toBeLessThan(600);
+    for (const [h, s, l] of turned) {
+      expect(h).toBeLessThan(0.15); // red to gold, never green
+      expect(s).toBeGreaterThan(0.5);
+      expect(l).toBeGreaterThan(0.3);
+    }
+    expect(fallLeaf(0.9)).toBe(null);
   });
 });

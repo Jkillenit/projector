@@ -9,7 +9,7 @@ import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, FIELD_LOOKS, fieldCanvas, meanTone, textureCanvas, TILE, worldUV } from "./textures.js";
 import { groundShade, shaded } from "./shade.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
-import { insideOf, placeTrees, seeded } from "./trees.js";
+import { fallLeaf, insideOf, placeTrees, seasonOf, seeded } from "./trees.js";
 import { roofOf } from "./roofs.js";
 import { shadowOffset } from "./quality.js";
 import { seedOf } from "../campusMap.js";
@@ -226,10 +226,16 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   // Each tree's own green: the token turned a little toward yellow or blue, fuller or grayer, lighter or darker. Seeded, so it never changes.
   const leafTint = () => {
     const base = new THREE.Color(token("--map-tree"));
-    const [r, c] = [seeded(seedOf("tree colors")), new THREE.Color()];
+    const [r, c, hsl] = [seeded(seedOf("tree colors")), new THREE.Color(), {}];
+    const fall = seasonOf() === "fall"; // #185: about half the trees turn, as dark or light as the theme's green
+    const dim = base.getHSL(hsl).l / 0.46;
     trees.forEach((_, i) => {
       const m = crowns[i % crowns.length];
-      m.setColorAt(Math.floor(i / crowns.length), c.copy(base).offsetHSL((r() - 0.6) * 0.09, (r() - 0.5) * 0.2, (r() - 0.5) * 0.14));
+      const leaf = fall && fallLeaf(r());
+      if (leaf) c.setHSL(leaf[0], leaf[1], leaf[2] * dim);
+      else c.copy(base);
+      const wide = leaf ? 0.35 : 1; // turned leaves keep close to their color
+      m.setColorAt(Math.floor(i / crowns.length), c.offsetHSL((r() - 0.6) * 0.09 * wide, (r() - 0.5) * 0.2 * wide, (r() - 0.5) * 0.14));
       m.instanceColor.needsUpdate = true;
     });
   };
