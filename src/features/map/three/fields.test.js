@@ -60,12 +60,17 @@ describe("fieldUV", () => {
   it("lays a football field's texture once over its box, any way it turns", () => {
     const ring = rect(10, 10, 110, 49, 0.7);
     const uv = fieldUV(flat(ring), longAxis(ring), "football");
-    const us = [...uv].filter((_, i) => i % 2 === 0).sort();
-    const vs = [...uv].filter((_, i) => i % 2 === 1).sort();
+    const us = [...uv].filter((_, i) => i % 2 === 0).sort((a, b) => a - b); // by number: a plain sort puts 2e-16 after 1
+    const vs = [...uv].filter((_, i) => i % 2 === 1).sort((a, b) => a - b);
     expect(us[0]).toBeCloseTo(0);
     expect(us[3]).toBeCloseTo(1);
     expect(vs[0]).toBeCloseTo(0);
     expect(vs[3]).toBeCloseTo(1);
+  });
+  it("does not mirror the texture: seen from above, its right is the field's right", () => {
+    // A field running east: the texture's left edge (u = 0) is west, and its top (v = 1) is north (-z).
+    const uv = fieldUV([0, 0, 0, 100, 0, 0, 0, 0, 50], { center: [50, 25], along: [1, 0], length: 100, width: 50 }, "football");
+    expect([...uv]).toEqual([0, 1, 1, 1, 0, 0]);
   });
   it("repeats courts at real size", () => {
     const ring = rect(0, 0, COURT.length, COURT.width * 3);
