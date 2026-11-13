@@ -143,7 +143,7 @@ export function textureCanvas(kind) {
  * Field textures (#150), painted in the theme's colors: { pitch, stripe, line, dirt, track, endzone, seat, aisle }.
  * Not cached, so a theme change repaints.
  */
-const FIELD_SIZE = { football: [1024, 512], stadium: [1024, 512], soccer: [512, 256], diamond: [1024, 1024], court: [256, 128], track: [64, 256], dirt: [8, 8], seats: [256, 256] };
+const FIELD_SIZE = { football: [1024, 512], stadium: [1024, 512], soccer: [512, 256], diamond: [1024, 1024], court: [256, 128], stalls: [128, 216], track: [64, 256], dirt: [8, 8], seats: [256, 256] };
 
 // A football field 120 yards with end zones, 53.3 wide: stripes every 5 yards, yard lines, hash marks, numbers.
 function gridiron(ctx, w, h, c, endzone) {
@@ -277,6 +277,17 @@ const PAINT_FIELD = {
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = c.line;
     for (let y = 0; y < h; y += h / 8) ctx.fillRect(0, y, w, 2);
+  },
+  // Parking (STALL_TILE in fields.js: 10.8 m along a row, 18.3 m across): only the lines, see-through, over the lot's asphalt.
+  // Two rows of 4 stalls, 5.5 m deep, an aisle between; the line at the top edge is where rows meet back to back.
+  stalls(ctx, w, h, c) {
+    const m = h / 18.3;
+    ctx.fillStyle = c.line;
+    ctx.fillRect(0, 0, w, 2);
+    for (let x = 0; x < w; x += w / 4) {
+      ctx.fillRect(x, 0, 2, 5.5 * m);
+      ctx.fillRect(x, h - 5.5 * m, 2, 5.5 * m);
+    }
   },
   dirt(ctx, w, h, c) {
     ctx.fillStyle = c.dirt;

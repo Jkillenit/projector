@@ -84,7 +84,7 @@ export function diamondFrame(ring, infield = null, sport = "baseball") {
 
 /**
  * UVs for flat points [x, y, z, ...] of one field. Football and soccer: the whole texture once over the field's box.
- * Courts and track: one tile per court or per 8 lanes, from the field's edge, so they repeat at real size.
+ * Courts, track and parking stalls: one tile per court, per 8 lanes or per parking module, from the field's edge, so they repeat at real size.
  * Diamonds: real size from home plate, center field toward the right of the texture.
  */
 export function fieldUV(positions, frame, look) {
@@ -102,6 +102,7 @@ export function fieldUV(positions, frame, look) {
     const [x, z] = [positions[i] - cx, positions[i + 2] - cz];
     const [a, c] = [x * ux + z * uz + length / 2, -x * uz + z * ux + width / 2]; // 0 at the field's corner
     if (look === "court") [uv[j], uv[j + 1]] = [a / COURT.length, c / COURT.width];
+    else if (look === "stalls") [uv[j], uv[j + 1]] = [a / STALL_TILE.along, c / STALL_TILE.across];
     else if (look === "track") [uv[j], uv[j + 1]] = [a / TRACK.along, c / TRACK.lanes];
     else [uv[j], uv[j + 1]] = [length ? a / length : 0, width ? c / width : 0];
   }
@@ -322,3 +323,18 @@ export function underBowl(path, outer) {
   const [cx, cz] = centroid(outer);
   return pathToRings(path).some((r) => ringArea(r) >= ringArea(outer) * 0.5 && inRing(centroid(r), outer) && inRing([cx, cz], r));
 }
+
+/** A parking module, meters (#151): stalls 2.7 wide and 5.5 deep, back to back, with a 7.3 m aisle. One tile is 4 stalls along a row. */
+export const STALL = { width: 2.7, depth: 5.5, aisle: 7.3 };
+export const STALL_TILE = { along: STALL.width * 4, across: STALL.depth * 2 + STALL.aisle };
+/** Lots smaller than this are a few spaces by a door: left plain. */
+export const MIN_LOT = 400;
+
+/** Parking lots with stall rows along each lot's long side: [{ look: "stalls", ring, frame }]. */
+export function parkingLots(d) {
+  return pathToRings(d).filter((ring) => ringArea(ring) >= MIN_LOT).map((ring) => ({ look: "stalls", ring, frame: longAxis(ring) })).filter((f) => f.frame);
+}
+
+/** How strong stall lines draw for a view `size` meters tall: full up close, gone far out, so lots do not shimmer. */
+export const STALL_FADE = [900, 1800];
+export const stallFade = (size) => Math.min(1, Math.max(0, (STALL_FADE[1] - size) / (STALL_FADE[1] - STALL_FADE[0])));

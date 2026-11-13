@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOWL, BOWL_PARTS, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, MIN_TRACK, OVAL, rayOut, trackOval, TRACK, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
+import { BOWL, BOWL_PARTS, MIN_LOT, parkingLots, STALL_FADE, STALL_TILE, stallFade, courtFrame, COURT, diamondFrame, fieldLook, fieldUV, HOME_U, hull, insetBand, longAxis, markedFields, MIN_TRACK, OVAL, rayOut, trackOval, TRACK, stadiumBowl, underBowl, WARNING_TRACK } from "./fields.js";
 import { inRing } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import nature from "../campus-nature.json";
@@ -228,5 +228,28 @@ describe("underBowl", () => {
   it("keeps small buildings near or inside it", () => {
     expect(underBowl("M-790 340L-780 340L-780 350L-790 350Z", stadium)).toBe(false);
     expect(underBowl("M0 0L10 0L10 10L0 10Z", stadium)).toBe(false);
+  });
+});
+
+describe("parking stalls (#151)", () => {
+  it("lines a turned lot's rows up with its long side, one tile per parking module", () => {
+    const ring = rect(40, -20, 90, 40, 0.6);
+    const [lot] = parkingLots(`M${ring.map((p) => p.join(" ")).join("L")}Z`);
+    expect(lot.look).toBe("stalls");
+    expect(lot.frame.length).toBeCloseTo(90);
+    expect(Math.abs(lot.frame.along[0] * Math.cos(0.6) + lot.frame.along[1] * Math.sin(0.6))).toBeCloseTo(1);
+    const uv = fieldUV(flat(ring), lot.frame, "stalls");
+    expect(Math.max(...uv.filter((_, i) => i % 2 === 0))).toBeCloseTo(90 / STALL_TILE.along);
+    expect(Math.max(...uv.filter((_, i) => i % 2 === 1))).toBeCloseTo(40 / STALL_TILE.across);
+  });
+  it("leaves tiny lots plain and finds the campus's big lots", () => {
+    expect(parkingLots("M0 0L10 0L10 10L0 10Z")).toEqual([]);
+    expect(parkingLots(nature.parking).length).toBeGreaterThan(10);
+    expect(MIN_LOT).toBeGreaterThan(100);
+  });
+  it("fades the lines out as the view zooms far out", () => {
+    expect(stallFade(300)).toBe(1);
+    expect(stallFade(STALL_FADE[1] + 1)).toBe(0);
+    expect(stallFade((STALL_FADE[0] + STALL_FADE[1]) / 2)).toBeCloseTo(0.5);
   });
 });

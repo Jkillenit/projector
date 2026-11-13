@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
-import { BOWL, BOWL_PARTS, fieldUV, markedFields, stadiumBowl, underBowl } from "./fields.js";
+import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stallFade, underBowl } from "./fields.js";
 import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
@@ -91,7 +91,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       if (!s.indices.length) continue;
       const geo = geometry(s.positions, s.indices);
       geo.setAttribute("uv", new THREE.Float32BufferAttribute(s.uvs, 2));
-      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide })));
+      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide, transparent: look === "stalls" })));
       Object.assign(m, { renderOrder: order - 100, receiveShadow: true });
       m.position.y = order * 0.05;
       m.userData.look = look;
@@ -301,7 +301,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     for (const m of fieldMeshes) {
       m.material.map?.dispose();
       const t = new THREE.CanvasTexture(fieldCanvas(m.userData.look, colors));
-      const tiles = m.userData.look === "court" || m.userData.look === "track";
+      const tiles = ["court", "track", "stalls"].includes(m.userData.look);
       t.wrapS = t.wrapT = tiles ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -329,6 +329,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return v.z > 1 ? null : [((v.x + 1) / 2) * size.w, ((1 - v.y) / 2) * size.h];
   };
   function overlay(size) {
+    const stalls = fieldMeshes.find((m) => m.userData.look === "stalls");
+    if (stalls) stalls.material.opacity = stallFade(poseOf({ position: camera.position.toArray(), target: controls.target.toArray() }, camera.fov).size);
     // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
     const box = host.getBoundingClientRect();
     const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
