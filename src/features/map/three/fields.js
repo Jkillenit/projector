@@ -104,7 +104,7 @@ export function fieldUV(positions, frame, look) {
     if (look === "court") [uv[j], uv[j + 1]] = [a / COURT.length, c / COURT.width];
     else if (look === "stalls") [uv[j], uv[j + 1]] = [a / STALL_TILE.along, c / STALL_TILE.across];
     else if (look === "track") [uv[j], uv[j + 1]] = [a / TRACK.along, c / TRACK.lanes];
-    else [uv[j], uv[j + 1]] = [length ? a / length : 0, width ? c / width : 0];
+    else [uv[j], uv[j + 1]] = [length ? a / length : 0, width ? 1 - c / width : 0]; // v flipped, so yard numbers and words read the right way from above
   }
   return uv;
 }
@@ -173,6 +173,7 @@ export function markedFields(nature, { stadium = null, tracks = [] } = {}) {
   const out = [];
   const add = (look, ring) => {
     const frame = longAxis(ring);
+    if (frame && frame.along[1] < 0) frame.along = [-frame.along[0], -frame.along[1]]; // texture starts at the north end (Saban Field: ALABAMA to the north)
     if (frame) out.push({ look, ring, frame: look === "court" ? courtFrame(frame) : frame });
   };
   for (const [sport, d] of Object.entries(nature.sports || {})) {
