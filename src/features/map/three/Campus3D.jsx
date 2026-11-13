@@ -166,13 +166,15 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const quiet = buildingMesh([...unnamed, ...buildings].filter((b) => b.quiet).map((b) => ({ ...b, name: "" })), [plainMat, plainMat, plainMat]);
   quiet.castShadow = false;
 
-  // Trees (#123): two lumpy crowns and a trunk, one InstancedMesh each, so one draw call per model.
-  // Crowns take --map-tree, so seasons (#128) can turn them; each tree is a shade lighter or darker.
+  // Trees (#123, #168): three lumpy crowns (round, wide like an oak, tall) and a trunk, one InstancedMesh each, so one draw call per model.
+  // Crowns start from --map-tree, so seasons (#128) can turn them; each tree gets its own green (leafTint).
   // Not in the tap list, so a tap goes through a tree to the building behind it.
-  const trees = placeTrees(nature, buildings, campus.bounds);
-  const CROWN = [3.5, 5, 6.5]; // crown radius by size, meters
+  const groves = campus.areas.filter((a) => /quad/i.test(a.name)).flatMap((a) => pathToRings(a.path)); // dense under big trees
+  const trees = placeTrees(nature, buildings, campus.bounds, groves);
+  const CROWN = [3.2, 4.8, 6.8]; // crown radius by size, meters
   const TRUNK = [3, 4, 5];
-  const crownMat = shaded(new THREE.MeshLambertMaterial({ flatShading: true }), { crown: { dark: 0.62, light: 1.1 } }); // #179: darker underneath
+  const CROWN_FORM = [[1, 0.8], [1.2, 0.62], [0.82, 1.1]]; // wide and tall, as a share of the radius
+  const crownMat = shaded(new THREE.MeshLambertMaterial(), { crown: { dark: 0.62, light: 1.1 } }); // #179: darker underneath
   const trunkMat = new THREE.MeshLambertMaterial();
   const crownShape = (k) => {
     const geo = new THREE.IcosahedronGeometry(1, 1);
@@ -180,20 +182,20 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     for (let i = 0; i < p.count; i++) {
       // A bump per corner, keyed by where the corner is, so faces that share it stay joined.
       const lump = 0.85 + 0.3 * seeded(seedOf(`${k}:${p.getX(i).toFixed(3)},${p.getY(i).toFixed(3)},${p.getZ(i).toFixed(3)}`))();
-      p.setXYZ(i, p.getX(i) * lump, p.getY(i) * lump * 0.8, p.getZ(i) * lump);
+      p.setXYZ(i, p.getX(i) * lump * CROWN_FORM[k][0], p.getY(i) * lump * CROWN_FORM[k][1], p.getZ(i) * lump * CROWN_FORM[k][0]);
     }
-    geo.computeVertexNormals();
+    geo.setAttribute("normal", new THREE.BufferAttribute(Float32Array.from(p.array), 3)); // soft, like a ball of leaves: light falls off evenly, no facets
+    geo.normalizeNormals();
     return geo;
   };
-  const crowns = [0, 1].map((k) => add(new THREE.InstancedMesh(crownShape(k), crownMat, Math.ceil((trees.length - k) / 2))));
+  const crowns = CROWN_FORM.map((_, k) => add(new THREE.InstancedMesh(crownShape(k), crownMat, Math.ceil((trees.length - k) / CROWN_FORM.length))));
   const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 1, 5, 1, true).translate(0, 0.5, 0);
   const trunks = add(new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length));
   {
     const o = new THREE.Object3D();
-    const shade = new THREE.Color();
     const r = seeded(seedOf("tree looks"));
     trees.forEach(([x, z, s], i) => {
-      const [crown, trunk, turn] = [CROWN[s] * (0.9 + r() * 0.2), TRUNK[s], r() * Math.PI * 2];
+      const [crown, trunk, turn] = [CROWN[s] * (0.8 + r() * 0.45), TRUNK[s], r() * Math.PI * 2];
       o.position.set(x, 0, z);
       o.rotation.set(0, turn, 0);
       o.scale.set(1, trunk, 1);
@@ -202,10 +204,19 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       o.position.y = trunk + crown * 0.6;
       o.scale.setScalar(crown);
       o.updateMatrix();
-      crowns[i % 2].setMatrixAt(i >> 1, o.matrix);
-      crowns[i % 2].setColorAt(i >> 1, shade.setScalar(0.85 + r() * 0.25));
+      crowns[i % crowns.length].setMatrixAt(Math.floor(i / crowns.length), o.matrix);
     });
   }
+  // Each tree's own green: the token turned a little toward yellow or blue, fuller or grayer, lighter or darker. Seeded, so it never changes.
+  const leafTint = () => {
+    const base = new THREE.Color(token("--map-tree"));
+    const [r, c] = [seeded(seedOf("tree colors")), new THREE.Color()];
+    trees.forEach((_, i) => {
+      const m = crowns[i % crowns.length];
+      m.setColorAt(Math.floor(i / crowns.length), c.copy(base).offsetHSL((r() - 0.6) * 0.09, (r() - 0.5) * 0.2, (r() - 0.5) * 0.14));
+      m.instanceColor.needsUpdate = true;
+    });
+  };
   for (const m of [...crowns, trunks]) m.castShadow = true;
 
   // Ambient shade (#179): a soft dark edge on the ground around every building, in every view and on both tiers.
@@ -323,7 +334,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     ground.material.color.set(token("--map-ground"));
     for (const m of layers) m.material.color.set(token(m.userData.token));
     edges.material.color.set(token("--map-roof"));
-    crownMat.color.set(token("--map-tree"));
+    leafTint();
     const pitch = new THREE.Color(token("--map-pitch"));
     const colors = {
       pitch: `#${pitch.getHexString()}`, stripe: `#${pitch.clone().offsetHSL(0, 0, 0.035).getHexString()}`, line: token("--map-line"), dirt: token("--map-dirt"),

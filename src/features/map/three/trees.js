@@ -6,10 +6,11 @@ import { seedOf } from "../campusMap.js";
 const CELL = 50; // grid cell for the obstacle lookup, meters
 const GAP = 5; // no two trees closer than this
 const CURB = 2; // trees stay this far off a road edge, path or wall
-const STREET = { setback: 4.5, every: 14 }; // street trees: past the curb, one every 14 m (#123)
+const STREET = { setback: 4.5, every: 11 }; // street trees: past the curb, one every 11 m (#123, #168)
 const ROW_EVERY = 8; // along OSM tree rows
 const WOOD_EVERY = 13; // woods: a jittered grid this tight
-const LAWN = { edgeEvery: 22, inset: 7, middleEvery: 38 }; // lawns: clusters near the edge, a few in the middle
+const LAWN = { edgeEvery: 15, inset: 7, middleEvery: 21 }; // lawns: clusters near the edge, some in the middle (#168: about twice as many)
+const GROVE = { every: 15, keep: 0.72 }; // groves like the Quad: dense, under big trees (#168)
 const NO_STREET_TREES = new Set(["service"]); // driveways and alleys
 
 /** A small seeded random generator (mulberry32): the same seed gives the same numbers. */
@@ -87,10 +88,11 @@ function obstacles() {
 /**
  * Every tree as [x, z, size], size 0 (small) to 2 (big).
  * nature: campus-nature.json. buildings: campus.json buildings ({ path }). bounds: [x0, y0, x1, y1], seeded fill stays inside it.
- * In order: OSM trees, OSM tree rows, street trees on campus roads, then seeded fill on woods, lawns and the campus.
+ * groves: rings to plant densely, like the Quad under its oaks; their trees are never the small size.
+ * In order: OSM trees, OSM tree rows, street trees on campus roads, groves, then seeded fill on woods, lawns and the campus.
  * None stand inside a building, on a road or path, in water, a parking lot or a sports field.
  */
-export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinity, Infinity, Infinity]) {
+export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinity, Infinity, Infinity], groves = []) {
   const block = obstacles();
   for (const b of buildings) for (const r of pathToRings(b.path)) block.shape(r, CURB);
   for (const o of nature.outlines || []) for (const r of pathToRings(o.path)) block.shape(r, CURB);
@@ -154,6 +156,11 @@ export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinit
       }
     }
   };
+  for (const ring of groves) {
+    const from = trees.length;
+    fill(ring, GROVE.every, GROVE.keep);
+    for (let i = from; i < trees.length; i++) trees[i][2] = Math.max(1, trees[i][2]);
+  }
   for (const ring of pathToRings(nature.wood)) fill(ring, WOOD_EVERY, 0.9);
   for (const ring of pathToRings(nature.grass)) {
     // Clusters of 1 to 3 just inside the edge, the way the Quad is lined.
@@ -163,8 +170,8 @@ export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinit
       const at = [p[0] - dy * LAWN.inset * side, p[1] + dx * LAWN.inset * side];
       for (let n = 1 + Math.floor(r() * 3); n > 0; n--) plant([at[0] + (r() - 0.5) * 8, at[1] + (r() - 0.5) * 8], r, (q) => inRing(q, ring));
     });
-    fill(ring, LAWN.middleEvery, 0.6);
+    fill(ring, LAWN.middleEvery, 0.7);
   }
-  for (const ring of pathToRings(nature.campus)) fill(ring, LAWN.middleEvery, 0.5);
+  for (const ring of pathToRings(nature.campus)) fill(ring, LAWN.middleEvery, 0.7);
   return trees;
 }
