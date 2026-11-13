@@ -1,5 +1,5 @@
 // Pure: where trees stand (#123). Does not import three. Same data in, same trees out, so every load looks the same.
-import { pathToRings } from "./extrude.js";
+import { inRing, pathToRings } from "./extrude.js";
 import { roadWidth } from "./campusMesh.js";
 import { seedOf } from "../campusMap.js";
 
@@ -30,16 +30,7 @@ export const insideOf = (d) => {
   return (p) => rings.some((r) => inRing(p, r));
 };
 
-/** Is [x, y] inside the ring (even-odd)? */
-export function inRing([x, y], ring) {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-}
+export { inRing };
 
 const segDist = ([px, py], [ax, ay], [bx, by]) => {
   const [dx, dy] = [bx - ax, by - ay];
