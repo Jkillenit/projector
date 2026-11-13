@@ -120,6 +120,19 @@ const PAINT = {
     ctx.fillRect(wx + ww / 2 - 2, wy, 4, wh);
     ctx.fillRect(wx, wy + wh / 3, ww, 4);
   },
+  deck(ctx, rand) {
+    // A parking deck (#146), same tile as brick (one bay, one floor): a concrete slab on top, the open dark level under it,
+    // a post at the bay edge. Posts sit at both edges in half widths, so the tile repeats.
+    noise(ctx, rand, 225, 250);
+    const open = ctx.createLinearGradient(0, 80, 0, SIZE);
+    open.addColorStop(0, "rgb(40,40,40)");
+    open.addColorStop(1, "rgb(85,85,85)");
+    ctx.fillStyle = open;
+    ctx.fillRect(0, 80, SIZE, SIZE - 80 - 24); // a low wall at the bottom, 24 px
+    ctx.fillStyle = "rgb(235,235,235)";
+    ctx.fillRect(0, 80, 10, SIZE - 80);
+    ctx.fillRect(SIZE - 10, 80, 10, SIZE - 80);
+  },
   roof(ctx, rand) {
     noise(ctx, rand, 222, 255);
     ctx.fillStyle = "rgba(190,190,190,0.7)";

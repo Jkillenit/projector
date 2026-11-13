@@ -3,7 +3,7 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stallFade, underBowl } from "./fields.js";
-import { addRibbons, GROUND_LAYERS, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
+import { addRibbons, GROUND_LAYERS, isDeck, isLandmark, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, FIELD_LOOKS, fieldCanvas, textureCanvas, TILE, worldUV } from "./textures.js";
@@ -123,6 +123,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   // so tapping (#118) still finds the building. OSM's building:colour and roof:colour win over our defaults.
   const wallMat = new THREE.MeshLambertMaterial({ map: texture("brick"), vertexColors: true });
   const roofMat = new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true });
+  const deckMat = new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }); // #146: concrete bands
   const looks = new Map();
   const buildingMesh = (list) => {
     const merged = mergeBuildings(list);
@@ -130,9 +131,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const scale = (i) => (merged.isRoof[i >> 1] ? TILE.roof : i % 2 ? BRICK.floor : BRICK.bay);
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(merged.uvs.map((x, i) => x / scale(i)), 2));
     geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(merged.positions.length), 3));
-    geo.addGroup(0, merged.wallIndices, 0);
+    geo.addGroup(0, merged.wallIndices - merged.deckIndices, 0);
+    geo.addGroup(merged.wallIndices - merged.deckIndices, merged.deckIndices, 2);
     geo.addGroup(merged.wallIndices, merged.indices.length - merged.wallIndices, 1);
-    const mesh = add(new THREE.Mesh(geo, [wallMat, roofMat]));
+    const mesh = add(new THREE.Mesh(geo, [wallMat, roofMat, deckMat]));
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.userData.merged = merged;
     return mesh;
@@ -143,7 +145,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return { id: `o${i}`, path: o.path, h: o.h };
   }));
   const town = buildingMesh(buildings.map((b) => {
-    looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name) });
+    looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name) });
     return b;
   }));
 
@@ -253,12 +255,12 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const attr = mesh.geometry.attributes.color;
     const { owners, isRoof, isTrim } = mesh.userData.merged;
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
-    const stone = new THREE.Color(token("--map-path")); // landmark columns (#130): light stone, like the paths
+    const stone = new THREE.Color(token("--map-path")); // landmark columns (#130) and deck concrete (#146): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
     for (const o of owners) {
       const look = looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : null;
-      const wall = lit || color(look.colour, look.landmark ? landmark : brick);
+      const wall = lit || color(look.colour, look.landmark ? landmark : look.deck ? stone : brick);
       const roof = lit || color(look.roof, slates[roofTone(o.id, slates.length)]);
       const trim = lit || stone;
       for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
@@ -514,7 +516,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
-      for (const t of [...Object.values(textures), wallMat, roofMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
+      for (const t of [...Object.values(textures), wallMat, roofMat, deckMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },

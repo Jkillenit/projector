@@ -6,7 +6,8 @@ import { landmarkShapes } from "./landmarks.js";
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
  * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim.
- * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: all walls first, then all roofs, wallIndices: how many indices are walls,
+ * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: brick walls, then deck walls, then roofs,
+ * wallIndices: how many indices are walls (both kinds), deckIndices: how many of those are deck walls (the last ones),
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
 export function mergeBuildings(buildings) {
@@ -16,8 +17,10 @@ export function mergeBuildings(buildings) {
   const isTrim = [];
   const owners = [];
   const walls = { indices: [], owner: [] };
+  const decks = { indices: [], owner: [] };
   const roofs = { indices: [], owner: [] };
   for (const b of buildings || []) {
+    const wallPart = isDeck(b.name) ? decks : walls;
     const start = positions.length / 3;
     for (const s of landmarkShapes(b) || extrudeRings(pathToRings(b.path), b.h)) {
       const base = positions.length / 3;
@@ -28,7 +31,7 @@ export function mergeBuildings(buildings) {
         isTrim.push(!!s.trim);
       }
       s.indices.forEach((i, k) => {
-        const part = k < s.wallIndices ? walls : roofs;
+        const part = k < s.wallIndices ? wallPart : roofs;
         part.indices.push(base + i);
         if (k % 3 === 0) part.owner.push(b.id);
       });
@@ -38,11 +41,15 @@ export function mergeBuildings(buildings) {
   }
   return {
     positions, uvs, isRoof, isTrim, owners,
-    indices: walls.indices.concat(roofs.indices),
-    wallIndices: walls.indices.length,
-    triOwner: walls.owner.concat(roofs.owner),
+    indices: walls.indices.concat(decks.indices, roofs.indices),
+    wallIndices: walls.indices.length + decks.indices.length,
+    deckIndices: decks.indices.length,
+    triOwner: walls.owner.concat(decks.owner, roofs.owner),
   };
 }
+
+/** Parking decks get open concrete bands, not brick and windows (#146). OSM names every UA deck "... Parking Deck". */
+export const isDeck = (name) => /parking (deck|garage)/i.test(name || "");
 
 /** Landmarks get crimson brick so they stand out (#122). Bryant-Denny is only an area in OSM, so it has no walls to color. */
 const LANDMARKS = new Set(["Amelia Gayle Gorgas Library", "Denny Chimes", "University of Alabama Student Center"]);

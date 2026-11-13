@@ -31,6 +31,19 @@ describe("mergeBuildings", () => {
     expect(m.isRoof).toHaveLength(m.positions.length / 3);
   });
 
+  it("puts parking deck walls last among the walls, so they take concrete bands, not windows (#146)", () => {
+    const m = mergeBuildings([
+      { id: "deck", name: "Tutwiler Parking Deck", path: SQUARE, h: 7 },
+      { id: "hall", name: "Gorgas Hall", path: "M20 0L30 0L30 10L20 10Z", h: 7 },
+    ]);
+    expect(m.deckIndices).toBe(4 * 6);
+    const brick = m.wallIndices - m.deckIndices;
+    expect(m.triOwner.slice(0, brick / 3)).toEqual(Array(brick / 3).fill("hall"));
+    expect(m.triOwner.slice(brick / 3, m.wallIndices / 3)).toEqual(Array(8).fill("deck"));
+    m.indices.forEach((v, k) => expect(m.isRoof[v]).toBe(k >= m.wallIndices));
+    expect(mergeBuildings([{ id: "a", name: "Parking Lot Office", path: SQUARE, h: 4 }]).deckIndices).toBe(0);
+  });
+
   it("gives walls UVs in meters along and up the wall, roofs their x and z", () => {
     const m = mergeBuildings([{ id: "a", path: SQUARE, h: 7 }]);
     expect(m.uvs).toHaveLength((m.positions.length / 3) * 2);
