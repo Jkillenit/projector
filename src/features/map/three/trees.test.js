@@ -75,6 +75,16 @@ describe("placeTrees on a made up lawn", () => {
   it("is the same every time", () => {
     expect(placeTrees(small, [hall])).toEqual(trees);
   });
+
+  it("plants a grove densely with bigger trees, and still off the building and the path (#168)", () => {
+    const [grove] = pathToRings(SQUARE(0, 0, 100));
+    const inGrove = (list) => list.filter(([x, y]) => inRing([x, y], grove));
+    const dense = placeTrees(small, [hall], undefined, [grove]);
+    expect(inGrove(dense).length).toBeGreaterThan(inGrove(trees).length * 1.25);
+    expect(inGrove(dense).filter(([, , size]) => size > 0).length).toBeGreaterThan(inGrove(dense).length * 0.7);
+    const [b] = pathToRings(hall.path);
+    for (const [x, y] of dense) expect(inRing([x, y], b)).toBe(false);
+  });
 });
 
 describe("placeTrees on the real campus data", () => {
@@ -82,7 +92,7 @@ describe("placeTrees on the real campus data", () => {
 
   it("is tree lined but stays drawable", () => {
     expect(trees.length).toBeGreaterThan(3000);
-    expect(trees.length).toBeLessThan(15000);
+    expect(trees.length).toBeLessThan(26000);
   });
 
   it("never puts a tree inside a building or on a road", () => {
