@@ -8,7 +8,7 @@ import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_R
 import { footprint, labelBox, thinLabels } from "./labels.js";
 import { BRICK, FIELD_LOOKS, fieldCanvas, textureCanvas, TILE, worldUV } from "./textures.js";
 import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./stage.js";
-import { placeTrees, seeded } from "./trees.js";
+import { insideOf, placeTrees, seeded } from "./trees.js";
 import { shadowOffset } from "./quality.js";
 import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
@@ -19,6 +19,7 @@ const TO_2D = " Showing the flat map instead.";
 const PIN = 28; // pin size on screen, px, as in ui.css
 const CLASS_SHIFT = -16; // class pins sit up and left of the spot, so a class and an event in one building do not cover each other
 const STADIUM = { name: "Bryant-Denny Stadium", field: "Saban Field" }; // the one bowl (#150)
+const QUIET = { h: 8, labels: 800 }; // #165: the town outside campus: walls no taller than this (m); names only when the view is this narrow (m)
 
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
@@ -69,7 +70,12 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   // Bryant-Denny's own outline in OSM is replaced by the bowl below (#150).
   const stadiumArea = campus.areas.find((a) => a.name === STADIUM.name);
   const stadiumRing = stadiumArea && pathToRings(stadiumArea.path)[0];
-  const outlines = stadiumRing ? nature.outlines.filter((o) => !underBowl(o.path, stadiumRing)) : nature.outlines;
+  // The town outside the campus edge stays quiet (#165): low, plain and pale, so campus stands out.
+  const onCampus = insideOf(nature.campus);
+  const low = (b) => (b.quiet ? { ...b, h: Math.min(b.h || 0, QUIET.h) } : b);
+  const outlines = (stadiumRing ? nature.outlines.filter((o) => !underBowl(o.path, stadiumRing)) : nature.outlines)
+    .map((o) => low({ ...o, quiet: !onCampus(pathToRings(o.path)[0]?.[0] || []) }));
+  buildings = buildings.map((b) => low({ ...b, quiet: !onCampus(b.c) }));
 
   // Sports fields (#150): one mesh per look just over the plain pitch. Textures are painted in theme colors, in theme().
   const fieldMeshes = [];
@@ -125,7 +131,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const roofMat = new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true });
   const deckMat = new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }); // #146: concrete bands
   const looks = new Map();
-  const buildingMesh = (list) => {
+  const buildingMesh = (list, mats = [wallMat, roofMat, deckMat]) => {
     const merged = mergeBuildings(list);
     const geo = geometry(merged.positions, merged.indices);
     const scale = (i) => (merged.isRoof[i >> 1] ? TILE.roof : i % 2 ? BRICK.floor : BRICK.bay);
@@ -134,20 +140,23 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     geo.addGroup(0, merged.wallIndices - merged.deckIndices, 0);
     geo.addGroup(merged.wallIndices - merged.deckIndices, merged.deckIndices, 2);
     geo.addGroup(merged.wallIndices, merged.indices.length - merged.wallIndices, 1);
-    const mesh = add(new THREE.Mesh(geo, [wallMat, roofMat, deckMat]));
+    const mesh = add(new THREE.Mesh(geo, mats));
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.userData.merged = merged;
     return mesh;
   };
   // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
-  const context = buildingMesh(outlines.map((o, i) => {
+  const unnamed = outlines.map((o, i) => {
     looks.set(`o${i}`, o);
-    return { id: `o${i}`, path: o.path, h: o.h };
-  }));
-  const town = buildingMesh(buildings.map((b) => {
-    looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name) });
-    return b;
-  }));
+    return { id: `o${i}`, path: o.path, h: o.h, quiet: o.quiet };
+  });
+  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name) });
+  const context = buildingMesh(unnamed.filter((b) => !b.quiet));
+  const town = buildingMesh(buildings.filter((b) => !b.quiet));
+  // Off campus: no brick or windows, no cast shadow, one plain material. Named ones are still tappable.
+  const plainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const quiet = buildingMesh([...unnamed, ...buildings].filter((b) => b.quiet).map((b) => ({ ...b, name: "" })), [plainMat, plainMat, plainMat]);
+  quiet.castShadow = false;
 
   // Trees (#123): two lumpy crowns and a trunk, one InstancedMesh each, so one draw call per model.
   // Crowns take --map-tree, so seasons (#128) can turn them; each tree is a shade lighter or darker.
@@ -240,7 +249,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const o = new CSS2DObject(el);
     const h = bowl && p === stadiumArea ? BOWL.top : p.h; // the stadium's name sits on its rim, and wins like a building
     o.position.set(p.c[0], (h || 0) + 2, p.c[1]);
-    o.userData = { id: p.id, name: p.name, rank: footprint(p.path) * (h ? 1 : 0.05) }; // areas give way to buildings
+    o.userData = { id: p.id, name: p.name, quiet: p.quiet, rank: footprint(p.path) * (p.quiet ? 0.001 : h ? 1 : 0.05) }; // areas give way to buildings, the town to both
     labelGroup.add(o);
   }
 
@@ -257,9 +266,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
     const stone = new THREE.Color(token("--map-path")); // landmark columns (#130) and deck concrete (#146): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
+    const pale = new THREE.Color(token("--map-context"));
     for (const o of owners) {
-      const look = looks.get(o.id);
-      const lit = o.id === picked ? on : o.id === hovered ? near : null;
+      const look = mesh === quiet ? {} : looks.get(o.id);
+      const lit = o.id === picked ? on : o.id === hovered ? near : mesh === quiet ? pale : null;
       const wall = lit || color(look.colour, look.landmark ? landmark : look.deck ? stone : brick);
       const roof = lit || color(look.roof, slates[roofTone(o.id, slates.length)]);
       const trim = lit || stone;
@@ -271,6 +281,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const on = new THREE.Color(token("--map-pick"));
     const near = new THREE.Color(token("--map-hover"));
     paintBuildings(town, on, near);
+    paintBuildings(quiet, on, near);
     if (all) paintBuildings(context);
     if (bowl) {
       const id = bowl.userData.id;
@@ -331,8 +342,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     return v.z > 1 ? null : [((v.x + 1) / 2) * size.w, ((1 - v.y) / 2) * size.h];
   };
   function overlay(size) {
+    const view = poseOf({ position: camera.position.toArray(), target: controls.target.toArray() }, camera.fov).size;
     const stalls = fieldMeshes.find((m) => m.userData.look === "stalls");
-    if (stalls) stalls.material.opacity = stallFade(poseOf({ position: camera.position.toArray(), target: controls.target.toArray() }, camera.fov).size);
+    if (stalls) stalls.material.opacity = stallFade(view);
     // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
     const box = host.getBoundingClientRect();
     const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
@@ -346,7 +358,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const items = [];
     for (const o of labelGroup.children) {
       const at = onScreen(o, size);
-      if (at) items.push({ id: o.userData.id, box: labelBox(o.userData.name, at[0], at[1]), rank: o.userData.id === picked ? Infinity : o.userData.rank });
+      if (at && (!o.userData.quiet || view < QUIET.labels || o.userData.id === picked)) items.push({ id: o.userData.id, box: labelBox(o.userData.name, at[0], at[1]), rank: o.userData.id === picked ? Infinity : o.userData.rank });
     }
     const shown = thinLabels(items, pinBoxes, size);
     for (const o of labelGroup.children) {
@@ -360,7 +372,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const under = (e) => {
     const box = renderer.domElement.getBoundingClientRect();
     ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, -((e.clientY - box.top) / box.height) * 2 + 1), camera);
-    const hit = ray.intersectObjects(bowl ? [town, areas, bowl] : [town, areas])[0];
+    const hit = ray.intersectObjects(bowl ? [town, quiet, areas, bowl] : [town, quiet, areas])[0];
     return hit ? hit.object.userData.merged.triOwner[hit.faceIndex] : null;
   };
   // Tap (not drag) picks.
@@ -516,7 +528,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     dispose() {
       stop();
       cancelAnimationFrame(hoverFrame);
-      for (const t of [...Object.values(textures), wallMat, roofMat, deckMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
+      for (const t of [...Object.values(textures), wallMat, roofMat, deckMat, plainMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
       host.removeEventListener("keydown", onKey);
       stage.dispose();
     },

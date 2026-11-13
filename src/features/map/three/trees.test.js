@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inRing, lines, placeTrees, seeded } from "./trees.js";
+import { insideOf, inRing, lines, placeTrees, seeded } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import { roadWidth } from "./campusMesh.js";
 import nature from "../campus-nature.json";
@@ -18,6 +18,16 @@ describe("seeded", () => {
     const xs = Array.from({ length: 5 }, a);
     expect(Array.from({ length: 5 }, b)).toEqual(xs);
     xs.forEach((x) => expect(x >= 0 && x < 1).toBe(true));
+  });
+});
+
+describe("insideOf", () => {
+  it("tells campus buildings from the town around it (#165)", () => {
+    const onCampus = insideOf(nature.campus);
+    const at = (name) => onCampus(campus.buildings.find((b) => b.name === name).c);
+    expect(at("Amelia Gayle Gorgas Library")).toBe(true);
+    expect(at("ALDI")).toBe(false);
+    expect(campus.buildings.filter((b) => onCampus(b.c)).length).toBeGreaterThan(campus.buildings.length / 2);
   });
 });
 
