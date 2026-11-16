@@ -44,7 +44,7 @@ export function EventsScreen({ profile }) {
       {status === "ready" && !shown.length ? (
         <p className="t-small t-muted">
           {filter === "mine" ? (
-            <>Nothing matches your interests in the next two weeks. <TextLink href={routeHref("settings")} arrow>Edit interests</TextLink></>
+            <>Nothing matches your interests in the next two weeks. <TextLink href={routeHref("settings")}>Edit interests</TextLink></>
           ) : (
             "No events in the next two weeks."
           )}
@@ -65,7 +65,7 @@ export function EventsScreen({ profile }) {
                   {e.match.length ? <Pill tone="good">Matches your interest in {e.match.join(" and ")}</Pill> : null}
                 </div>
                 {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "See it on UA's calendar" : "See it on The SOURCE"}</TextLink> : null}
-                {!e.online && e.where ? <TextLink href={routeHref("map", [], { q: e.where })} arrow>On the map</TextLink> : null}
+                {!e.online && e.where ? <TextLink href={routeHref("map", [], { q: e.where })}>On the map</TextLink> : null}
               </Card>
             ))}
           </div>

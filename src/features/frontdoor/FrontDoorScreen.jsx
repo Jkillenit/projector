@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
-import { Button, Card, Chip, CodeTag, CourseDot, Icon, Notice, Pill, ProgressBar, Skeleton, TextLink, VisuallyHidden } from "../../components/ui/index.jsx";
+import { Button, Card, Chip, CodeTag, CourseDot, Icon, Loading, Notice, Pill, ProgressBar, TextLink, VisuallyHidden } from "../../components/ui/index.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { useColorLookup, useCourseStyle } from "../../shell/CourseColors.jsx";
 import { courseStyle } from "../dashboard/courseColor.js";
@@ -12,12 +12,16 @@ import { coursePicks } from "./coursePicks.js";
 import { greeting } from "./dueSoon.js";
 
 import { useCampusEvents } from "../campus/useCampusEvents.js";
+import { GuideCard } from "../companion/GuideCard.jsx";
 import { tomorrowWalks } from "../map/classLayer.js";
 import { useIndoor } from "../map/useIndoor.js";
 import { useMyClasses } from "../map/useMyClasses.js";
 import { askSuggestions, dueText, eventWhen, homeEvents, kindLabel, postedText, subtitleText, timeLeft } from "./homeView.js";
 import { lastVisitOrDefault } from "./newGrades.js";
 import { useHomeData } from "./useHomeData.js";
+
+// The map outlines are about 300 KB, so Home's preview loads on its own after the page.
+const MapPreview = lazy(() => import("../map/MapPreview.jsx").then((m) => ({ default: m.MapPreview })));
 
 const VISIT_KEY = "fd.lastVisit";
 const TONIGHT_ROWS = 5;
@@ -64,7 +68,7 @@ function TaskRow({ t, now }) {
 function Tonight({ tasks, now }) {
   const [first, ...rest] = tasks;
   return (
-    <Card className="home-card home-tile--tonight" aria-labelledby="tonight-h">
+    <Card className="home-card" aria-labelledby="tonight-h">
       <div className="home-tonight-head">
         <h2 id="tonight-h" className="t-title">Tonight</h2>
         <span className="t-small t-faint">{tasks.length === 1 ? "1 task" : `${tasks.length} tasks`}</span>
@@ -74,12 +78,12 @@ function Tonight({ tasks, now }) {
         <div>
           <FeaturedTask t={first} now={now} />
           {rest.slice(0, TONIGHT_ROWS - 1).map((t) => <TaskRow key={t.uuid} t={t} now={now} />)}
-          {tasks.length > TONIGHT_ROWS ? <div className="home-more"><TextLink href={routeHref("calendar")} arrow>See all</TextLink></div> : null}
+          {tasks.length > TONIGHT_ROWS ? <div className="home-more"><TextLink href={routeHref("calendar")}>See all</TextLink></div> : null}
         </div>
       ) : (
         <div className="ui-empty">
           <span>Nothing due tonight.</span>
-          <TextLink href={routeHref("calendar")} arrow>Open calendar</TextLink>
+          <TextLink href={routeHref("calendar")}>Open calendar</TextLink>
         </div>
       )}
     </Card>
@@ -92,10 +96,10 @@ function DayDot({ id }) {
 
 function ThisWeek({ week }) {
   return (
-    <Card className="home-tile--week" aria-labelledby="week-h">
+    <Card aria-labelledby="week-h">
       <div className="card-head">
         <h2 id="week-h" className="t-heading">This week</h2>
-        <TextLink href={routeHref("calendar")} arrow>Open calendar</TextLink>
+        <TextLink href={routeHref("calendar")}>Open calendar</TextLink>
       </div>
       <div className="home-week">
         {week.map((d) => (
@@ -155,7 +159,7 @@ function GradeRow({ c, shown, fresh }) {
 
 function ClassesCard({ courses, shown, onShown, freshFor }) {
   return (
-    <Card className="home-tile--classes" aria-labelledby="classes-h">
+    <Card aria-labelledby="classes-h">
       <div className="card-head">
         <h2 id="classes-h" className="t-heading">How classes are going</h2>
         <Button variant="outline-sm" size="sm" icon="eye" aria-pressed={shown} onClick={() => onShown(!shown)}>
@@ -182,7 +186,7 @@ function HelpItem({ p, style }) {
       </span>
       <span className="home-help-name">{p.resource.name}</span>
       <span className="t-small t-muted">{p.resource.description}</span>
-      <TextLink href={routeHref("campus", ["r", p.resource.id])} arrow>How to get in</TextLink>
+      <TextLink href={routeHref("campus", ["r", p.resource.id])}>How to get in</TextLink>
     </li>
   );
 }
@@ -196,8 +200,11 @@ function HelpCard({ facts }) {
     return found.length ? found : GENERAL.map((id) => ({ key: id, resource: resources.find((r) => r.id === id) })).filter((p) => p.resource);
   }, [facts]);
   return (
-    <Card className="home-tile--help" aria-labelledby="help-h">
-      <h2 id="help-h" className="t-heading">Help for this week</h2>
+    <Card aria-labelledby="help-h">
+      <div className="card-head">
+        <h2 id="help-h" className="t-heading">Campus resources</h2>
+        <TextLink href={routeHref("campus")}>All resources</TextLink>
+      </div>
       <ul className="home-help">
         {picks.map((p) => <HelpItem key={p.key} p={p} style={p.courseId ? courseStyle(colorOf(p.courseId)) : undefined} />)}
       </ul>
@@ -209,21 +216,23 @@ function EventsCard({ interests }) {
   const { status, events } = useCampusEvents();
   const picks = useMemo(() => homeEvents(events, interests), [events, interests]);
   return (
-    <Card className="home-tile--events" aria-labelledby="events-h">
+    <Card aria-labelledby="events-h">
       <div className="card-head">
         <h2 id="events-h" className="t-heading">On campus this week</h2>
-        <TextLink href={routeHref("events")} arrow>All events</TextLink>
+        <TextLink href={routeHref("events")}>All events</TextLink>
       </div>
       {status === "loading" ? (
-        <div className="home-events"><Skeleton height={72} /><Skeleton height={72} /><Skeleton height={72} /></div>
+        <Loading>Getting events…</Loading>
       ) : picks.length ? (
         <ul className="home-events">
           {picks.map((e) => (
             <li key={e.id} className="home-event">
               <span className="home-event-when">{eventWhen(e.start)}</span>
-              <span className="home-event-title">{e.title}</span>
-              {e.where ? <span className="t-small t-muted">{e.where}</span> : null}
-              {e.match.length ? <Pill tone="good" tiny>For you</Pill> : null}
+              <span className="home-event-body">
+                <span className="home-event-title">{e.title}</span>
+                {e.where ? <span className="t-small t-muted">{e.where}</span> : null}
+              </span>
+              {e.match.length ? <Pill tone="good" tiny>For you</Pill> : <span />}
             </li>
           ))}
         </ul>
@@ -247,7 +256,7 @@ function TomorrowWalk() {
         {walks.map(({ m, walk }) => (
           <li key={`${walk.building}-${walk.room}`} className="home-help-item">
             <span>{m.course} in {m.building} {m.room}.</span>
-            <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })} arrow>Preview the walk</TextLink>
+            <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })}>Preview the walk</TextLink>
           </li>
         ))}
       </ul>
@@ -255,17 +264,7 @@ function TomorrowWalk() {
   );
 }
 
-function HomeSkeleton() {
-  return (
-    <div className="home-bento" aria-busy="true">
-      <Card className="home-tile--tonight"><Skeleton height={28} width="30%" radius={8} /><Skeleton height={88} /><Skeleton height={56} /><Skeleton height={56} /></Card>
-      <Card className="home-tile--classes"><Skeleton height={22} width="50%" radius={8} /><Skeleton height={64} /><Skeleton height={64} /></Card>
-      <Card className="home-tile--week"><Skeleton height={22} width="25%" radius={8} /><Skeleton height={84} /></Card>
-      <Card className="home-tile--help"><Skeleton height={22} width="50%" radius={8} /><Skeleton height={64} /></Card>
-      <Card className="home-tile--events"><Skeleton height={22} width="30%" radius={8} /><Skeleton height={72} /></Card>
-    </div>
-  );
-}
+const MapLoading = () => <Card className="home-map"><Loading>Loading the map…</Loading></Card>;
 
 export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown, onGradesShown, actions }) {
   const orgIds = useOrgIds();
@@ -308,17 +307,27 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
 
       <TomorrowWalk />
 
-      {!data.loaded ? (
-        <HomeSkeleton />
-      ) : (
-        <div className="home-bento">
-          <Tonight tasks={data.tasks} now={now} />
-          <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
-          <ThisWeek week={data.week} />
-          <HelpCard facts={data.facts} />
-          <EventsCard interests={profile.interests} />
+      <div className="home-cols">
+        <div className="home-main" aria-busy={!data.loaded || undefined}>
+          {!data.loaded ? (
+            <Loading>Loading your week…</Loading>
+          ) : (
+            <>
+              <HelpCard facts={data.facts} />
+              <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
+              <Tonight tasks={data.tasks} now={now} />
+              <ThisWeek week={data.week} />
+              <EventsCard interests={profile.interests} />
+            </>
+          )}
         </div>
-      )}
+        <aside className="home-side" aria-label="Guide and map">
+          <GuideCard first={first} />
+          <Suspense fallback={<MapLoading />}>
+            <MapPreview />
+          </Suspense>
+        </aside>
+      </div>
     </div>
   );
 }

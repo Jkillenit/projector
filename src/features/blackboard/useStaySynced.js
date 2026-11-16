@@ -37,7 +37,7 @@ async function pruneEnded(enrollments) {
       removed += 1;
     }
   }
-  if (removed) window.dispatchEvent(new CustomEvent("projector-courses-pruned"));
+  if (removed) window.dispatchEvent(new CustomEvent("al-courses-pruned"));
   return removed;
 }
 

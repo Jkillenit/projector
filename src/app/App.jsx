@@ -78,14 +78,14 @@ function useSyncEvents(reloadCourse, reloadAll) {
     });
     // Old-term courses were removed from the database: re-read the list.
     const onPruned = () => void reloadAll();
-    window.addEventListener("projector-courses-pruned", onPruned);
+    window.addEventListener("al-courses-pruned", onPruned);
     // Disconnect wiped everything mirrored from Blackboard: start over from a clean screen.
     const offGone = bb.onDisconnected?.(() => window.location.reload());
     return () => {
       offSync?.();
       offSyllabus?.();
       offGone?.();
-      window.removeEventListener("projector-courses-pruned", onPruned);
+      window.removeEventListener("al-courses-pruned", onPruned);
     };
   }, [reloadCourse, reloadAll]);
 }
@@ -161,12 +161,12 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
     { key: "a-settings", label: "Open settings", run: () => navigate("settings") },
   ];
   const syncBox = <SyncBox mode={mode} studentName={profile.name} sync={sync} expired={expired} onSettings={() => navigate("settings")} />;
-  const sidebar = <Sidebar route={route} courses={sideCourses} onSearch={() => setPaletteOpen(true)} syncBox={syncBox} />;
+  const sidebar = (rail) => <Sidebar route={route} courses={sideCourses} onSearch={() => setPaletteOpen(true)} syncBox={syncBox} rail={rail} />;
 
   return (
     <CourseColorProvider courses={sideCourses}>
       <div className="app">
-        <div className="app-side">{sidebar}</div>
+        <div className="app-side">{sidebar(true)}</div>
         <div className="app-main">
           <TitleBar />
           <TopBar onSearch={() => setPaletteOpen(true)} onMenu={() => setDrawerOpen(true)} />
@@ -177,7 +177,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
           </main>
           <TabBar route={route} />
         </div>
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar}</Drawer>
+        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>{sidebar(false)}</Drawer>
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} courses={sideCourses} upcoming={upcoming.rows} profile={profile} paletteActions={paletteActions} actions={actions} />
       </div>
     </CourseColorProvider>

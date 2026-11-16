@@ -20,17 +20,17 @@ export function MyClasses({ week, indoor, spots, unplaced, range, onPick, onAdd,
       <h2 className="t-title">{range === "today" ? "Your day" : "Your week"}</h2>
       {week.status === "notConnected" ? (
         <p className="t-small t-muted">
-          See your classes here: <TextLink href={routeHref("settings")} arrow>connect your UA account in Settings</TextLink>
+          See your classes here: <TextLink href={routeHref("settings")}>connect your UA account in Settings</TextLink>
         </p>
       ) : week.status === "signedOut" || week.status === "error" ? (
         <p className="t-small t-muted">
-          {week.signedOut ? "myBama signed you out." : "Could not get your classes right now."} <TextLink href={routeHref("settings")} arrow>Sign in again</TextLink>
+          {week.signedOut ? "myBama signed you out." : "Could not get your classes right now."} <TextLink href={routeHref("settings")}>Sign in again</TextLink>
         </p>
       ) : null}
       {week.stale ? <p className="t-small t-faint">Classes from your last myBama check.</p> : null}
       {week.status === "syllabus" ? (
         <p className="t-small t-faint">
-          From your syllabi. For your myBama schedule, <TextLink href={routeHref("settings")} arrow>connect your UA account</TextLink>
+          From your syllabi. For your myBama schedule, <TextLink href={routeHref("settings")}>connect your UA account</TextLink>
         </p>
       ) : null}
       {rows.length ? (
@@ -49,7 +49,7 @@ export function MyClasses({ week, indoor, spots, unplaced, range, onPick, onAdd,
                 <span className="t-heading">{classWhere(m)}</span>
               )}
               {!key && !/online/i.test(m.building) ? <span className="t-small t-faint">Not on the map yet: we could not find this building.</span> : null}
-              {walk.room ? <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })} arrow>{walk.label}</TextLink> : null}
+              {walk.room ? <TextLink href={routeHref("map", [], { walk: walk.building, room: walk.room })}>{walk.label}</TextLink> : null}
               {m.session ? (
                 <Button size="sm" variant="quiet" onClick={() => onRemove(m.id)} aria-label={`Remove ${m.title}`}>Remove</Button>
               ) : null}

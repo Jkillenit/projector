@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Card, Chip, CodeTag, CourseDot, Icon, Notice, Pill, ProgressBar, Segmented, Skeleton, StepList, TextLink } from "../../components/ui/index.jsx";
+import { Button, Card, Chip, CodeTag, CourseDot, Icon, Loading, Notice, Pill, ProgressBar, Segmented, StepList, TextLink } from "../../components/ui/index.jsx";
 import { ICON_NAMES } from "../../components/ui/Icon.jsx";
 import { courseStyle, getCourseColor } from "../dashboard/courseColor.js";
 
@@ -13,7 +13,7 @@ export function UiGallery() {
     <div className="page ui-fade">
       <h1 className="t-display">Components</h1>
       <Card>
-        <h2 className="t-heading">Bento Campus tokens</h2>
+        <h2 className="t-heading">Tokens</h2>
         <Row>
           <span className="dev-token"><span className="dev-token-chip" style={{ background: "var(--accent)" }} />accent</span>
           <span className="dev-token"><span className="dev-token-chip" style={{ background: "var(--new)" }} />new</span>
@@ -25,14 +25,12 @@ export function UiGallery() {
           <span className="dev-token"><span className="dev-token-chip" style={{ borderRadius: "var(--r-sm)" }} />r-sm</span>
           <span className="dev-token"><span className="dev-token-chip" style={{ borderRadius: "var(--r-md)" }} />r-md</span>
           <span className="dev-token"><span className="dev-token-chip" style={{ borderRadius: "var(--r-lg)" }} />r-lg</span>
-          <span className="dev-token"><span className="dev-token-chip" style={{ boxShadow: "var(--shadow-1)" }} />shadow-1</span>
-          <span className="dev-token"><span className="dev-token-chip" style={{ boxShadow: "var(--shadow-2)" }} />shadow-2</span>
-          <span className="dev-token"><span className="dev-token-chip" style={{ boxShadow: "var(--shadow-3)" }} />shadow-3</span>
+          <span className="dev-token"><span className="dev-token-chip" style={{ boxShadow: "var(--shadow-3)" }} />shadow-3 (overlays only)</span>
         </Row>
         <p className="t-display">Display 32</p>
         <p className="t-title">Title 22</p>
         <p className="t-heading">Heading 18</p>
-        <p>Body 16. Atkinson Hyperlegible Next, with numbers in <span className="num">Geist Mono 0123</span>.</p>
+        <p>Body 16. Atkinson Hyperlegible Next, with tabular numbers: <span className="num">0123 89.5%</span>. Course codes: <CodeTag>MATH 126</CodeTag></p>
         <p className="t-small t-muted">Small 14, muted</p>
         <p className="t-label t-faint">Label 13, faint</p>
       </Card>
@@ -44,7 +42,7 @@ export function UiGallery() {
           <Button variant="quiet">Quiet</Button>
           <Button variant="outline-sm" size="sm" icon="eye">Outline small</Button>
           <Button variant="primary" size="lg" external href="https://ualearn.blackboard.com">Large external</Button>
-          <TextLink arrow>Text link</TextLink>
+          <TextLink>Text link</TextLink>
         </Row>
       </Card>
       <Card>
@@ -94,8 +92,7 @@ export function UiGallery() {
       </Card>
       <Card>
         <h2 className="t-heading">Loading</h2>
-        <Skeleton height={56} />
-        <Skeleton height={56} width="70%" />
+        <Loading />
       </Card>
     </div>
   );

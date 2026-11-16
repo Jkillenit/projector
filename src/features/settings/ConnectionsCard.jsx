@@ -34,8 +34,8 @@ export function ConnectionsCard({ mode }) {
   };
   const disconnect = async (row) => {
     const message = row.ua
-      ? "Sign out of your UA account in Projector? Blackboard and myBama both turn off, and Projector deletes what it saved from them."
-      : `Disconnect ${row.name}? This signs you out there and deletes everything Projector saved from it.`;
+      ? "Sign out of your UA account in AL? Blackboard and myBama both turn off, and AL deletes what it saved from them."
+      : `Disconnect ${row.name}? This signs you out there and deletes everything AL saved from it.`;
     if (!window.confirm(message)) return;
     setBusy(row.id);
     try {
@@ -51,7 +51,7 @@ export function ConnectionsCard({ mode }) {
     <Card aria-labelledby="set-conn">
       <h2 id="set-conn" className="t-heading">Connections</h2>
       <p className="t-small t-muted">
-        Connect the services you use so the map can show and do more. Each one is off until you turn it on. You sign in on its own page, and Projector never sees your password.
+        Connect the services you use so the map can show and do more. Each one is off until you turn it on. You sign in on its own page, and AL never sees your password.
         {mode === "demo" ? " In the demo these are pretend and nothing leaves this page." : ""}
       </p>
       <ul className="conn-list">

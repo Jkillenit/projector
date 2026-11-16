@@ -44,7 +44,7 @@ function Detail({ r, onAsk, onClose }) {
       <div className="card-foot">
         <span>Source: official UA page</span>
         <span>{checkedLabel(r)}</span>
-        <TextLink className="card-foot-end" arrow onClick={() => onAsk(`How do I get into ${r.name}?`)}>Ask about this</TextLink>
+        <TextLink className="card-foot-end" onClick={() => onAsk(`How do I get into ${r.name}?`)}>Ask about this</TextLink>
       </div>
     </Card>
   );
@@ -62,7 +62,7 @@ function Clubs({ profile, sectionRef }) {
       <div className="campus-clubs-head">
         <h2 id="clubs-h" className="t-title">Clubs that fit you</h2>
         <span className="t-small t-faint">{fromSource ? `Matched to your interests from The SOURCE${stale ? ". Showing the last list we got" : ""}` : "Matched to your interests and your free time"}</span>
-        <TextLink href={routeHref("settings")} arrow className="card-foot-end">Edit interests</TextLink>
+        <TextLink href={routeHref("settings")} className="card-foot-end">Edit interests</TextLink>
       </div>
       {status === "loading" ? <p className="t-small t-muted">Getting clubs…</p> : null}
       {status === "error" ? (
@@ -85,7 +85,7 @@ function Clubs({ profile, sectionRef }) {
               {club.url ? (
                 <TextLink href={club.url} external>See it on The SOURCE</TextLink>
               ) : (
-                <TextLink href={routeHref("campus", ["r", "the-source"])} arrow>How to join</TextLink>
+                <TextLink href={routeHref("campus", ["r", "the-source"])}>How to join</TextLink>
               )}
             </Card>
           );
@@ -170,7 +170,7 @@ export function CampusScreen({ profile, section, resourceId, actions }) {
             <div className="ui-empty">
               <span>Nothing matches "{query}".</span>
               <Button variant="quiet" size="sm" onClick={() => { setQuery(""); setFilter("all"); }}>Show everything</Button>
-              <TextLink arrow onClick={() => actions.ask(query)}>Ask instead</TextLink>
+              <TextLink onClick={() => actions.ask(query)}>Ask instead</TextLink>
             </div>
           )}
         </div>

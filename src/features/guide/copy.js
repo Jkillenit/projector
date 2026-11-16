@@ -1,7 +1,7 @@
 /** Every fixed sentence on the Ask screen. Kept in one place so it can be tested and reviewed. */
 export const ASK_COPY = {
   title: "Ask",
-  intro: "Find the right place on campus. Answers come from UA sites. Projector never asks for your password.",
+  intro: "Find the right place on campus. Answers come from UA sites. AL never asks for your password.",
   mockup: "This is a mockup. Answers are scripted, not a live AI.",
   placeholderEmpty: "Ask about tutoring, clubs, money…",
   placeholderFollowUp: "Ask a follow up…",

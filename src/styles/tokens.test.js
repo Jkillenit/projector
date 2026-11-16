@@ -34,7 +34,7 @@ describe("design tokens", () => {
   });
 
   it("has a dark theme with the same names", () => {
-    for (const name of ["bg", "surface", "text", "muted", "faint", "accent", "accent-text", "accent-fill-hover", "new", "new-text", "border-input", "shadow-1", "shadow-2", "shadow-3"]) expect(token(dark, name), name).toBeTruthy();
+    for (const name of ["bg", "surface", "text", "muted", "faint", "accent", "accent-text", "accent-fill-hover", "new", "new-text", "border-input", "shadow-3"]) expect(token(dark, name), name).toBeTruthy();
   });
 
   it.each([["light"], ["dark"]])("%s text passes 4.5:1 and input borders 3:1", (theme) => {
@@ -46,9 +46,18 @@ describe("design tokens", () => {
     expect(ratio(token(css, "border-input"), token(css, "surface-input"))).toBeGreaterThanOrEqual(3);
   });
 
-  it("uses Atkinson Hyperlegible Next for words and Geist Mono for numbers", () => {
+  it("uses Atkinson Hyperlegible Next for words and the system monospace for codes, never Inter, Geist or Space Grotesk", () => {
     expect(token(light, "font-sans")).toMatch(/^"Atkinson Hyperlegible Next Variable"/);
-    expect(token(light, "font-mono")).toMatch(/^"Geist Mono"/);
+    expect(token(light, "font-mono")).toMatch(/^ui-monospace/);
+    expect(tokens).not.toMatch(/\b(Inter|Geist|Space Grotesk)\b/i);
+  });
+
+  it("keeps corners crisp: no radius token over 8px except the dot/toggle --r-full", () => {
+    for (const name of ["r-sm", "r-md", "r-lg"]) expect(parseFloat(token(light, name)), name).toBeLessThanOrEqual(8);
+  });
+
+  it("has one shadow, for overlays only", () => {
+    expect(tokens.match(/--shadow-\d/g)).toEqual(["--shadow-3", "--shadow-3"]);
   });
 
   it("keeps hex colors inside tokens.css", () => {
@@ -58,9 +67,7 @@ describe("design tokens", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("uses no gradient except the course header wash", () => {
-    const css = readFileSync(join(SRC, "styles/ui.css"), "utf8");
-    expect(css.match(/gradient\(/g)).toHaveLength(1);
-    expect(css).toMatch(/linear-gradient\(180deg, var\(--course-wash\), transparent\)/);
+  it("uses no gradients", () => {
+    expect(readFileSync(join(SRC, "styles/ui.css"), "utf8")).not.toMatch(/gradient\(/);
   });
 });

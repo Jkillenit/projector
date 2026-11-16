@@ -4,7 +4,9 @@ import { localDayKey } from "../../lib/dates.js";
  * Study and tutoring sessions the student adds by hand ("Add my session"). Saved on this computer only (rule 4),
  * in the settings key below. On the map they sit beside classes as one "your day" layer.
  */
-export const SESSIONS_KEY = "projector.mySessions";
+export const SESSIONS_KEY = "al.mySessions";
+/** Where sessions were saved before the rename to AL. Read only, as a fallback. */
+export const OLD_SESSIONS_KEY = "projector.mySessions";
 export const KINDS = [
   ["tutoring", "Tutoring"],
   ["study", "Study session"],

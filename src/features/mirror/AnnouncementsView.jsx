@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, Skeleton, TextLink } from "../../components/ui/index.jsx";
+import { Button, Card, Loading, TextLink } from "../../components/ui/index.jsx";
 import { plainDate } from "../../lib/dates.js";
 import { courseStore } from "../../db/courseStore.js";
 
@@ -36,7 +36,7 @@ export function AnnouncementsView({ courseUuid }) {
     notify();
   };
 
-  if (rows === null) return <Card><Skeleton height={20} width="40%" radius={8} /><Skeleton height={60} /></Card>;
+  if (rows === null) return <Loading />;
   if (!rows.length) return <Card><p className="t-muted">No announcements yet. They show up after the next sync.</p></Card>;
   const unread = rows.filter((a) => !a.read).length;
 

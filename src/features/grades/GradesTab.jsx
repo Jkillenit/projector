@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card, Icon, ProgressBar, Segmented, Skeleton } from "../../components/ui/index.jsx";
+import { Button, Card, Icon, Loading, ProgressBar, Segmented } from "../../components/ui/index.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { parseSyllabusGrading } from "../import/syllabusImport.js";
 import { formatPct } from "../today/priority.js";
@@ -9,7 +9,7 @@ import { useCourseGrade } from "./useCourseGrade.js";
 
 const DEFAULT_SCALE = { A: 90, B: 80, C: 70, D: 60 };
 const SOURCE_KEY = (uuid) => `grades.weightsSource.${uuid}`;
-const pct = (n, digits = 1) => (n == null ? "—" : `${Number(n).toFixed(digits).replace(/\.0$/, "")}%`);
+const pct = (n, digits = 1) => (n == null ? "Not set" : `${Number(n).toFixed(digits).replace(/\.0$/, "")}%`);
 
 function StandCard({ current, letter, st, remaining }) {
   const names = remaining.slice(0, 3).map((r) => r.title).join(", ");
@@ -73,7 +73,7 @@ function WeightsCard({ cats, pointsBased, source, onSave, onUpload, status }) {
                     <td className="gr-cat">{c.name}</td>
                     <td className="num-col num t-muted">{pct(c.weight, 0)}</td>
                     <td className="num-col num t-muted">{c.gradedText}</td>
-                    <td className="num-col num">{c.score == null ? "—" : pct(c.score)}</td>
+                    <td className={`num-col num${c.score == null ? " t-muted" : ""}`}>{c.score == null ? "No grades yet" : pct(c.score)}</td>
                   </tr>
                 ))}
           </tbody>
@@ -170,7 +170,7 @@ export function GradesTab({ courseUuid }) {
     void courseStore.getSetting(SOURCE_KEY(courseUuid)).then(setSource);
   }, [courseUuid]);
 
-  if (!view) return <div className="split"><div className="split-main"><Card><Skeleton height={64} /></Card><Card><Skeleton height={160} /></Card></div></div>;
+  if (!view) return <Loading />;
   const { cats, st, remaining, pointsBased } = view;
   const scale = data.scale && Object.keys(data.scale).length ? data.scale : DEFAULT_SCALE;
   const current = st.current ?? view.g.current;

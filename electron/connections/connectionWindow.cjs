@@ -3,7 +3,7 @@
  * cookie store. Off until the student connects. Disconnect deletes the cookies, the cache and anything saved.
  * Only the tech lead changes files in electron/connections/.
  *
- * Probe mode (PROJECTOR_PROBE=1 only): while the window is open, writes userData/probe-<id>.json with page paths
+ * Probe mode (AL_PROBE=1 only): while the window is open, writes userData/probe-<id>.json with page paths
  * and the *shape* of JSON answers (keys and types). Never values, query strings, headers or cookies (rule 3).
  */
 const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
@@ -16,7 +16,7 @@ const { failPage } = require("./failPage.cjs");
 const { fromWeekAtAGlance, mondayOf, weekUrl, ymdOf } = require("./mybamaWeek.cjs");
 
 const STATUS_KEY = "connections.status";
-const PROBE = process.env.PROJECTOR_PROBE === "1";
+const PROBE = process.env.AL_PROBE === "1";
 const windows = new Map();
 const probeFile = (id) => path.join(app.getPath("userData"), `probe-${id}.json`);
 
@@ -202,7 +202,7 @@ function registerConnectionHandlers(getMainWindow, ua = {}) {
     const win = new BrowserWindow({
       width: 1100,
       height: 850,
-      title: `Projector: sign in to ${service.name}${PROBE ? " (probe on)" : ""}`,
+      title: `AL: sign in to ${service.name}${PROBE ? " (probe on)" : ""}`,
       parent: getMainWindow() || undefined,
       webPreferences: { partition: partitionOf(id), nodeIntegration: false, contextIsolation: true, sandbox: true },
     });

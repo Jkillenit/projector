@@ -1,6 +1,11 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
 
+// The app was called Projector, and Electron names the user data folder after the app. Keep that folder so
+// studyhub.db, backups and the persist:blackboard sign in survive the rename to AL. Must run before anything
+// reads userData, including the single instance lock below.
+app.setPath("userData", path.join(app.getPath("appData"), "Projector"));
+
 const { registerDbHandlers } = require("./dbHandlers.cjs");
 const { registerMirrorHandlers } = require("./dbMirrorHandlers.cjs");
 const { registerBlackboardHandlers, connectBlackboard, disconnectBlackboard } = require("./blackboardWindow.cjs");
@@ -18,7 +23,7 @@ let mainWindow = null;
 let windowChromeHandlersRegistered = false;
 
 // Text from a syllabus the student picked by hand (PDF or Word). Local only; nothing is fetched.
-ipcMain.handle("projector:extract-file", async (_evt, { name, bytes } = {}) => {
+ipcMain.handle("al:extract-file", async (_evt, { name, bytes } = {}) => {
   const ext = String(name || "").split(".").pop();
   if (!["pdf", "doc", "docx"].includes(ext.toLowerCase()) || !bytes) return { ok: false, text: "" };
   try {
@@ -28,7 +33,7 @@ ipcMain.handle("projector:extract-file", async (_evt, { name, bytes } = {}) => {
   }
 });
 
-ipcMain.handle("projector:open-external", async (_evt, url) => {
+ipcMain.handle("al:open-external", async (_evt, url) => {
   const value = String(url || "");
   if (!/^https:\/\//i.test(value)) return { ok: false, error: "Only https links can be opened." };
   await shell.openExternal(value);

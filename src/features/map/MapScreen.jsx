@@ -319,7 +319,7 @@ export function MapScreen({ query, placeId, addKind, addTitle, walk, room }) {
               </p>
               {unpinned ? (
                 <p className="t-small t-faint">
-                  {unpinned} more {unpinned === 1 ? "is" : "are"} online or at a place we could not find. <TextLink href={routeHref("events")} arrow>See all events</TextLink>
+                  {unpinned} more {unpinned === 1 ? "is" : "are"} online or at a place we could not find. <TextLink href={routeHref("events")}>See all events</TextLink>
                 </p>
               ) : null}
             </>

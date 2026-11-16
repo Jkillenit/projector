@@ -1,8 +1,8 @@
-# CLAUDE.md: Projector
+# CLAUDE.md: AL
 
 ## What this is
 
-Projector is a student starting point for The University of Alabama: sign in once, see what is due, what is new, and which campus resource fits you right now. An AI guide matches you to tutoring, clubs and services and shows the exact steps to get in.
+AL (formerly Projector) is a student starting point for The University of Alabama: sign in once, see what is due, what is new, and which campus resource fits you right now. An AI guide matches you to tutoring, clubs and services and shows the exact steps to get in.
 
 It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. The guide is scripted rules, not a live AI. The web version runs on **made-up demo data**. It was started from a personal study app called Study Hub.
 
@@ -36,6 +36,8 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
 12. Plain UI copy: short sentences, everyday words.
 13. Do not renumber or delete database migrations in `electron/database.cjs`, even for tables we no longer use.
 14. Real floor plans, real indoor data and real interior photos are never committed, not even in a branch. They load only from a folder on the student's own computer, in Live mode. Demo mode uses made up buildings only, like Demo Hall (`src/demo/indoor/demo-hall.indoor.json`).
+15. Keep the `userData` pin to the old `Projector` folder at the top of `electron/main.cjs`, and keep `build.appId` as `edu.ua.mis430.projector`. Removing either signs students out and hides their saved data.
+16. The campus guide mascot is scripted, like the Ask guide (rule 5: no LLM calls). It never sees grades (rule 4). Until UA approves in writing, it is an original elephant, not Big Al (see `docs/al/scope.md`).
 
 ## Commands
 
@@ -53,4 +55,5 @@ It is a class project for MIS 430 (four senior MIS majors). It is a **mockup**. 
 | `src/features/resources/` | Requirements lead |
 | `src/features/guide/` | Process and safety lead |
 | `src/features/clubs/` | Users and change lead |
+| `src/features/companion/` | Campus guide mascot. Owner: team pick (see `docs/al/scope.md`) |
 | `src/features/campus/` | Shared screen: Resources part is the requirements lead, Clubs part is the users and change lead. List it under "Shared files touched" in the PR |

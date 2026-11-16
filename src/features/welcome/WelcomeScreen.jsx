@@ -1,7 +1,8 @@
 import { useState } from "react";
 import students from "../../demo/students.json";
 import { Button, Card, Pill } from "../../components/ui/index.jsx";
-import { APP_NAME } from "../../constants/app.js";
+import { DISCLAIMER } from "../../constants/app.js";
+import { Brand } from "../../shell/Brand.jsx";
 
 /** Two steps: pick a demo student, then land on Home. No name prompt. */
 export function WelcomeScreen({ onPick }) {
@@ -11,8 +12,7 @@ export function WelcomeScreen({ onPick }) {
     <main className="welcome">
       <div className="welcome-inner">
         <span className="sb-brand welcome-brand">
-          <span className="sb-mark" aria-hidden>P</span>
-          <span className="sb-name">{APP_NAME}</span>
+          <Brand />
         </span>
         {!picked ? (
           <>
@@ -45,6 +45,7 @@ export function WelcomeScreen({ onPick }) {
             </div>
           </>
         )}
+        <p className="t-small t-faint">{DISCLAIMER}</p>
       </div>
     </main>
   );

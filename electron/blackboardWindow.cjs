@@ -26,7 +26,8 @@ let onDisconnect = () => {};
 let onConnect = () => {};
 let extractBufferText = null;
 
-const BB_TEMP_DIR = path.join(app.getPath("temp"), "projector-bb");
+const BB_TEMP_DIR = path.join(app.getPath("temp"), "al-bb");
+const OLD_BB_TEMP_DIR = path.join(app.getPath("temp"), "projector-bb");
 const BB_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const hostOf = (url) => {
@@ -58,12 +59,14 @@ function isMainWindowSender(event) {
   return !!win && !win.isDestroyed() && event?.sender === win.webContents;
 }
 
-/** Removes the Blackboard temp download folder, whatever is in it. */
+/** Removes the Blackboard temp download folder (and the one from before the rename), whatever is in it. */
 function removeTempDir() {
-  try {
-    fs.rmSync(BB_TEMP_DIR, { recursive: true, force: true });
-  } catch {
-    /* in use; the OS clears temp later */
+  for (const dir of [BB_TEMP_DIR, OLD_BB_TEMP_DIR]) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch {
+      /* in use; the OS clears temp later */
+    }
   }
 }
 
@@ -314,7 +317,7 @@ async function openBlackboardWindow(targetUrl = null) {
   bbWindow = new BrowserWindow({
     width: 1200,
     height: 850,
-    title: "Projector — Blackboard",
+    title: "AL: Blackboard",
     webPreferences: {
       partition: BB_PARTITION,
       nodeIntegration: false,
@@ -330,7 +333,7 @@ async function openBlackboardWindow(targetUrl = null) {
         overrideBrowserWindowOptions: {
           width: 1000,
           height: 850,
-          title: "Projector — Syllabus",
+          title: "AL: Syllabus",
           webPreferences: { partition: BB_PARTITION, nodeIntegration: false, contextIsolation: true, sandbox: true },
         },
       };

@@ -1,6 +1,6 @@
 /**
  * Probe helpers: describe a service's data without keeping any of it (rule 3).
- * Used only when PROJECTOR_PROBE=1, to learn where myBama keeps the class schedule.
+ * Used only when AL_PROBE=1, to learn where myBama keeps the class schedule.
  */
 
 /** "https://x.ua.edu/api/student/12345678/schedule?term=202640" → "x.ua.edu/api/student/:n/schedule". No query, no long numbers or ids. */

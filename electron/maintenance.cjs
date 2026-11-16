@@ -101,9 +101,9 @@ function registerMaintenanceHandlers(getMainWindow) {
 
   ipcMain.handle("app:backup:create", async () => {
     const { canceled, filePath } = await dialog.showSaveDialog(getMainWindow() ?? undefined, {
-      title: "Save Projector backup",
-      defaultPath: `study-hub-backup-${today()}.db`,
-      filters: [{ name: "Projector backup", extensions: ["db"] }],
+      title: "Save AL backup",
+      defaultPath: `al-backup-${today()}.db`,
+      filters: [{ name: "AL backup", extensions: ["db"] }],
     });
     if (canceled || !filePath) return { ok: false, canceled: true };
     await getDb().backup(filePath);
@@ -130,19 +130,19 @@ function registerMaintenanceHandlers(getMainWindow) {
   ipcMain.handle("app:backup:restore", async () => {
     const win = getMainWindow();
     const { canceled, filePaths } = await dialog.showOpenDialog(win ?? undefined, {
-      title: "Restore Projector backup",
+      title: "Restore AL backup",
       properties: ["openFile"],
-      filters: [{ name: "Projector backup", extensions: ["db"] }],
+      filters: [{ name: "AL backup", extensions: ["db"] }],
     });
     if (canceled || !filePaths?.length) return { ok: false, canceled: true };
     const source = filePaths[0];
-    if (!isValidStudyHubDb(source)) return { ok: false, error: "That file is not a Projector backup." };
+    if (!isValidStudyHubDb(source)) return { ok: false, error: "That file is not an AL backup." };
     const { response } = await dialog.showMessageBox(win ?? undefined, {
       type: "warning",
       buttons: ["Restore and restart", "Cancel"],
       defaultId: 1,
       cancelId: 1,
-      message: "Replace all current Projector data with this backup?",
+      message: "Replace all current AL data with this backup?",
       detail: "A safety copy of your current data is saved in the backups folder first.",
     });
     if (response !== 0) return { ok: false, canceled: true };

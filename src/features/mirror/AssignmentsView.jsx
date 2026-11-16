@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, Icon, Skeleton } from "../../components/ui/index.jsx";
+import { Card, Icon, Loading } from "../../components/ui/index.jsx";
 import { TaskLine } from "../../components/TaskLine.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { groupAssignments } from "./assignmentState.js";
@@ -50,7 +50,7 @@ export function AssignmentsView({ courseUuid, code, highlight }) {
     await courseStore.setAssignmentCompleted(a.uuid, !a.completed);
   };
 
-  if (rows === null) return <Card><Skeleton height={56} /><Skeleton height={56} /><Skeleton height={56} /></Card>;
+  if (rows === null) return <Loading />;
   if (!rows.length) return <Card><p className="t-muted">No assignments yet. They show up after the next sync.</p></Card>;
   const groups = groupAssignments(rows);
 

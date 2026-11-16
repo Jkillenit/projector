@@ -19,7 +19,7 @@ const TABS = [
   ["content", "Content"],
 ];
 
-/** "202640-SS.GBA-490-911-12345" → "GBA-490-911". Empty when the id has no section. */
+/** "202640-SS.GBA-490-911-12345" becomes "GBA-490-911". Empty when the id has no section. */
 export function sectionCode(id) {
   const m = String(id || "").match(/([A-Z]{2,5})[-_ ]?(\d{3,4}[A-Z]?)[-_ ](\d{1,4})\b/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : "";

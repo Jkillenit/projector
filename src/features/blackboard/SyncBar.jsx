@@ -40,7 +40,7 @@ export function SyncBar({ sync }) {
       {!running && enrollments.length > 0 && (
         <details className="set-details">
           <summary>Every course Blackboard returned</summary>
-          <ul>{enrollments.map((e, i) => <li key={i} title={e.hint}>{e.name} · {e.line} → {e.reason}</li>)}</ul>
+          <ul>{enrollments.map((e, i) => <li key={i} title={e.hint}>{e.name} · {e.line}: {e.reason}</li>)}</ul>
         </details>
       )}
       {report.length > 0 && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card, Skeleton, TextLink } from "../../components/ui/index.jsx";
+import { Card, Loading, TextLink } from "../../components/ui/index.jsx";
 import { TaskLine } from "../../components/TaskLine.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { plainDate } from "../../lib/dates.js";
@@ -32,7 +32,7 @@ export function OverviewTab({ courseUuid, courseId, code }) {
   }, [courseUuid]);
 
   const groups = useMemo(() => groupAssignments(rows || []), [rows]);
-  if (!rows) return <Card><Skeleton height={56} /><Skeleton height={56} /></Card>;
+  if (!rows) return <Loading />;
   const latest = news[0];
   const href = (tab, query) => routeHref("course", [courseId, tab], query);
 
@@ -42,7 +42,7 @@ export function OverviewTab({ courseUuid, courseId, code }) {
         <Card aria-labelledby="ov-next">
           <div className="card-head">
             <h2 id="ov-next" className="t-heading">Next up</h2>
-            <TextLink href={href("assignments")} arrow>All assignments</TextLink>
+            <TextLink href={href("assignments")}>All assignments</TextLink>
           </div>
           {groups.todo.length ? (
             <div className="rows-tight">
@@ -51,7 +51,7 @@ export function OverviewTab({ courseUuid, courseId, code }) {
           ) : (
             <p className="t-muted">Nothing due. You are clear.</p>
           )}
-          {groups.missing.length ? <TextLink href={href("assignments")} arrow>{groups.missing.length} missing</TextLink> : null}
+          {groups.missing.length ? <TextLink href={href("assignments")}>{groups.missing.length} missing</TextLink> : null}
         </Card>
       </div>
       <div className="split-side">
@@ -59,7 +59,7 @@ export function OverviewTab({ courseUuid, courseId, code }) {
         <Card aria-labelledby="ov-news">
           <div className="card-head">
             <h2 id="ov-news" className="t-heading">Latest announcement</h2>
-            <TextLink href={href("announcements")} arrow>All</TextLink>
+            <TextLink href={href("announcements")}>All</TextLink>
           </div>
           {latest ? (
             <div className="ann-preview">
@@ -73,8 +73,8 @@ export function OverviewTab({ courseUuid, courseId, code }) {
         </Card>
         <Card aria-label="Quick links">
           <div className="quick-links">
-            <TextLink href={href("grades")} arrow>Grades and what you need</TextLink>
-            <TextLink href={href("content")} arrow>Course content</TextLink>
+            <TextLink href={href("grades")}>Grades and what you need</TextLink>
+            <TextLink href={href("content")}>Course content</TextLink>
           </div>
         </Card>
       </div>
