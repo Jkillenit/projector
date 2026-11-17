@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, Icon, Skeleton, TextLink } from "../../components/ui/index.jsx";
+import { Card, Icon, Loading, TextLink } from "../../components/ui/index.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
 
@@ -16,7 +16,7 @@ export function ContentTab({ courseUuid }) {
       window.removeEventListener("studyhub-bb-synced", load);
     };
   }, [courseUuid]);
-  if (!items) return <Card><Skeleton height={40} /><Skeleton height={40} /></Card>;
+  if (!items) return <Loading />;
   if (!items.length) return <Card><p className="t-muted">No course content yet. It shows up after the next sync.</p></Card>;
   const ids = new Set(items.map((i) => i.bb_id));
   const depth = (i) => {

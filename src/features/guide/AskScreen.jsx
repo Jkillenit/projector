@@ -36,7 +36,7 @@ function ResourceAnswer({ item }) {
       <div className="card-foot">
         <span>Source: {sourceName(r)}</span>
         <span>{checkedLabel(r)}</span>
-        {url ? <TextLink href={url} external className="card-foot-end">Open site</TextLink> : r.id.startsWith("org-") ? null : <TextLink href={routeHref("campus", ["r", r.id])} arrow className="card-foot-end">See details</TextLink>}
+        {url ? <TextLink href={url} external className="card-foot-end">Open site</TextLink> : r.id.startsWith("org-") ? null : <TextLink href={routeHref("campus", ["r", r.id])} className="card-foot-end">See details</TextLink>}
       </div>
     </Card>
   );

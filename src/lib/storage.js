@@ -1,4 +1,4 @@
-/** localStorage keys — shared with any legacy standalone HTML using the same profile. */
+/** localStorage keys, shared with any legacy standalone HTML using the same profile. */
 export const STORAGE = {
   disabled: "studyHub.v2.builtin.disabledModules",
   completed: "studyHub.v2.builtin.completedChapters",

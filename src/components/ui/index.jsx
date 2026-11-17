@@ -32,13 +32,12 @@ export function Button({ variant = "secondary", size = "md", href, external, ico
   );
 }
 
-/** Accent text link. `arrow` adds a trailing →. A button when there is no `href`. */
-export function TextLink({ href, external, arrow, className, children, ...rest }) {
+/** Accent text link. A button when there is no `href`. */
+export function TextLink({ href, external, className, children, ...rest }) {
   const cls = cx("ui-link", className);
   const body = (
     <>
       {children}
-      {arrow ? <span aria-hidden> →</span> : null}
       {external ? <Icon name="arrow-up-right" size={13} /> : null}
     </>
   );
@@ -109,13 +108,13 @@ export function Segmented({ options, value, onChange, label }) {
 export function ProgressBar({ value, height = 4, dim, label }) {
   const v = Math.max(0, Math.min(100, Number(value) || 0));
   return (
-    <span className="ui-bar" style={{ height, borderRadius: height }} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label={label}>
-      <span className="ui-bar-fill" style={{ width: `${v}%`, borderRadius: height, opacity: dim ? 0.7 : 1 }} />
+    <span className="ui-bar" style={{ height }} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label={label}>
+      <span className="ui-bar-fill" style={{ width: `${v}%`, opacity: dim ? 0.7 : 1 }} />
     </span>
   );
 }
 
-/** Numbered steps with round number badges. `steps`: strings or nodes. */
+/** Numbered steps. `steps`: strings or nodes. */
 export function StepList({ steps }) {
   return (
     <ol className="ui-steps">
@@ -154,7 +153,7 @@ export function VisuallyHidden({ children, ...rest }) {
   );
 }
 
-/** Gray placeholder in the shape of real content. */
-export function Skeleton({ height = 16, width = "100%", radius = 12 }) {
-  return <span className="ui-skel" style={{ height, width, borderRadius: radius }} aria-hidden />;
+/** One plain status line while data loads. No placeholder shapes. */
+export function Loading({ children = "Loading…" }) {
+  return <p className="ui-loading" role="status">{children}</p>;
 }

@@ -1,4 +1,4 @@
-/* Projector design tokens ("Bento Campus", see design-system/projector/MASTER.md). The only place hex colors live. Light is the default theme. */
+/* AL design tokens (see design-system/al/MASTER.md). The only place hex colors live. Light is the default theme. */
 
 :root,
 :root[data-theme="light"] {
@@ -6,6 +6,7 @@
 
   /* surfaces */
   --bg: #F7F5F2;
+  --bg-dot: #DCD6CE;
   --bg-sidebar: #FFFFFF;
   --surface: #FFFFFF;
   --surface-2: #F3F0EC;
@@ -69,7 +70,7 @@
   --support-line: rgba(47, 95, 168, 0.30);
   --support-btn-line: #B7C7E0;
 
-  /* course palette: dot / tag text / tag bg / header wash (dot at 6%) */
+  /* course palette: dot / tag text / tag bg / wash (dot at 6%) */
   --c1-dot: #D9A54A; --c1-text: #7F5300; --c1-tint: rgba(217, 165, 74, 0.14); --c1-wash: rgba(217, 165, 74, 0.08);
   --c2-dot: #4FB3A9; --c2-text: #1D6E66; --c2-tint: rgba(79, 179, 169, 0.14); --c2-wash: rgba(79, 179, 169, 0.08);
   --c3-dot: #6C8EEF; --c3-text: #3450B0; --c3-tint: rgba(108, 142, 239, 0.14); --c3-wash: rgba(108, 142, 239, 0.08);
@@ -79,22 +80,19 @@
 
   /* type */
   --font-sans: "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
 
-  /* shape */
-  --r-sm: 8px;
-  --r-md: 10px;
-  --r-lg: 16px;
+  /* shape: crisp corners; --r-full is for dots and toggles only */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --r-full: 999px;
 
-  /* depth: cards float, controls sit */
-  --shadow-1: 0 1px 2px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.04);
-  --shadow-2: 0 4px 12px rgba(28, 25, 23, 0.08);
-  --shadow-3: 0 16px 40px rgba(28, 25, 23, 0.18);
+  /* depth: flat surfaces with hairline borders; a shadow only on things that float over the page */
+  --shadow-3: 0 12px 32px rgba(28, 25, 23, 0.16);
 
-  /* focus and motion */
+  /* focus */
   --ring: 0 0 0 4px var(--good-ring);
-  --ease: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 
   /* campus map, shared by the SVG map and the 3D scene (solid hex: three's Color takes no alpha) */
   --map-ground: #ECE8E1; /* outside campus: plain and quiet (#149) */
@@ -128,6 +126,7 @@
   color-scheme: dark;
 
   --bg: #151312;
+  --bg-dot: #2C2724;
   --bg-sidebar: #110F0E;
   --surface: #1D1A18;
   --surface-2: #26221F;
@@ -193,10 +192,7 @@
   --c5-dot: #71717A; --c5-text: #A1A1AA; --c5-tint: rgba(161, 161, 170, 0.12); --c5-wash: rgba(113, 113, 122, 0.06);
   --c6-text: #E595A4; --c6-tint: rgba(217, 122, 140, 0.12); --c6-wash: rgba(217, 122, 140, 0.06);
 
-  /* dark uses a hairline instead of a soft shadow */
-  --shadow-1: 0 0 0 1px var(--border);
-  --shadow-2: 0 0 0 1px var(--border-strong);
-  --shadow-3: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.5);
 
   /* campus map, shared by the SVG map and the 3D scene (solid hex: three's Color takes no alpha) */
   --map-ground: #1F1C1A;

@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 18, Vite 6, plain CSS (tokens + `ui.css`), vitest, Electron 34. One new package: `@fontsource-variable/atkinson-hyperlegible-next@^5.3.0`. One removed: `@fontsource/geist-sans`.
 
-**Spec:** [design-system/projector/MASTER.md](../../../design-system/projector/MASTER.md). Every value below that isn't written out comes from there.
+**Spec:** [design-system/al/MASTER.md](../../../design-system/al/MASTER.md). Every value below that isn't written out comes from there.
 
 ## Global Constraints
 

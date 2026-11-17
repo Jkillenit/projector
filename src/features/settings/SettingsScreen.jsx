@@ -1,7 +1,7 @@
 import { useState } from "react";
 import students from "../../demo/students.json";
 import { Button, Card, Chip, Segmented, TextLink } from "../../components/ui/index.jsx";
-import { BLACKBOARD_URL } from "../../constants/app.js";
+import { BLACKBOARD_URL, DISCLAIMER } from "../../constants/app.js";
 import { setMotionPref, useReducedMotion } from "../../shell/motion.js";
 import { INTEREST_OPTIONS } from "../../platform/profile.js";
 import { BlackboardSyncPanel } from "../blackboard/BlackboardSyncPanel.jsx";
@@ -97,6 +97,8 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
           )}
         </Card>
       )}
+
+      <p className="t-small t-faint">{DISCLAIMER}</p>
     </div>
   );
 }

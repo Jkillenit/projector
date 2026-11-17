@@ -1,6 +1,6 @@
-# Projector
+# AL
 
-Codename: **Project Projector**.
+Formerly **Projector**. AL is a student project. It is not an official University of Alabama app.
 
 A student starting point for UA: sign in once, see what is due, what is new, and which campus resource fits you right now. An AI guide (scripted, for now) matches you to tutoring, clubs and services and shows the exact steps to get in.
 
@@ -66,6 +66,7 @@ Then run `npm install` again. Windows builds need no extra step. The demo never 
 | `src/features/resources/` | Directory, search, how to get in |
 | `src/features/guide/` | Ask screen and the scripted matcher (`matcher.js`) |
 | `src/features/clubs/` | Club list and matching |
+| `src/features/companion/` | Campus guide mascot (scripted). Home has its spot today; the character comes later |
 | `src/features/today/`, `grades/`, `dashboard/`, `mirror/` | Due list, grades, calendar, course pages (from Study Hub) |
 | `electron/` | Desktop app: window, local database, read only Blackboard sync |
 | `docs/bmad/` | BMAD output and the decision log |

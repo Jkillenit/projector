@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Pill, ProgressBar, Skeleton } from "../../components/ui/index.jsx";
+import { Button, Card, Loading, Pill, ProgressBar } from "../../components/ui/index.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { uid } from "../../hub/userCourseModel.js";
 import { RATINGS, previewIntervals } from "../../lib/sm2.js";
@@ -135,7 +135,7 @@ export function StudyTab({ courseUuid }) {
     setCards((list) => list.map((c) => (c.uuid === card.uuid ? next : c)));
   };
 
-  if (!cards) return <Skeleton height={160} />;
+  if (!cards) return <Loading />;
   if (queue) return <Review queue={queue} onRate={rate} onDone={() => setQueue(null)} />;
 
   return (

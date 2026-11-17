@@ -1,8 +1,5 @@
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
-import "@fontsource/geist-mono/400.css";
-import "@fontsource/geist-mono/500.css";
-import "@fontsource/geist-mono/600.css";
 import "./styles/tokens.css";
 import "./styles/ui.css";
 import { installDemoBridge } from "./platform/demoBridge.js";

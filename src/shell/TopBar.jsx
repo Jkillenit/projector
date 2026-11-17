@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { APP_NAME } from "../constants/app.js";
 import { Icon } from "../components/ui/index.jsx";
+import { Brand } from "./Brand.jsx";
 import { routeHref } from "./useRoute.js";
 
 /** Under 900px the sidebar becomes this bar: brand, search and a menu that opens the sidebar as a drawer. */
@@ -8,8 +8,7 @@ export function TopBar({ onSearch, onMenu }) {
   return (
     <header className="topbar">
       <a className="sb-brand topbar-brand" href={routeHref("home")}>
-        <span className="sb-mark" aria-hidden>P</span>
-        <span className="sb-name">{APP_NAME}</span>
+        <Brand />
       </a>
       <button type="button" className="topbar-btn" aria-label="Search" onClick={onSearch}>
         <Icon name="search" size={18} />

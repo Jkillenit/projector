@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Icon } from "./ui/Icon.jsx";
 
 const api = () => (typeof window !== "undefined" ? window.electronAPI : undefined);
 
@@ -22,9 +23,9 @@ export function TitleBar() {
   return (
     <header className="titlebar" onDoubleClick={(e) => e.target === e.currentTarget && electron.maximizeWindow?.()}>
       <div className="titlebar-controls">
-        <button type="button" className="titlebar-btn" aria-label="Minimize" onClick={() => electron.minimizeWindow()}>−</button>
-        <button type="button" className="titlebar-btn" aria-label={maximized ? "Restore" : "Maximize"} onClick={() => electron.maximizeWindow()}>{maximized ? "❐" : "□"}</button>
-        <button type="button" className="titlebar-btn titlebar-btn--close" aria-label="Close" onClick={() => electron.closeWindow()}>×</button>
+        <button type="button" className="titlebar-btn" aria-label="Minimize" onClick={() => electron.minimizeWindow()}><Icon name="win-min" size={14} strokeWidth={1} /></button>
+        <button type="button" className="titlebar-btn" aria-label={maximized ? "Restore" : "Maximize"} onClick={() => electron.maximizeWindow()}><Icon name={maximized ? "win-restore" : "win-max"} size={14} strokeWidth={1} /></button>
+        <button type="button" className="titlebar-btn titlebar-btn--close" aria-label="Close" onClick={() => electron.closeWindow()}><Icon name="x" size={14} strokeWidth={1} /></button>
       </div>
     </header>
   );

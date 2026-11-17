@@ -1,95 +1,64 @@
+// AL's own icon set: a 20 unit grid, 1.5 stroke, square ends and sharp joins.
 const PATHS = {
   search: (
     <>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+      <circle cx="8.5" cy="8.5" r="5.5" />
+      <path d="M12.5 12.5 17 17" />
     </>
   ),
-  home: (
-    <>
-      <path d="M3 10.5 12 3l9 7.5" />
-      <path d="M5 9v12h14V9" />
-    </>
-  ),
-  calendar: (
-    <>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M3 10h18M8 3v4M16 3v4" />
-    </>
-  ),
-  ask: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
-  book: (
-    <>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </>
-  ),
-  map: <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />,
-  star: <path d="M12 2l3.1 6.3 6.9 1-5 4.8 1.2 6.9-6.2-3.2-6.2 3.2L7 14.1 2 9.3l6.9-1z" />,
+  home: <path d="M3 9 10 3.5 17 9M5 7.5v9h10v-9M8.5 16.5V12h3v4.5" />,
+  calendar: <path d="M3 4.5h14V17H3zM3 8.5h14M7 2.5V6M13 2.5V6" />,
+  ask: <path d="M3 4h14v9.5H8l-3.5 3v-3H3z" />,
+  book: <path d="M10 5.5C8.5 4.3 6 4 3 4.5v11c3-.5 5.5-.2 7 1 1.5-1.2 4-1.5 7-1v-11c-3-.5-5.5-.2-7 1zM10 5.5v11" />,
+  map: <path d="M2.5 5 7.5 3l5 2 5-2v12l-5 2-5-2-5 2zM7.5 3v12M12.5 5v12" />,
+  ticket: <path d="M3 5.5h14v3a1.5 1.5 0 0 0 0 3v3H3v-3a1.5 1.5 0 0 0 0-3zM12.5 5.5v1.5M12.5 9.25v1.5M12.5 13v1.5" />,
   users: (
     <>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+      <circle cx="7.5" cy="7" r="2.75" />
+      <path d="M2.5 16.5c0-3 2-4.5 5-4.5s5 1.5 5 4.5M12.5 4.4a2.75 2.75 0 0 1 0 5.2M14.5 12.3c1.8.5 3 1.9 3 4.2" />
     </>
   ),
   settings: (
     <>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+      <path d="M3 6h6M13 6h4M3 14h2M9 14h8" />
+      <circle cx="11" cy="6" r="2" />
+      <circle cx="7" cy="14" r="2" />
     </>
   ),
-  "chevron-right": <path d="m9 18 6-6-6-6" />,
-  "chevron-down": <path d="m6 9 6 6 6-6" />,
-  "arrow-up-right": <path d="M7 17 17 7M8 7h9v9" />,
-  lock: (
-    <>
-      <rect x="4" y="11" width="16" height="10" rx="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </>
-  ),
+  "chevron-right": <path d="M8 5l5 5-5 5" />,
+  "chevron-down": <path d="M5 8l5 5 5-5" />,
+  "arrow-up-right": <path d="M6.5 13.5l7-7M7.5 6.5h6v6" />,
+  lock: <path d="M4 9h12v8H4zM6.5 9V6.5a3.5 3.5 0 0 1 7 0V9" />,
   eye: (
     <>
-      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-      <circle cx="12" cy="12" r="3" />
+      <path d="M2 10c2-3.5 4.8-5.2 8-5.2s6 1.7 8 5.2c-2 3.5-4.8 5.2-8 5.2S4 13.5 2 10z" />
+      <circle cx="10" cy="10" r="2.5" />
     </>
   ),
-  "alert-triangle": (
-    <>
-      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-      <path d="M12 9v4M12 17h.01" />
-    </>
-  ),
-  columns: (
-    <>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M12 3v18" />
-    </>
-  ),
-  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
-  x: <path d="M18 6 6 18M6 6l12 12" />,
-  file: (
-    <>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-    </>
-  ),
-  folder: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />,
+  "alert-triangle": <path d="M10 3l8 13.5H2zM10 8v3.5M10 13.25v1.25" />,
+  columns: <path d="M3 3h14v14H3zM10 3v14" />,
+  menu: <path d="M3 5.5h14M3 10h14M3 14.5h14" />,
+  x: <path d="M5 5l10 10M15 5 5 15" />,
+  file: <path d="M5 2.5h6.5L15 6v11.5H5zM11.5 2.5V6H15" />,
+  folder: <path d="M2.5 5H8l1.5 1.5h8v9h-15z" />,
+  "win-min": <path d="M5 10h10" />,
+  "win-max": <path d="M5 5h10v10H5z" />,
+  "win-restore": <path d="M5 7.5h7.5V15H5zM7.5 7.5V5H15v7.5h-2.5" />,
 };
 
 /** Inline stroke icon. Decorative unless `label` is given. */
-export function Icon({ name, size = 16, label, className, strokeWidth = 1.8 }) {
+export function Icon({ name, size = 16, label, className, strokeWidth = 1.5 }) {
   return (
     <svg
       className={className}
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
       aria-hidden={label ? undefined : true}
       aria-label={label}
       role={label ? "img" : undefined}

@@ -41,7 +41,7 @@ function WalkHere({ classes, indoor }) {
   return (
     <section className="map-section ui-chips" aria-label="Walk me there">
       {links.length ? (
-        links.map((w) => <TextLink key={w.room} href={routeHref("map", [], { walk: w.building, room: w.room })} arrow>{w.label}</TextLink>)
+        links.map((w) => <TextLink key={w.room} href={routeHref("map", [], { walk: w.building, room: w.room })}>{w.label}</TextLink>)
       ) : (
         <p className="t-small t-muted">{walks[0].reason}.</p>
       )}
@@ -80,7 +80,7 @@ function ResourcesHere({ place, places }) {
       <ul className="map-events">
         {here.map((r) => (
           <li key={r.id}>
-            <TextLink href={routeHref("campus", ["r", r.id])} arrow>{r.name}</TextLink>
+            <TextLink href={routeHref("campus", ["r", r.id])}>{r.name}</TextLink>
             <span className="t-small t-muted">{r.description}</span>
           </li>
         ))}

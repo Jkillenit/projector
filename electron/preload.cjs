@@ -32,9 +32,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 contextBridge.exposeInMainWorld("studyHub", {
   platform: process.platform,
   mode: "live",
-  openExternal: (url) => ipcRenderer.invoke("projector:open-external", url),
+  openExternal: (url) => ipcRenderer.invoke("al:open-external", url),
   /** Text of a PDF or Word file the student picked: `{ name, bytes: ArrayBuffer }` → `{ ok, text }`. */
-  extractFile: (file) => ipcRenderer.invoke("projector:extract-file", file),
+  extractFile: (file) => ipcRenderer.invoke("al:extract-file", file),
 
   app: {
     info: () => ipcRenderer.invoke("app:info"),
