@@ -13,6 +13,7 @@ import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./st
 import { fallLeaf, insideOf, placeTrees, seasonOf, seeded } from "./trees.js";
 import { roofOf } from "./roofs.js";
 import { shadowOffset } from "./quality.js";
+import { IDLE, keep, perfLine, summarize } from "./perf.js";
 import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
@@ -27,9 +28,38 @@ const MACRO = { grass: 0.09, water: 0.07, asphalt: 0.05, concrete: 0.03 }; // bi
 const BASE = { dark: 0.72, height: 7 }; // walls are darker where they meet the ground
 const QUIET = { h: 8, labels: 800 }; // #165: the town outside campus: walls no taller than this (m); names only when the view is this narrow (m)
 
+// The phone check (#129): with ?perf in the address (#/map?perf=1), a line over the map shows the tier, frame rate
+// and draw time. Off for everyone else. Shows nothing about the student.
+function perfMeter(host) {
+  if (!new URLSearchParams(window.location.hash.split("?")[1] || "").has("perf")) return null;
+  const line = document.createElement("p");
+  line.className = "map-perf";
+  line.setAttribute("aria-hidden", "true");
+  host.parentElement.appendChild(line);
+  let [draws, frames, last, loop, shown, tier] = [[], [], 0, 0, 0, ""];
+  const show = () => { line.textContent = perfLine(summarize(draws, frames), tier); };
+  // Count real screen frames while the map moves, not draws: a slow finger sends fewer moves than the screen could show.
+  const tick = (t) => {
+    frames = keep(frames, t);
+    if (t - shown > 500) { shown = t; show(); }
+    loop = t - last < IDLE ? requestAnimationFrame(tick) : 0;
+  };
+  return {
+    start(t) { tier = t; show(); },
+    draw(at, ms) {
+      draws = keep(draws, ms);
+      last = at;
+      loop ||= requestAnimationFrame(tick);
+    },
+    remove() { cancelAnimationFrame(loop); line.remove(); },
+  };
+}
+
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
-  const stage = createStage(three, host, { outdoor: true, theme: () => theme(), overlay: (size) => overlay(size) });
+  const meter = perfMeter(host);
+  const stage = createStage(three, host, { outdoor: true, theme: () => theme(), overlay: (size) => overlay(size), onDraw: meter?.draw });
+  meter?.start(stage.tier);
   const { THREE, camera, controls, render, add, geometry, solid, renderer, shadows } = stage;
   controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
   let mode = firstMode;
@@ -52,7 +82,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const flat = (geo, order, kind) => {
     geo.setAttribute("uv", new THREE.BufferAttribute(worldUV(geo.attributes.position.array, TILE[kind]), 2));
     // #179: grain fades to the tile's flat tone from far away, and big soft patches keep lawns and lots from looking tiled.
-    const mat = shaded(new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide }), { detail: { mean: meanTone(textureCanvas(kind)), ...FADE }, macro: MACRO[kind] });
+    // #129: forceSinglePass on flat ground. A see-through two-sided layer is otherwise drawn twice and its shader re-checked each draw.
+    const mat = shaded(new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true }), { detail: { mean: meanTone(textureCanvas(kind)), ...FADE }, macro: MACRO[kind] });
     const m = add(new THREE.Mesh(geo, mat));
     m.renderOrder = order - 100;
     m.position.y = order * 0.05;
@@ -121,7 +152,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       if (!s.indices.length) continue;
       const geo = geometry(s.positions, s.indices);
       geo.setAttribute("uv", new THREE.Float32BufferAttribute(s.uvs, 2));
-      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide, transparent: look === "stalls" })));
+      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, transparent: look === "stalls" })));
       Object.assign(m, { renderOrder: order - 100, receiveShadow: true });
       m.position.y = order * 0.05;
       m.userData.look = look;
@@ -248,7 +279,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const s = groundShade([...buildings, ...outlines, ...(bowl ? [{ path: stadiumArea.path }] : [])].flatMap((b) => pathToRings(b.path)));
     const geo = geometry(s.positions, s.indices);
     geo.setAttribute("color", new THREE.Float32BufferAttribute(s.colors, 4));
-    const m = add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide })));
+    const m = add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true })));
     m.renderOrder = GROUND_LAYERS.length - 100;
     m.position.y = GROUND_LAYERS.length * 0.05;
   }
@@ -267,7 +298,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       for (const r of pathToRings(b.path)) rings.push(r.map(([x, z]) => [x + dx, z + dz]));
     }
     patch(new THREE.Mesh(solid(rings, 0.01, { walls: false }), shadeMat));
-    const blobs = patch(new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2), shadeMat, trees.length));
+    // #129: the blobs get their own copy. One material on an InstancedMesh and a plain Mesh makes three
+    // work out its shader again twice every draw, which cost phones about a third of each frame.
+    const blobs = patch(new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2), shadeMat.clone(), trees.length));
     const o = new THREE.Object3D();
     trees.forEach(([x, z, s], i) => {
       const [dx, dz] = shadowOffset(TRUNK[s] + CROWN[s] * 0.6);
@@ -403,7 +436,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     centerLine.material.opacity = stallFade(view) * 0.8;
     // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
     const box = host.getBoundingClientRect();
-    const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
+    const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit, .map-perf")].map((el) => {
       const r = el.getBoundingClientRect();
       return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height };
     });
@@ -586,6 +619,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       cancelAnimationFrame(hoverFrame);
       for (const t of [...Object.values(textures), wallMat, roofMat, deckMat, plainMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
       host.removeEventListener("keydown", onKey);
+      meter?.remove();
       stage.dispose();
     },
   };
