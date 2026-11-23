@@ -46,4 +46,6 @@ Next to UA's map ours looked washed out and flat: pale mint lawns with grain, ev
 5. #129 on a phone before more detail goes in.
 6. #170, #183, #195 if time allows, then phase 4 (#125 to #128).
 
+**Added after the review.** Checking the landmarks against reference photos (kept out of git) gave three more issues. Order: #199 Denny Chimes, then #194 roof details, then #200 Gorgas (it needs #194's gable ends), then #129 on a phone, then #201 Bryant-Denny's outside.
+
 #196 is a script so the next review takes the same screenshots.
