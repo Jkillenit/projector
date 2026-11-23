@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { frontEdge, landmarkShapes } from "./landmarks.js";
+import { CHIMES, frontEdge, landmarkShapes } from "./landmarks.js";
 import { mergeBuildings } from "./campusMesh.js";
 import campus from "../campus.json";
 
@@ -32,15 +32,29 @@ describe("landmarkShapes", () => {
     expect(landmarkShapes({ name: "Bidgood Hall", path: SQUARE, h: 10 })).toBe(null);
     expect(landmarkShapes({ name: "Denny Chimes", path: "", h: 35 })).toBe(null);
   });
-  it("gives Denny Chimes a shaft, a wider belfry and a pointed cap up to its full height", () => {
+  it("gives Denny Chimes a white base, a brick shaft that narrows, an open belfry and a stepped white cap (#199)", () => {
     const b = byName("Denny Chimes");
     expect(b.h).toBeGreaterThanOrEqual(30); // 115 ft, from buildings-extra.json
     const shapes = landmarkShapes(b);
-    expect(shapes.length).toBe(3);
     expect(Math.max(...ys(shapes))).toBeCloseTo(b.h);
-    const xs = (s) => s.positions.filter((_, i) => i % 3 === 0);
-    const width = (s) => Math.max(...xs(s)) - Math.min(...xs(s));
-    expect(width(shapes[1])).toBeGreaterThan(width(shapes[0]));
+    const xs = (list) => list.flatMap((s) => s.positions.filter((_, i) => i % 3 === 0));
+    const width = (list) => Math.max(...xs(list)) - Math.min(...xs(list));
+    const between = (y0, y1) => shapes.filter((s) => Math.min(...ys([s])) >= y0 - 1e-6 && Math.max(...ys([s])) <= y1 + 1e-6);
+    const brick = shapes.filter((s) => !s.trim && s.wallVerts > 0);
+    expect(brick).toHaveLength(1); // the shaft is the only brick
+    const shaft = brick[0];
+    const ringAt = (y) => ({ positions: shaft.positions.filter((_, i, a) => Math.abs(a[i - (i % 3) + 1] - y) < 1e-6) });
+    expect(width([ringAt(b.h * CHIMES.shaft.top)])).toBeLessThan(width([ringAt(b.h * CHIMES.base.lip)])); // narrows
+    const base = between(0, b.h * CHIMES.base.top);
+    expect(base.length).toBeGreaterThan(0);
+    expect(base.every((s) => s.trim)).toBe(true);
+    expect(width(base)).toBeGreaterThan(width([shaft])); // the base is wider than the shaft
+    const belfry = between(b.h * CHIMES.band.top, b.h * CHIMES.belfry.top);
+    expect(belfry.filter((s) => s.trim).length).toBe(4 * 3); // 4 corner posts, 2 thin ones per side
+    expect(belfry.filter((s) => !s.trim && s.wallVerts === 0)).toHaveLength(1); // the dark openings
+    const cap = between(b.h * CHIMES.cornice.top, b.h).map((s) => width([s]));
+    expect(cap).toHaveLength(CHIMES.cap.length);
+    expect(cap.every((w, i) => i === 0 || w < cap[i - 1])).toBe(true); // each tier smaller
   });
   it("gives Gorgas columns on its Quad side, marked as trim, under the roof line", () => {
     const b = byName("Amelia Gayle Gorgas Library");
