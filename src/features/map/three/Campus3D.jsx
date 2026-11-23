@@ -155,8 +155,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const roofMat = shaded(new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true }), { detail: { mean: meanTone(textureCanvas("roof")), ...FADE } });
   const deckMat = shaded(new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }), { base: BASE }); // #146: concrete bands
   const looks = new Map();
+  const quads = campus.areas.filter((a) => /quad$/i.test(a.name || "")).map((a) => a.c); // #167: porticos face the nearest one
   const buildingMesh = (list, mats = [wallMat, roofMat, deckMat]) => {
-    const merged = mergeBuildings(list);
+    const merged = mergeBuildings(list, { quads });
     const geo = geometry(merged.positions, merged.indices);
     const scale = (i) => (merged.isRoof[i >> 1] ? TILE.roof : i % 2 ? BRICK.floor : BRICK.bay);
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(merged.uvs.map((x, i) => x / scale(i)), 2));
@@ -315,7 +316,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const attr = mesh.geometry.attributes.color;
     const { owners, isRoof, isTrim } = mesh.userData.merged;
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
-    const stone = new THREE.Color(token("--map-path")); // landmark columns (#130) and deck concrete (#146): light stone, like the paths
+    const stone = new THREE.Color(token("--map-path")); // trim: columns and cornices (#130, #167), and deck concrete (#146): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
     const pale = new THREE.Color(token("--map-context"));
     for (const o of owners) {

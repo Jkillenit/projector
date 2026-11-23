@@ -92,7 +92,7 @@ describe("roofedShapes", () => {
     expect(sloped.length).toBeGreaterThan(halls.length * 0.9);
     const merged = mergeBuildings(campus.buildings);
     expect(merged.positions.every(Number.isFinite)).toBe(true);
-    expect(Math.max(...merged.indices)).toBeLessThan(merged.positions.length / 3);
+    expect(merged.indices.reduce((a, b) => Math.max(a, b), 0)).toBeLessThan(merged.positions.length / 3);
     expect(merged.triOwner.length).toBe(merged.indices.length / 3);
   });
 });

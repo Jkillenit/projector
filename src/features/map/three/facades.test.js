@@ -1,0 +1,123 @@
+import { describe, expect, it } from "vitest";
+import { cornice, facadeShapes, facingOf, frontEdge, outsetRing, portico, PORTICOS, TRIM } from "./facades.js";
+import { mergeBuildings } from "./campusMesh.js";
+import { inRing } from "./extrude.js";
+import campus from "../campus.json";
+
+const rect = (x, z, w, d) => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
+const path = (ring) => `M${ring.map((p) => p.join(" ")).join("L")}Z`;
+const ys = (shapes) => shapes.flatMap((s) => s.positions.filter((_, i) => i % 3 === 1));
+const xz = (shapes) => shapes.flatMap((s) => s.positions.reduce((pts, v, i) => (i % 3 === 2 ? [...pts, [s.positions[i - 2], v]] : pts), []));
+const quads = campus.areas.filter((a) => /quad$/i.test(a.name || "")).map((a) => a.c);
+
+/** Every triangle's normal points away from the shape's middle (faces show from outside). */
+function facesOut(s) {
+  const n = s.positions.length / 3;
+  const mid = [0, 1, 2].map((k) => s.positions.filter((_, i) => i % 3 === k).reduce((a, b) => a + b, 0) / n);
+  const p = (i) => s.positions.slice(i * 3, i * 3 + 3);
+  for (let t = 0; t < s.indices.length; t += 3) {
+    const [a, b, c] = [p(s.indices[t]), p(s.indices[t + 1]), p(s.indices[t + 2])];
+    const u = b.map((v, k) => v - a[k]);
+    const w = c.map((v, k) => v - a[k]);
+    const nrm = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const centre = [0, 1, 2].map((k) => (a[k] + b[k] + c[k]) / 3 - mid[k]);
+    if (nrm.reduce((sum, v, k) => sum + v * centre[k], 0) < -1e-9) return false;
+  }
+  return true;
+}
+
+describe("frontEdge", () => {
+  it("faces the way it is asked to, and keeps south as the default", () => {
+    const ring = rect(0, 0, 30, 20);
+    expect(frontEdge(ring).a[1]).toBe(20);
+    const east = frontEdge(ring, 10, [1, 0]);
+    expect([east.a[0], east.b[0]]).toEqual([30, 30]);
+    expect(east.out[0]).toBeCloseTo(1);
+  });
+  it("takes the wall that faces best when none faces squarely", () => {
+    const f = frontEdge(rect(0, 0, 30, 20), 10, [Math.SQRT1_2, Math.SQRT1_2]);
+    expect(f).not.toBe(null);
+    expect(f.out[0] + f.out[1]).toBeCloseTo(1);
+  });
+});
+
+describe("outsetRing", () => {
+  it("moves every wall out by d, either way round", () => {
+    for (const ring of [rect(0, 0, 10, 10), [...rect(0, 0, 10, 10)].reverse()]) {
+      const out = outsetRing(ring, 1).map((p) => p.map((v) => Math.round(v * 1000) / 1000));
+      expect(out.map(String).sort()).toEqual(rect(-1, -1, 12, 12).map(String).sort());
+    }
+  });
+  it("keeps sharp corners from spiking", () => {
+    const sliver = [[0, 0], [40, 0], [0, 2]];
+    for (const [i, p] of outsetRing(sliver, 0.5, 2).entries()) expect(Math.hypot(p[0] - sliver[i][0], p[1] - sliver[i][1])).toBeLessThanOrEqual(1.0001);
+  });
+});
+
+describe("cornice", () => {
+  it("is a light band under the eave, a little proud of the wall, with a top seen from above", () => {
+    const shapes = cornice([rect(0, 0, 20, 12)], 10);
+    expect(shapes.every((s) => s.trim && s.wallVerts === 0)).toBe(true);
+    expect(Math.max(...ys(shapes))).toBeLessThan(10);
+    expect(Math.min(...ys(shapes))).toBeCloseTo(10 - TRIM.cornice.tall);
+    expect(Math.min(...xz(shapes).map((p) => p[0]))).toBeCloseTo(-TRIM.cornice.out);
+    expect(shapes[0].indices.length).toBeGreaterThan(4 * 6); // walls and a top
+  });
+});
+
+describe("portico", () => {
+  const front = frontEdge(rect(0, 0, 30, 20));
+  it("stands columns off the wall, under a beam, and a gable on top", () => {
+    const shapes = portico(front, 12, { t0: 7, t1: 23 });
+    expect(shapes.every((s) => s.trim)).toBe(true);
+    const columns = shapes.filter((s) => Math.max(...ys([s])) === 12 - TRIM.column.beam && Math.min(...ys([s])) === 0);
+    expect(columns.length).toBeGreaterThanOrEqual(4);
+    for (const c of columns) expect(Math.min(...xz([c]).map((p) => p[1]))).toBeGreaterThan(20); // in front of the wall
+    const gable = shapes[shapes.length - 1];
+    expect(Math.max(...ys([gable]))).toBeGreaterThan(12);
+    expect(facesOut(gable)).toBe(true);
+  });
+  it("has no gable when asked for a plain colonnade", () => {
+    expect(Math.max(...ys(portico(front, 12, { pediment: false })))).toBeLessThan(12);
+  });
+});
+
+describe("facingOf", () => {
+  it("reads a compass letter or faces the nearest quad", () => {
+    expect(facingOf({ facing: "n" }, rect(0, 0, 10, 10))).toEqual([0, -1]);
+    const d = facingOf({ facing: "quad" }, rect(0, 0, 10, 10), [[105, 5], [-500, 0]]);
+    expect(d[0]).toBeCloseTo(1);
+    expect(facingOf({ facing: "quad" }, rect(0, 0, 10, 10), [])).toBe(null);
+    expect(facingOf(undefined, rect(0, 0, 10, 10))).toBe(null);
+  });
+});
+
+describe("facadeShapes", () => {
+  it("trims sloped roofs only: not flat roofs, decks or low sheds", () => {
+    const hall = { id: "h", path: path(rect(0, 0, 20, 12)), h: 11 };
+    expect(facadeShapes(hall).length).toBeGreaterThan(0);
+    expect(facadeShapes({ ...hall, roofShape: "flat" })).toEqual([]);
+    expect(facadeShapes({ ...hall, plain: true })).toEqual([]);
+    expect(facadeShapes({ ...hall, h: 3 })).toEqual([]);
+    expect(facadeShapes({ id: "x", path: "", h: 11 })).toEqual([]);
+  });
+  it("gives every portico hall that is in the data a columned front facing its way", () => {
+    for (const name of Object.keys(PORTICOS)) {
+      const b = campus.buildings.find((x) => x.name === name);
+      expect(b, name).toBeTruthy();
+      const plain = facadeShapes({ ...b, name: "" }, quads);
+      const shapes = facadeShapes(b, quads);
+      expect(shapes.length, name).toBeGreaterThan(plain.length + 4);
+      // the columns stand outside the footprint
+      const ring = b.path.slice(1, -1).split("L").map((p) => p.split(" ").map(Number));
+      const extra = xz(shapes.slice(plain.length, plain.length + 1));
+      expect(extra.some((p) => !inRing(p, ring)), name).toBe(true);
+    }
+  });
+  it("adds trim to many campus halls when merged, and stays one tappable building each", () => {
+    const m = mergeBuildings(campus.buildings, { quads });
+    expect(m.isTrim.filter(Boolean).length).toBeGreaterThan(1000);
+    expect(m.triOwner).toHaveLength(m.indices.length / 3);
+    expect(new Set(m.triOwner).size).toBe(m.owners.length);
+  });
+});

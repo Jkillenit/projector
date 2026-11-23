@@ -1,16 +1,18 @@
 // Pure: campus.json shapes as flat arrays the 3D view hands to three. Does not import three.
 import { seedOf } from "../campusMap.js";
+import { facadeShapes } from "./facades.js";
 import { landmarkShapes } from "./landmarks.js";
 import { roofedShapes } from "./roofs.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
- * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim. Roofs come from roofs.js (#166).
+ * Landmarks (#130) use their own shapes. Other halls get light trim from facades.js (#167): a cornice, and columns on a few.
+ * Trim is marked per vertex in isTrim. Roofs come from roofs.js (#166). quads: [[x, z], ...] quad middles, for porticos that face one.
  * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: brick walls, then deck walls, then roofs,
  * wallIndices: how many indices are walls (both kinds), deckIndices: how many of those are deck walls (the last ones),
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
-export function mergeBuildings(buildings) {
+export function mergeBuildings(buildings, { quads = [] } = {}) {
   const positions = [];
   const uvs = [];
   const isRoof = [];
@@ -23,7 +25,7 @@ export function mergeBuildings(buildings) {
     const wallPart = isDeck(b.name) ? decks : walls;
     const start = positions.length / 3;
     const roofed = { ...b, plain: b.plain ?? (b.quiet || isDeck(b.name)) }; // #166: decks and the quiet town keep a flat top
-    for (const s of landmarkShapes(roofed) || roofedShapes(roofed)) {
+    for (const s of landmarkShapes(roofed) || [...roofedShapes(roofed), ...facadeShapes(roofed, quads)]) {
       const base = positions.length / 3;
       for (const v of s.positions) positions.push(v);
       for (const v of s.uvs) uvs.push(v);
