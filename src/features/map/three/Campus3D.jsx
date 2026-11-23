@@ -315,7 +315,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   };
   const paintBuildings = (mesh, on, near) => {
     const attr = mesh.geometry.attributes.color;
-    const { owners, isRoof, isTrim } = mesh.userData.merged;
+    const { owners, isRoof, isTrim, isFlat } = mesh.userData.merged;
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
     const stone = new THREE.Color(token("--map-path")); // trim: columns and cornices (#130, #167), and deck concrete (#146): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
@@ -327,7 +327,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       const wall = lit || (look.wall === "stone" ? stone : look.wall ? color(look.wall, brick) : look.deck ? stone : look.landmark ? color(null, landmark) : color(null, brick).multiplyScalar(wallShade(o.id)));
       const roof = lit || color(look.roof, look.flat ? pale.getStyle() : slates[roofTone(o.id, slates.length)]); // #166: big flat roofs are a light membrane
       const trim = lit || stone;
-      for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
+      const flat = lit || pale; // #200: a flat roof inside a landmark with sloped roofs, like Gorgas's stacks
+      for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? (isFlat?.[v] ? flat : roof) : wall).toArray(attr.array, v * 3);
     }
     attr.needsUpdate = true;
   };

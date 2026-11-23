@@ -140,6 +140,15 @@ describe("ridge roofs (#194)", () => {
     expect(facesOut(s)).toBe(true);
     expect(roofedShapes({ id: "g", h: 10, roofShape: "gabled", path: path(rect(0, 0, 60, 30)) })[0].wallVerts).toBe(4 * 4 + 2 * 3);
   });
+  it("can put a gable on one end and a hip on the other (#200)", () => {
+    const s = ridgeRoof(rect(0, 0, 40, 10), 10, [false, true]);
+    const xs = [];
+    for (let i = 0; i < s.positions.length; i += 3) if (s.positions[i + 1] > 12) xs.push(s.positions[i]);
+    expect(Math.min(...xs)).toBeCloseTo(5); // hip at the start: the ridge stops half the width in
+    expect(Math.max(...xs)).toBeCloseTo(40); // gable at the end: the ridge runs to the wall
+    expect(s.wallVerts).toBe(4 * 4 + 3); // one gable triangle
+    expect(facesOut(s)).toBe(true);
+  });
   it("keeps the flat topped hip on wide halls that are not tagged gabled", () => {
     const [s] = roofedShapes({ id: "w", h: 10, path: path(rect(0, 0, 60, 30)) });
     expect(s.wallVerts).toBe(16);

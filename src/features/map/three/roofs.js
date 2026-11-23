@@ -52,7 +52,7 @@ const lifted = (shapes, y0, trim) => shapes.map((s) => {
 });
 
 /** A flat roof: walls up to a light rim, the roof inside it, and a few units on top (seeded by id, never over the edge). */
-function flatRoof(ring, h, id) {
+export function flatRoof(ring, h, id) {
   const inner = insetRing(ring, ROOF.parapet);
   if (!inner) return extrudeRings([ring], h);
   const top = h + ROOF.lip;
@@ -113,19 +113,22 @@ function face(shape, pts, toward, uv) {
 /**
  * A roof that comes to a ridge on an about rectangular hall (#194): two long slopes up to a ridge along the long side, and either
  * two short slopes (hip) or two upright brick triangles (gable) at the ends. Rise: half the short side times the pitch.
+ * gable: true or false for both ends, or [start, end] for each: start is the p3 to p0 end, end the p1 to p2 end (#200).
+ * pitch: rise per meter in from the eave (#200: low pediment gables on Gorgas).
  * Same shape format as extrudeRings: walls (and gable ends) first, then the roof. walls: false leaves out the walls, not the gable ends.
  */
-export function ridgeRoof(ring, h, gable = false, { walls: withWalls = true } = {}) {
+export function ridgeRoof(ring, h, gable = false, { walls: withWalls = true, pitch = ROOF.pitch } = {}) {
   const [p0, p1, p2, p3] = asRectangle(ring);
   const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
   const w = (Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) + Math.hypot(p0[0] - p3[0], p0[1] - p3[1])) / 2;
   const u = [(p1[0] - p0[0]) / len, (p1[1] - p0[1]) / len];
   const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  const back = gable ? 0 : Math.min(w / 2, len / 2); // hips: the ridge stops half the width in from each end
-  const top = h + (w / 2) * ROOF.pitch;
+  const [g0, g1] = Array.isArray(gable) ? gable : [gable, gable];
+  const back = (g) => (g ? 0 : Math.min(w / 2, len / 2)); // hips: the ridge stops half the width in from the end
+  const top = h + (w / 2) * pitch;
   const [m0, m1] = [mid(p3, p0), mid(p1, p2)];
-  const r0 = [m0[0] + u[0] * back, top, m0[1] + u[1] * back];
-  const r1 = [m1[0] - u[0] * back, top, m1[1] - u[1] * back];
+  const r0 = [m0[0] + u[0] * back(g0), top, m0[1] + u[1] * back(g0)];
+  const r1 = [m1[0] - u[0] * back(g1), top, m1[1] - u[1] * back(g1)];
   const at = ([x, z]) => [x, h, z];
   const c = centroid4(ring);
   const out = (a, b) => {
@@ -135,8 +138,8 @@ export function ridgeRoof(ring, h, gable = false, { walls: withWalls = true } = 
   const [walls] = withWalls ? extrudeRings([ring], h, { roof: false }) : [{ positions: [], indices: [], uvs: [] }];
   const shape = { positions: [...walls.positions], indices: [...walls.indices], uvs: [...walls.uvs] };
   const flat = (pts) => pts.map((p) => [p[0], p[2]]);
-  if (gable) {
-    for (const [a, b, r] of [[p1, p2, r1], [p3, p0, r0]]) {
+  for (const [a, b, r, g] of [[p1, p2, r1, g1], [p3, p0, r0, g0]]) {
+    if (g) {
       const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const o = out(a, b);
       face(shape, [at(a), at(b), r], [o[0], 0, o[1]], [[0, h], [d, h], [d / 2, top]]);
@@ -144,14 +147,16 @@ export function ridgeRoof(ring, h, gable = false, { walls: withWalls = true } = 
   }
   const wallVerts = shape.positions.length / 3;
   const wallIndices = shape.indices.length;
-  const slope = (a, b, o) => [o[0], Math.hypot(...o) / ROOF.pitch, o[1]];
+  const slope = (a, b, o) => [o[0], Math.hypot(...o) / pitch, o[1]];
   let pts = [at(p0), at(p1), r1, r0];
   face(shape, pts, slope(p0, p1, out(p0, p1)), flat(pts));
   pts = [at(p2), at(p3), r0, r1];
   face(shape, pts, slope(p2, p3, out(p2, p3)), flat(pts));
-  if (!gable) {
+  if (!g1) {
     pts = [at(p1), at(p2), r1];
     face(shape, pts, slope(p1, p2, out(p1, p2)), flat(pts));
+  }
+  if (!g0) {
     pts = [at(p3), at(p0), r0];
     face(shape, pts, slope(p3, p0, out(p3, p0)), flat(pts));
   }

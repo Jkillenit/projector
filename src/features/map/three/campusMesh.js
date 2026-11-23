@@ -7,8 +7,8 @@ import { roofedShapes } from "./roofs.js";
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
  * Landmarks (#130) use their own shapes. Other halls get light trim from facades.js (#167): a cornice, and columns on a few.
- * Trim is marked per vertex in isTrim. Roofs come from roofs.js (#166). quads: [[x, z], ...] quad middles, for porticos that face one.
- * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: brick walls, then deck walls, then roofs,
+ * Trim is marked per vertex in isTrim, and flat roofs inside a sloped roofed landmark in isFlat (#200). Roofs come from roofs.js (#166). quads: [[x, z], ...] quad middles, for porticos that face one.
+ * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], isFlat: [per vertex], indices: brick walls, then deck walls, then roofs,
  * wallIndices: how many indices are walls (both kinds), deckIndices: how many of those are deck walls (the last ones),
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
@@ -17,6 +17,7 @@ export function mergeBuildings(buildings, { quads = [] } = {}) {
   const uvs = [];
   const isRoof = [];
   const isTrim = [];
+  const isFlat = [];
   const owners = [];
   const walls = { indices: [], owner: [] };
   const decks = { indices: [], owner: [] };
@@ -32,6 +33,7 @@ export function mergeBuildings(buildings, { quads = [] } = {}) {
       for (let v = 0; v < s.positions.length / 3; v++) {
         isRoof.push(v >= s.wallVerts);
         isTrim.push(!!s.trim);
+        isFlat.push(!!s.flat);
       }
       s.indices.forEach((i, k) => {
         const part = k < s.wallIndices ? wallPart : roofs;
@@ -43,7 +45,7 @@ export function mergeBuildings(buildings, { quads = [] } = {}) {
     if (end > start) owners.push({ id: b.id, start, end });
   }
   return {
-    positions, uvs, isRoof, isTrim, owners,
+    positions, uvs, isRoof, isTrim, isFlat, owners,
     indices: walls.indices.concat(decks.indices, roofs.indices),
     wallIndices: walls.indices.length + decks.indices.length,
     deckIndices: decks.indices.length,
