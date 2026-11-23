@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extrudeRings, inRing, insetRing, pathToRings } from "./extrude.js";
-import { ROOF, roofedShapes, roofOf, roofTiers } from "./roofs.js";
+import { asRectangle, ridgeRoof, ROOF, roofedShapes, roofOf, roofTiers, wings } from "./roofs.js";
 import { mergeBuildings } from "./campusMesh.js";
 import { insideOf } from "./trees.js";
 import nature from "../campus-nature.json";
@@ -96,3 +96,81 @@ describe("roofedShapes", () => {
     expect(merged.triOwner.length).toBe(merged.indices.length / 3);
   });
 });
+
+/** Every triangle's normal points away from the shape's middle (faces show from outside). */
+function facesOut(s) {
+  const n = s.positions.length / 3;
+  const mid = [0, 1, 2].map((k) => s.positions.filter((_, i) => i % 3 === k).reduce((a, b) => a + b, 0) / n);
+  const p = (i) => s.positions.slice(i * 3, i * 3 + 3);
+  for (let t = 0; t < s.indices.length; t += 3) {
+    const [a, b, c] = [p(s.indices[t]), p(s.indices[t + 1]), p(s.indices[t + 2])];
+    const u = b.map((v, k) => v - a[k]);
+    const w = c.map((v, k) => v - a[k]);
+    const nrm = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const centre = [0, 1, 2].map((k) => (a[k] + b[k] + c[k]) / 3 - mid[k]);
+    if (nrm.reduce((sum, v, k) => sum + v * centre[k], 0) < -1e-9) return false;
+  }
+  return true;
+}
+
+describe("ridge roofs (#194)", () => {
+  it("knows an about rectangular ring, long side first, and nothing else", () => {
+    expect(asRectangle(rect(0, 0, 10, 30))[0]).toEqual([10, 0]); // turned so the long side comes first
+    expect(asRectangle(rect(0, 0, 30, 10))[0]).toEqual([0, 0]);
+    expect(asRectangle([[0, 0], [30, 0], [36, 10], [0, 10]])).toBe(null); // a slanted end
+    expect(asRectangle([[0, 0], [30, 0], [30, 10], [10, 10], [0, 10]])).toBe(null); // five corners
+  });
+  it("brings a narrow hall to a ridge along its long side, by the pitch", () => {
+    const [s] = roofedShapes({ id: "n", h: 10, path: path(rect(0, 0, 40, 10)) });
+    const top = Math.max(...ys([s]));
+    expect(top).toBeCloseTo(10 + 5 * ROOF.pitch);
+    const ridge = [];
+    for (let i = 0; i < s.positions.length; i += 3) if (s.positions[i + 1] > top - 1e-6) ridge.push([s.positions[i], s.positions[i + 2]]);
+    expect(new Set(ridge.map((p) => p[1]))).toEqual(new Set([5])); // down the middle
+    expect(Math.min(...ridge.map((p) => p[0]))).toBeCloseTo(5); // hipped: stops half the width in
+    expect(facesOut(s)).toBe(true);
+  });
+  it("gives a gabled hall upright brick ends and a ridge that runs end to end", () => {
+    const s = ridgeRoof(rect(0, 0, 40, 10), 10, true);
+    const xs = [];
+    for (let i = 0; i < s.positions.length; i += 3) if (s.positions[i + 1] > 12) xs.push(s.positions[i]);
+    expect(Math.min(...xs)).toBeCloseTo(0);
+    expect(Math.max(...xs)).toBeCloseTo(40);
+    expect(s.wallVerts).toBe(4 * 4 + 2 * 3); // four walls and two gable triangles count as wall
+    expect(facesOut(s)).toBe(true);
+    expect(roofedShapes({ id: "g", h: 10, roofShape: "gabled", path: path(rect(0, 0, 60, 30)) })[0].wallVerts).toBe(4 * 4 + 2 * 3);
+  });
+  it("keeps the flat topped hip on wide halls that are not tagged gabled", () => {
+    const [s] = roofedShapes({ id: "w", h: 10, path: path(rect(0, 0, 60, 30)) });
+    expect(s.wallVerts).toBe(16);
+    expect(Math.max(...ys([s]))).toBeCloseTo(10 + ROOF.maxInset * ROOF.pitch);
+  });
+});
+
+describe("wings (#194)", () => {
+  const L = [[0, 0], [40, 0], [40, 12], [12, 12], [12, 30], [0, 30]];
+  it("splits an L into two long wings that overlap at the corner", () => {
+    const w = wings(L);
+    expect(w).toHaveLength(2);
+    const size = (r) => [Math.hypot(r[1][0] - r[0][0], r[1][1] - r[0][1]), Math.hypot(r[2][0] - r[1][0], r[2][1] - r[1][1])].map(Math.round);
+    expect(w.map(size).sort()).toEqual([[30, 12], [40, 12]]); // each runs its full length, long side first
+  });
+  it("covers a U with three wings, and turns with the building", () => {
+    const U = [[0, 0], [50, 0], [50, 30], [38, 30], [38, 12], [12, 12], [12, 30], [0, 30]];
+    expect(wings(U)).toHaveLength(3);
+    const turn = (p) => [p[0] * 0.8 - p[1] * 0.6, p[0] * 0.6 + p[1] * 0.8];
+    expect(wings(U.map(turn))).toHaveLength(3);
+  });
+  it("gives up on long slanted walls, and allows small cut corners", () => {
+    expect(wings([[0, 0], [40, 0], [40, 12], [12, 30], [0, 30]])).toBe(null);
+    const cut = wings([[0, 0], [40, 0], [40, 10], [38, 12], [12, 12], [12, 30], [0, 30]]);
+    const long = (r) => Math.hypot(r[1][0] - r[0][0], r[1][1] - r[0][1]);
+    expect(cut.filter((r) => long(r) >= 30)).toHaveLength(2); // both wings, maybe a small box at the cut corner too
+  });
+  it("brings each wing of a real L hall to a ridge, and every face shows from outside", () => {
+    const shapes = roofedShapes({ id: "l", h: 10, path: path(L) });
+    expect(Math.max(...ys(shapes))).toBeCloseTo(10 + 6 * ROOF.pitch);
+    for (const s of shapes.filter((x) => x.wallVerts === 0 && x.indices.length > 6)) expect(facesOut(s)).toBe(true);
+  });
+});
+
