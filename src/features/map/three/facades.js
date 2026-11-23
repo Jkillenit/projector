@@ -50,7 +50,7 @@ const COMPASS = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
 const area2 = (ring) => ring.reduce((s, [x, z], i) => s + x * ring[(i + 1) % ring.length][1] - ring[(i + 1) % ring.length][0] * z, 0);
 export const centroid = (ring) => ring.reduce(([x, z], p) => [x + p[0] / ring.length, z + p[1] / ring.length], [0, 0]);
-const circle = ([cx, cz], r, n) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos((i * 2 * Math.PI) / n), cz + r * Math.sin((i * 2 * Math.PI) / n)]);
+export const circle = ([cx, cz], r, n) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos((i * 2 * Math.PI) / n), cz + r * Math.sin((i * 2 * Math.PI) / n)]);
 const biggest = (rings) => rings.reduce((big, r) => (Math.abs(area2(r)) > Math.abs(area2(big)) ? r : big));
 
 /** Every vertex light trim: no brick, no windows, counted with the roof so it takes the trim color. */
