@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stallFade, underBowl } from "./fields.js";
+import { wallOf, wallShade } from "./facades.js";
 import { addDashes, addRibbons, CURB, GROUND_LAYERS, isDeck, isLandmark, MAIN_ROADS, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
@@ -172,10 +173,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   };
   // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
   const unnamed = outlines.map((o, i) => {
-    looks.set(`o${i}`, o);
+    looks.set(`o${i}`, { ...o, wall: wallOf("", o) });
     return { id: `o${i}`, path: o.path, h: o.h, quiet: o.quiet, roofShape: o.roofShape };
   });
-  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name), flat: roofOf({ ...b, plain: b.quiet || isDeck(b.name) }) === "flat" });
+  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], wall: wallOf(b.name, nature.looks?.[b.id]), landmark: isLandmark(b.name), deck: isDeck(b.name), flat: roofOf({ ...b, plain: b.quiet || isDeck(b.name) }) === "flat" });
   const context = buildingMesh(unnamed.filter((b) => !b.quiet));
   const town = buildingMesh(buildings.filter((b) => !b.quiet));
   // Off campus: no brick or windows, no cast shadow, one plain material. Named ones are still tappable.
@@ -322,7 +323,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     for (const o of owners) {
       const look = mesh === quiet ? {} : looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : mesh === quiet ? pale : null;
-      const wall = lit || color(look.colour, look.landmark ? landmark : look.deck ? stone : brick);
+      // #167: OSM's colour or our light walls first, then stone, then brick with a small tint of its own.
+      const wall = lit || (look.wall === "stone" ? stone : look.wall ? color(look.wall, brick) : look.deck ? stone : look.landmark ? color(null, landmark) : color(null, brick).multiplyScalar(wallShade(o.id)));
       const roof = lit || color(look.roof, look.flat ? pale.getStyle() : slates[roofTone(o.id, slates.length)]); // #166: big flat roofs are a light membrane
       const trim = lit || stone;
       for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);

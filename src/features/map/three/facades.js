@@ -8,7 +8,30 @@ export const TRIM = {
   cornice: { tall: 0.6, out: 0.35, maxMiter: 2 },
   column: { every: 3.2, out: 2.6, beam: 2.2, sides: 16, min: 4 },
   pediment: 0.16,
+  base: { tall: 0.7, out: 0.08 }, // a stone base course at the foot of the wall, like Gorgas's
+  belt: { tall: 0.22, out: 0.12, floor: 3.5 }, // a thin line at each floor (3.5 m: the brick tile's floor), clear of the windows
 };
+
+/** Walls that are light stone or painted white, when OSM does not say. Checked against photos. */
+export const LIGHT_WALLS = { "President's Mansion": "white" };
+const STONE = /^(stone|limestone|marble|sandstone|concrete|plaster|stucco)$/;
+
+/**
+ * The wall color a building gets: "stone" (light, the trim color), a CSS color from OSM or LIGHT_WALLS, or null for brick.
+ * look: { colour, material } from OSM. OSM wins over our list.
+ */
+export function wallOf(name, look = {}) {
+  if (look.colour) return look.colour;
+  if (STONE.test(look.material || "")) return "stone";
+  return LIGHT_WALLS[name] || null;
+}
+
+/** A small seeded change in a brick wall's lightness, 0.9 to 1.08, so the halls are not all the same brick. Fixed per building. */
+export function wallShade(id) {
+  let h = 2166136261;
+  for (const ch of String(id ?? "")) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return 0.9 + ((h >>> 0) % 1000) / 1000 * 0.18;
+}
 
 /**
  * Halls with a columned front, and the way it faces. "quad": toward the middle of the nearest quad.
@@ -87,6 +110,21 @@ export function cornice(rings, h) {
   return rings.flatMap((ring) => trimBlock(outsetRing(ring, out), Math.max(0, h - tall), h - 0.01));
 }
 
+/**
+ * A stone base at the foot of each wall and a thin light line at every floor, each a little proud of the brick.
+ * Floors below the roof edge only, and not where the cornice already is.
+ */
+export function belts(rings, h, { top = h } = {}) {
+  const { base, belt } = TRIM;
+  return rings.flatMap((ring) => {
+    const shapes = trimBlock(outsetRing(ring, base.out), 0, Math.min(base.tall, h / 4), { roof: false });
+    for (let y = belt.floor; y + belt.tall < top - 1; y += belt.floor) {
+      shapes.push(...trimBlock(outsetRing(ring, belt.out), y - belt.tall / 2, y + belt.tall / 2, { roof: false })); // no top: it would hide inside the wall
+    }
+    return shapes;
+  });
+}
+
 /** One flat face, turned so it points along `toward`. pts: 3 or 4 corners [x, y, z]. */
 function face(shape, pts, toward) {
   const [a, b, c] = pts;
@@ -144,15 +182,17 @@ export function facingOf(spec, ring, quads = []) {
 }
 
 /**
- * Trim for a building ({ name, path, h, plain, roofShape }): a cornice under a sloped roof, and a columned front for the halls in PORTICOS.
- * Flat roofs already have a light rim (roofs.js), and plain buildings (decks, the town off campus) get none.
+ * Trim for a building ({ name, path, h, plain, roofShape }): a stone base and a line at each floor, a cornice under a sloped roof,
+ * and a columned front for the halls in PORTICOS. Flat roofs already have a light rim (roofs.js). Plain buildings (decks, the town off campus) get none.
  */
 export function facadeShapes(b, quads = []) {
   const rings = pathToRings(b?.path);
   if (!rings.length || !(b.h > 0)) return [];
+  if (b.plain) return []; // decks and the town off campus: no trim
   const kind = roofOf(b);
-  const shapes = kind === "hip" || kind === "round" ? cornice(rings, b.h) : [];
-  const spec = !b.plain && PORTICOS[b.name];
+  const sloped = kind === "hip" || kind === "round";
+  const shapes = [...belts(rings, b.h, { top: sloped ? b.h - TRIM.cornice.tall : b.h }), ...(sloped ? cornice(rings, b.h) : [])];
+  const spec = PORTICOS[b.name];
   const ring = spec && biggest(rings);
   const dir = spec && facingOf(spec, ring, quads);
   const front = dir && frontEdge(ring, 10, dir);

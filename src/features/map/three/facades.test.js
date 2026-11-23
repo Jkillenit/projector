@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cornice, facadeShapes, facingOf, frontEdge, outsetRing, portico, PORTICOS, TRIM } from "./facades.js";
+import { belts, cornice, facadeShapes, facingOf, frontEdge, outsetRing, portico, PORTICOS, TRIM, wallOf, wallShade } from "./facades.js";
 import { mergeBuildings } from "./campusMesh.js";
 import { inRing } from "./extrude.js";
 import campus from "../campus.json";
@@ -65,6 +65,38 @@ describe("cornice", () => {
   });
 });
 
+describe("belts", () => {
+  it("gives a stone base and a line at each floor below the roof edge, clear of the windows", () => {
+    const shapes = belts([rect(0, 0, 20, 12)], 14, { top: 13.4 });
+    expect(shapes.every((s) => s.trim)).toBe(true);
+    const mids = shapes.slice(1).map((s) => (Math.max(...ys([s])) + Math.min(...ys([s]))) / 2);
+    expect(mids.map((y) => Math.round(y * 10) / 10)).toEqual([3.5, 7, 10.5]);
+    expect(Math.min(...ys([shapes[0]]))).toBe(0);
+    expect(Math.max(...ys([shapes[0]]))).toBeCloseTo(TRIM.base.tall);
+    // the brick tile puts windows 1.2 to 2.9 m above each floor
+    for (const y of mids) expect((y % 3.5 + 3.5) % 3.5 < 1.2 - TRIM.belt.tall || (y % 3.5) > 2.9).toBe(true);
+  });
+  it("gives a one floor shed a base and no lines", () => {
+    expect(belts([rect(0, 0, 10, 10)], 4)).toHaveLength(1);
+  });
+});
+
+describe("wallOf and wallShade", () => {
+  it("uses OSM first, then stone by material, then our list, else brick", () => {
+    expect(wallOf("President's Mansion", { colour: "#5e2612" })).toBe("#5e2612");
+    expect(wallOf("Any Hall", { material: "limestone" })).toBe("stone");
+    expect(wallOf("President's Mansion")).toBe("white");
+    expect(wallOf("Bidgood Hall", { material: "brick" })).toBe(null);
+  });
+  it("is fixed per building, small, and not the same for all", () => {
+    const shades = campus.buildings.map((b) => wallShade(b.id));
+    expect(wallShade("w1")).toBe(wallShade("w1"));
+    expect(Math.min(...shades)).toBeGreaterThanOrEqual(0.9);
+    expect(Math.max(...shades)).toBeLessThanOrEqual(1.08);
+    expect(new Set(shades.map((v) => v.toFixed(2))).size).toBeGreaterThan(10);
+  });
+});
+
 describe("portico", () => {
   const front = frontEdge(rect(0, 0, 30, 20));
   it("stands columns off the wall, under a beam, and a gable on top", () => {
@@ -93,12 +125,12 @@ describe("facingOf", () => {
 });
 
 describe("facadeShapes", () => {
-  it("trims sloped roofs only: not flat roofs, decks or low sheds", () => {
+  it("puts a cornice under sloped roofs only, and no trim on decks or the town", () => {
     const hall = { id: "h", path: path(rect(0, 0, 20, 12)), h: 11 };
-    expect(facadeShapes(hall).length).toBeGreaterThan(0);
-    expect(facadeShapes({ ...hall, roofShape: "flat" })).toEqual([]);
+    const top = (shapes) => Math.max(...ys(shapes));
+    expect(top(facadeShapes(hall))).toBeCloseTo(11 - 0.01);
+    expect(top(facadeShapes({ ...hall, roofShape: "flat" }))).toBeLessThan(11 - 1);
     expect(facadeShapes({ ...hall, plain: true })).toEqual([]);
-    expect(facadeShapes({ ...hall, h: 3 })).toEqual([]);
     expect(facadeShapes({ id: "x", path: "", h: 11 })).toEqual([]);
   });
   it("gives every portico hall that is in the data a columned front facing its way", () => {
