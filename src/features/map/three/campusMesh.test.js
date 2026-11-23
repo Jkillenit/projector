@@ -50,7 +50,8 @@ describe("mergeBuildings", () => {
     const us = [];
     const vs = [];
     m.isRoof.forEach((roof, v) => {
-      if (roof) expect([m.uvs[v * 2], m.uvs[v * 2 + 1]]).toEqual([m.positions[v * 3], m.positions[v * 3 + 2]]);
+      if (m.isTrim[v]) expect([m.uvs[v * 2], m.uvs[v * 2 + 1]]).toEqual([0, 0]); // #167: the cornice is plain trim
+      else if (roof) expect([m.uvs[v * 2], m.uvs[v * 2 + 1]]).toEqual([m.positions[v * 3], m.positions[v * 3 + 2]]);
       else {
         us.push(m.uvs[v * 2]);
         vs.push(m.uvs[v * 2 + 1]);
@@ -75,7 +76,7 @@ describe("mergeBuildings", () => {
   it("handles the whole campus", () => {
     const m = mergeBuildings(campus.buildings);
     expect(m.owners.length).toBeGreaterThan(campus.buildings.length * 0.95);
-    expect(Math.max(...m.indices)).toBe(m.positions.length / 3 - 1);
+    expect(m.indices.reduce((a, b) => Math.max(a, b), 0)).toBe(m.positions.length / 3 - 1);
   });
 });
 

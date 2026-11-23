@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui/index.jsx";
 import campus from "../campus.json";
 import { extrudeRings, pathToRings } from "./extrude.js";
 import { BOWL, BOWL_PARTS, fieldUV, markedFields, parkingLots, stadiumBowl, stallFade, underBowl } from "./fields.js";
+import { wallOf, wallShade } from "./facades.js";
 import { addDashes, addRibbons, CURB, GROUND_LAYERS, isDeck, isLandmark, MAIN_ROADS, mergeBuildings, PATH_WIDTH, roadWidth, roofTone } from "./campusMesh.js";
 import { blend, cameraFrom, clipFor, distanceFor, MODES, poseFor, poseOf, SIZE_RANGE, viewFor } from "./camera.js";
 import { footprint, labelBox, thinLabels } from "./labels.js";
@@ -12,6 +13,7 @@ import { createStage, hasWebGL, loadThree, NO_LOAD, NO_WEBGL, token } from "./st
 import { fallLeaf, insideOf, placeTrees, seasonOf, seeded } from "./trees.js";
 import { roofOf } from "./roofs.js";
 import { shadowOffset } from "./quality.js";
+import { IDLE, keep, perfLine, summarize } from "./perf.js";
 import { seedOf } from "../campusMap.js";
 import { isReducedMotion } from "../../../shell/motion.js";
 
@@ -26,9 +28,38 @@ const MACRO = { grass: 0.09, water: 0.07, asphalt: 0.05, concrete: 0.03 }; // bi
 const BASE = { dark: 0.72, height: 7 }; // walls are darker where they meet the ground
 const QUIET = { h: 8, labels: 800 }; // #165: the town outside campus: walls no taller than this (m); names only when the view is this narrow (m)
 
+// The phone check (#129): with ?perf in the address (#/map?perf=1), a line over the map shows the tier, frame rate
+// and draw time. Off for everyone else. Shows nothing about the student.
+function perfMeter(host) {
+  if (!new URLSearchParams(window.location.hash.split("?")[1] || "").has("perf")) return null;
+  const line = document.createElement("p");
+  line.className = "map-perf";
+  line.setAttribute("aria-hidden", "true");
+  host.parentElement.appendChild(line);
+  let [draws, frames, last, loop, shown, tier] = [[], [], 0, 0, 0, ""];
+  const show = () => { line.textContent = perfLine(summarize(draws, frames), tier); };
+  // Count real screen frames while the map moves, not draws: a slow finger sends fewer moves than the screen could show.
+  const tick = (t) => {
+    frames = keep(frames, t);
+    if (t - shown > 500) { shown = t; show(); }
+    loop = t - last < IDLE ? requestAnimationFrame(tick) : 0;
+  };
+  return {
+    start(t) { tier = t; show(); },
+    draw(at, ms) {
+      draws = keep(draws, ms);
+      last = at;
+      loop ||= requestAnimationFrame(tick);
+    },
+    remove() { cancelAnimationFrame(loop); line.remove(); },
+  };
+}
+
 /** Builds the scene once. Returns { setPicked, setPins, setMode, fly, zoom, reset, dispose }. */
 function setup(three, host, { buildings, center, mode: firstMode, nature, onPick }) {
-  const stage = createStage(three, host, { outdoor: true, theme: () => theme(), overlay: (size) => overlay(size) });
+  const meter = perfMeter(host);
+  const stage = createStage(three, host, { outdoor: true, theme: () => theme(), overlay: (size) => overlay(size), onDraw: meter?.draw });
+  meter?.start(stage.tier);
   const { THREE, camera, controls, render, add, geometry, solid, renderer, shadows } = stage;
   controls.screenSpacePanning = false; // pan along the ground, so 2.5D and 3D never lift off it
   let mode = firstMode;
@@ -51,7 +82,8 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const flat = (geo, order, kind) => {
     geo.setAttribute("uv", new THREE.BufferAttribute(worldUV(geo.attributes.position.array, TILE[kind]), 2));
     // #179: grain fades to the tile's flat tone from far away, and big soft patches keep lawns and lots from looking tiled.
-    const mat = shaded(new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide }), { detail: { mean: meanTone(textureCanvas(kind)), ...FADE }, macro: MACRO[kind] });
+    // #129: forceSinglePass on flat ground. A see-through two-sided layer is otherwise drawn twice and its shader re-checked each draw.
+    const mat = shaded(new THREE.MeshLambertMaterial({ map: texture(kind), depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true }), { detail: { mean: meanTone(textureCanvas(kind)), ...FADE }, macro: MACRO[kind] });
     const m = add(new THREE.Mesh(geo, mat));
     m.renderOrder = order - 100;
     m.position.y = order * 0.05;
@@ -120,7 +152,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       if (!s.indices.length) continue;
       const geo = geometry(s.positions, s.indices);
       geo.setAttribute("uv", new THREE.Float32BufferAttribute(s.uvs, 2));
-      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide, transparent: look === "stalls" })));
+      const m = add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, transparent: look === "stalls" })));
       Object.assign(m, { renderOrder: order - 100, receiveShadow: true });
       m.position.y = order * 0.05;
       m.userData.look = look;
@@ -155,8 +187,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   const roofMat = shaded(new THREE.MeshLambertMaterial({ map: texture("roof"), vertexColors: true }), { detail: { mean: meanTone(textureCanvas("roof")), ...FADE } });
   const deckMat = shaded(new THREE.MeshLambertMaterial({ map: texture("deck"), vertexColors: true }), { base: BASE }); // #146: concrete bands
   const looks = new Map();
+  const quads = campus.areas.filter((a) => /quad$/i.test(a.name || "")).map((a) => a.c); // #167: porticos face the nearest one
   const buildingMesh = (list, mats = [wallMat, roofMat, deckMat]) => {
-    const merged = mergeBuildings(list);
+    const merged = mergeBuildings(list, { quads });
     const geo = geometry(merged.positions, merged.indices);
     const scale = (i) => (merged.isRoof[i >> 1] ? TILE.roof : i % 2 ? BRICK.floor : BRICK.bay);
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(merged.uvs.map((x, i) => x / scale(i)), 2));
@@ -171,10 +204,10 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   };
   // Unnamed buildings: not tappable, so their roofs are grayer than named ones.
   const unnamed = outlines.map((o, i) => {
-    looks.set(`o${i}`, o);
+    looks.set(`o${i}`, { ...o, wall: wallOf("", o) });
     return { id: `o${i}`, path: o.path, h: o.h, quiet: o.quiet, roofShape: o.roofShape };
   });
-  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], landmark: isLandmark(b.name), deck: isDeck(b.name), flat: roofOf({ ...b, plain: b.quiet || isDeck(b.name) }) === "flat" });
+  for (const b of buildings) looks.set(b.id, { ...nature.looks?.[b.id], wall: wallOf(b.name, nature.looks?.[b.id]), landmark: isLandmark(b.name), deck: isDeck(b.name), flat: roofOf({ ...b, plain: b.quiet || isDeck(b.name) }) === "flat" });
   const context = buildingMesh(unnamed.filter((b) => !b.quiet));
   const town = buildingMesh(buildings.filter((b) => !b.quiet));
   // Off campus: no brick or windows, no cast shadow, one plain material. Named ones are still tappable.
@@ -246,7 +279,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     const s = groundShade([...buildings, ...outlines, ...(bowl ? [{ path: stadiumArea.path }] : [])].flatMap((b) => pathToRings(b.path)));
     const geo = geometry(s.positions, s.indices);
     geo.setAttribute("color", new THREE.Float32BufferAttribute(s.colors, 4));
-    const m = add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide })));
+    const m = add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true })));
     m.renderOrder = GROUND_LAYERS.length - 100;
     m.position.y = GROUND_LAYERS.length * 0.05;
   }
@@ -265,7 +298,9 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       for (const r of pathToRings(b.path)) rings.push(r.map(([x, z]) => [x + dx, z + dz]));
     }
     patch(new THREE.Mesh(solid(rings, 0.01, { walls: false }), shadeMat));
-    const blobs = patch(new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2), shadeMat, trees.length));
+    // #129: the blobs get their own copy. One material on an InstancedMesh and a plain Mesh makes three
+    // work out its shader again twice every draw, which cost phones about a third of each frame.
+    const blobs = patch(new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2), shadeMat.clone(), trees.length));
     const o = new THREE.Object3D();
     trees.forEach(([x, z, s], i) => {
       const [dx, dz] = shadowOffset(TRUNK[s] + CROWN[s] * 0.6);
@@ -313,18 +348,20 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
   };
   const paintBuildings = (mesh, on, near) => {
     const attr = mesh.geometry.attributes.color;
-    const { owners, isRoof, isTrim } = mesh.userData.merged;
+    const { owners, isRoof, isTrim, isFlat } = mesh.userData.merged;
     const [brick, landmark] = [token("--map-brick"), token("--map-landmark")];
-    const stone = new THREE.Color(token("--map-path")); // landmark columns (#130) and deck concrete (#146): light stone, like the paths
+    const stone = new THREE.Color(token("--map-path")); // trim: columns and cornices (#130, #167), and deck concrete (#146): light stone, like the paths
     const slates = mesh === town ? ["--map-slate-1", "--map-slate-2", "--map-slate-3"].map(token) : [token("--map-context")];
     const pale = new THREE.Color(token("--map-context"));
     for (const o of owners) {
       const look = mesh === quiet ? {} : looks.get(o.id);
       const lit = o.id === picked ? on : o.id === hovered ? near : mesh === quiet ? pale : null;
-      const wall = lit || color(look.colour, look.landmark ? landmark : look.deck ? stone : brick);
+      // #167: OSM's colour or our light walls first, then stone, then brick with a small tint of its own.
+      const wall = lit || (look.wall === "stone" ? stone : look.wall ? color(look.wall, brick) : look.deck ? stone : look.landmark ? color(null, landmark) : color(null, brick).multiplyScalar(wallShade(o.id)));
       const roof = lit || color(look.roof, look.flat ? pale.getStyle() : slates[roofTone(o.id, slates.length)]); // #166: big flat roofs are a light membrane
       const trim = lit || stone;
-      for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? roof : wall).toArray(attr.array, v * 3);
+      const flat = lit || pale; // #200: a flat roof inside a landmark with sloped roofs, like Gorgas's stacks
+      for (let v = o.start; v < o.end; v++) (isTrim[v] ? trim : isRoof[v] ? (isFlat?.[v] ? flat : roof) : wall).toArray(attr.array, v * 3);
     }
     attr.needsUpdate = true;
   };
@@ -399,7 +436,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
     centerLine.material.opacity = stallFade(view) * 0.8;
     // The zoom buttons and the OSM credit sit over the map too; names stay clear of them.
     const box = host.getBoundingClientRect();
-    const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit")].map((el) => {
+    const pinBoxes = [...host.parentElement.querySelectorAll(".map-zoom, .map-credit, .map-perf")].map((el) => {
       const r = el.getBoundingClientRect();
       return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height };
     });
@@ -582,6 +619,7 @@ function setup(three, host, { buildings, center, mode: firstMode, nature, onPick
       cancelAnimationFrame(hoverFrame);
       for (const t of [...Object.values(textures), wallMat, roofMat, deckMat, plainMat, ...fieldMeshes.map((m) => m.material.map).filter(Boolean), ...(bowl ? bowl.material.flatMap((m) => [m, m.map].filter(Boolean)) : [])]) t.dispose();
       host.removeEventListener("keydown", onKey);
+      meter?.remove();
       stage.dispose();
     },
   };

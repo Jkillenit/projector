@@ -1,20 +1,23 @@
 // Pure: campus.json shapes as flat arrays the 3D view hands to three. Does not import three.
 import { seedOf } from "../campusMap.js";
+import { facadeShapes } from "./facades.js";
 import { landmarkShapes } from "./landmarks.js";
 import { roofedShapes } from "./roofs.js";
 
 /**
  * All buildings as one shape, so the view draws them in a single mesh.
- * Landmarks (#130) use their own shapes; their trim (columns) is marked per vertex in isTrim. Roofs come from roofs.js (#166).
- * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], indices: brick walls, then deck walls, then roofs,
+ * Landmarks (#130) use their own shapes. Other halls get light trim from facades.js (#167): a cornice, and columns on a few.
+ * Trim is marked per vertex in isTrim, and flat roofs inside a sloped roofed landmark in isFlat (#200). Roofs come from roofs.js (#166). quads: [[x, z], ...] quad middles, for porticos that face one.
+ * Returns { positions, uvs (meters), isRoof: [per vertex], isTrim: [per vertex], isFlat: [per vertex], indices: brick walls, then deck walls, then roofs,
  * wallIndices: how many indices are walls (both kinds), deckIndices: how many of those are deck walls (the last ones),
  * owners: [{ id, start, end }] (vertex ranges, for coloring one building), triOwner: [id per triangle] (for tapping) }.
  */
-export function mergeBuildings(buildings) {
+export function mergeBuildings(buildings, { quads = [] } = {}) {
   const positions = [];
   const uvs = [];
   const isRoof = [];
   const isTrim = [];
+  const isFlat = [];
   const owners = [];
   const walls = { indices: [], owner: [] };
   const decks = { indices: [], owner: [] };
@@ -23,13 +26,14 @@ export function mergeBuildings(buildings) {
     const wallPart = isDeck(b.name) ? decks : walls;
     const start = positions.length / 3;
     const roofed = { ...b, plain: b.plain ?? (b.quiet || isDeck(b.name)) }; // #166: decks and the quiet town keep a flat top
-    for (const s of landmarkShapes(roofed) || roofedShapes(roofed)) {
+    for (const s of landmarkShapes(roofed) || [...roofedShapes(roofed), ...facadeShapes(roofed, quads)]) {
       const base = positions.length / 3;
       for (const v of s.positions) positions.push(v);
       for (const v of s.uvs) uvs.push(v);
       for (let v = 0; v < s.positions.length / 3; v++) {
         isRoof.push(v >= s.wallVerts);
         isTrim.push(!!s.trim);
+        isFlat.push(!!s.flat);
       }
       s.indices.forEach((i, k) => {
         const part = k < s.wallIndices ? wallPart : roofs;
@@ -41,7 +45,7 @@ export function mergeBuildings(buildings) {
     if (end > start) owners.push({ id: b.id, start, end });
   }
   return {
-    positions, uvs, isRoof, isTrim, owners,
+    positions, uvs, isRoof, isTrim, isFlat, owners,
     indices: walls.indices.concat(decks.indices, roofs.indices),
     wallIndices: walls.indices.length + decks.indices.length,
     deckIndices: decks.indices.length,

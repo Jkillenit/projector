@@ -2,6 +2,7 @@
 import { inRing, pathToRings } from "./extrude.js";
 import { roadWidth } from "./campusMesh.js";
 import { seedOf } from "../campusMap.js";
+import { frontEdge } from "./facades.js";
 
 const CELL = 50; // grid cell for the obstacle lookup, meters
 const GAP = 5; // no two trees closer than this
@@ -12,6 +13,19 @@ const WOOD_EVERY = 13; // woods: a jittered grid this tight
 const LAWN = { edgeEvery: 15, inset: 7, middleEvery: 21 }; // lawns: clusters near the edge, some in the middle (#168: about twice as many)
 const GROVE = { every: 15, keep: 0.72 }; // groves like the Quad: dense, under big trees (#168)
 const NO_STREET_TREES = new Set(["service"]); // driveways and alleys
+/** Landmarks with an open lawn in front, checked against a photo (#200): meters out from the front wall, and past each end of it. */
+export const OPEN_FRONT = { "Amelia Gayle Gorgas Library": { out: 28, side: 10 } };
+
+/** The open lawn in front of a landmark in OPEN_FRONT, as a ring, or null. */
+export function openFront(b) {
+  const spec = OPEN_FRONT[b?.name];
+  const [ring] = spec ? pathToRings(b.path) : [];
+  const f = ring && frontEdge(ring);
+  if (!f) return null;
+  const u = [(f.b[0] - f.a[0]) / f.len, (f.b[1] - f.a[1]) / f.len];
+  const at = (t, d) => [f.a[0] + u[0] * t + f.out[0] * d, f.a[1] + u[1] * t + f.out[1] * d];
+  return [at(-spec.side, 0), at(f.len + spec.side, 0), at(f.len + spec.side, spec.out), at(-spec.side, spec.out)];
+}
 
 /** A small seeded random generator (mulberry32): the same seed gives the same numbers. */
 export function seeded(seed) {
@@ -104,11 +118,15 @@ function obstacles() {
  * nature: campus-nature.json. buildings: campus.json buildings ({ path }). bounds: [x0, y0, x1, y1], seeded fill stays inside it.
  * groves: rings to plant densely, like the Quad under its oaks; their trees are never the small size.
  * In order: OSM trees, OSM tree rows, street trees on campus roads, groves, then seeded fill on woods, lawns and the campus.
- * None stand inside a building, on a road or path, in water, a parking lot or a sports field.
+ * None stand inside a building, on a road or path, in water, a parking lot or a sports field, or on the open lawn in front of a landmark.
  */
 export function placeTrees(nature, buildings = [], bounds = [-Infinity, -Infinity, Infinity, Infinity], groves = []) {
   const block = obstacles();
-  for (const b of buildings) for (const r of pathToRings(b.path)) block.shape(r, CURB);
+  for (const b of buildings) {
+    for (const r of pathToRings(b.path)) block.shape(r, CURB);
+    const lawn = openFront(b);
+    if (lawn) block.shape(lawn);
+  }
   for (const o of nature.outlines || []) for (const r of pathToRings(o.path)) block.shape(r, CURB);
   for (const k of ["water", "parking", "pitch", "track"]) for (const r of pathToRings(nature[k])) block.shape(r, 1);
   for (const [type, d] of Object.entries(nature.roads || {})) for (const l of lines(d)) block.line(l, roadWidth(type) / 2 + CURB);

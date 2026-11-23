@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fallLeaf, insideOf, inRing, lines, placeTrees, seasonOf, seeded } from "./trees.js";
+import { fallLeaf, insideOf, inRing, lines, openFront, placeTrees, seasonOf, seeded } from "./trees.js";
 import { pathToRings } from "./extrude.js";
 import { roadWidth } from "./campusMesh.js";
 import nature from "../campus-nature.json";
@@ -105,6 +105,15 @@ describe("placeTrees on the real campus data", () => {
       expect(rings.some((r) => inRing(p, r))).toBe(false);
       expect(roads.some(({ pts, half }) => pts.some((a, i) => i > 0 && segDist(p, pts[i - 1], a) < half))).toBe(false);
     }
+  });
+
+  it("keeps the lawn in front of Gorgas open, on its Quad side (#200)", () => {
+    const g = campus.buildings.find((b) => b.name === "Amelia Gayle Gorgas Library");
+    const lawn = openFront(g);
+    expect(lawn).toHaveLength(4);
+    expect(Math.min(...lawn.map((p) => p[1]))).toBeGreaterThan(g.c[1]); // south of the middle: the Quad
+    expect(trees.filter((t) => inRing(t, lawn))).toEqual([]);
+    expect(openFront(campus.buildings.find((b) => b.name === "Bidgood Hall"))).toBe(null);
   });
 });
 

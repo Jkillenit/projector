@@ -1275,6 +1275,7 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
   .map-tools .ui-seg-btn, .walk-side .ui-seg-btn { height: 44px; }
 }
 .map-zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
+.map-perf { position: absolute; left: 8px; top: 8px; max-width: calc(100% - 80px); margin: 0; font-size: 12px; line-height: 1.4; color: var(--text); background: var(--surface); padding: 2px 6px; border-radius: var(--r-sm); pointer-events: none; z-index: 1; } /* #129: only with ?perf; over the names, which keep clear of it */
 .map-credit { position: absolute; right: 8px; bottom: 6px; font-size: 12px; color: var(--muted); background: var(--surface); padding: 1px 6px; border-radius: var(--r-sm); }
 .map-side { gap: 10px; max-height: 70vh; overflow: auto; }
 /* Wide screens: the map fills the window's width and height, not a 4:3 box in a 1240 px column. */

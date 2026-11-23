@@ -29,9 +29,10 @@ export const token = (name) => getComputedStyle(document.documentElement).getPro
 /**
  * A 3D stage in host. theme() is called now and whenever the theme changes, so colors follow our tokens.
  * Pass overlay(size) to get an HTML layer over the scene (CSS2DObjects): it runs before each draw of that layer.
- * Returns { THREE, scene, camera, controls, render, add, geometry, solid, dispose }.
+ * Pass onDraw(at, ms) to hear when each draw started and how long it took (#129, the ?perf readout).
+ * Returns { THREE, scene, camera, controls, render, add, geometry, solid, tier, dispose }.
  */
-export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { near = 1, far = 12000, theme = () => {}, overlay = null, outdoor = false } = {}) {
+export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { near = 1, far = 12000, theme = () => {}, overlay = null, outdoor = false, onDraw = null } = {}) {
   const quality = deviceTier();
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(quality.maxPixelRatio, window.devicePixelRatio || 1));
@@ -101,14 +102,23 @@ export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { nea
   };
 
   const size = { w: 1, h: 1 };
-  const render = () => {
+  const draw = () => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    const at = performance.now();
     if (shadows) followSun();
     if (outdoor) haze();
     renderer.render(scene, camera);
-    if (!html) return;
-    overlay(size);
-    html.render(scene, camera);
+    if (html) {
+      overlay(size);
+      html.render(scene, camera);
+    }
+    onDraw?.(at, performance.now() - at);
   };
+  // #129: at most one draw per screen frame. A drag on a phone can send more moves than the screen shows;
+  // drawing for each one did work nobody saw and made the next frame late.
+  let frame = 0;
+  const render = () => { frame ||= requestAnimationFrame(draw); };
   controls.addEventListener("change", render);
   const fit = () => {
     const w = host.clientWidth || 1;
@@ -118,7 +128,7 @@ export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { nea
     Object.assign(size, { w, h });
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    render();
+    draw(); // now: a resized canvas is blank until drawn
   };
   const resize = new ResizeObserver(fit);
   resize.observe(host);
@@ -135,10 +145,11 @@ export function createStage({ THREE, OrbitControls, CSS2DRenderer }, host, { nea
   media?.addEventListener?.("change", recolor);
 
   return {
-    THREE, scene, camera, controls, renderer, render, add, geometry, solid, shadows,
+    THREE, scene, camera, controls, renderer, render, add, geometry, solid, shadows, tier: quality.name,
     /** Call once the scene is built. */
     start() { recolor(); fit(); },
     dispose() {
+      cancelAnimationFrame(frame);
       resize.disconnect();
       themeWatch.disconnect();
       media?.removeEventListener?.("change", recolor);
