@@ -1,0 +1,79 @@
+[
+  {
+    "id": "math126-dropin",
+    "course": "MATH 126",
+    "title": "Calculus II drop-in tutoring (demo)",
+    "where": "Lloyd Hall 111",
+    "days": [1, 3],
+    "start": "18:00",
+    "end": "20:00",
+    "signUp": ["No sign-up needed. Just drop in.", "Bring your homework or notes."],
+    "demo": true
+  },
+  {
+    "id": "math126-review",
+    "course": "MATH 126",
+    "title": "Calculus II exam review (demo)",
+    "where": "Gorgas Library 205",
+    "days": [4],
+    "start": "17:00",
+    "end": "19:00",
+    "signUp": ["Open the tutoring booking page", "Sign in with your UA account", "Pick the Thursday review and tap Book"],
+    "demo": true
+  },
+  {
+    "id": "ch101-dropin",
+    "course": "CH 101",
+    "title": "General Chemistry drop-in tutoring (demo)",
+    "where": "Shelby Hall 2015",
+    "days": [2, 4],
+    "start": "16:00",
+    "end": "18:00",
+    "signUp": ["No sign-up needed. Just drop in."],
+    "demo": true
+  },
+  {
+    "id": "engl101-writing",
+    "course": "ENGL 101",
+    "title": "Essay help for English Composition (demo)",
+    "where": "Lloyd Hall 322",
+    "days": [1, 2, 3, 4],
+    "start": "10:00",
+    "end": "16:00",
+    "signUp": ["Open the tutoring booking page", "Sign in with your UA account", "Pick a time and tap Book"],
+    "demo": true
+  },
+  {
+    "id": "ac310-dropin",
+    "course": "AC 310",
+    "title": "Intermediate Accounting study table (demo)",
+    "where": "Alston Hall 140",
+    "days": [3],
+    "start": "15:00",
+    "end": "17:00",
+    "signUp": ["No sign-up needed. Just drop in."],
+    "demo": true
+  },
+  {
+    "id": "fi302-dropin",
+    "course": "FI 302",
+    "title": "Business Finance problem session (demo)",
+    "where": "Bidgood Hall 205",
+    "days": [2],
+    "start": "18:00",
+    "end": "19:30",
+    "signUp": ["No sign-up needed. Just drop in."],
+    "demo": true
+  },
+  {
+    "id": "psy101-online",
+    "course": "PSY 101",
+    "title": "Intro Psychology online review (demo)",
+    "where": "Online (Zoom)",
+    "days": [0],
+    "start": "19:00",
+    "end": "20:00",
+    "signUp": ["Open the tutoring booking page", "Sign in with your UA account", "Tap Book to get the Zoom link"],
+    "demo": true
+  }
+]
