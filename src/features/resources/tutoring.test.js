@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import campus from "../map/campus.json";
 import seed from "../../demo/tutoring.json";
-import { courseKey, placeTutoring, tutoringFor } from "./tutoring.js";
+import { courseKey, placeTutoring, tutoringCourses, tutoringFor } from "./tutoring.js";
 
 const places = [...campus.buildings, ...campus.areas];
 const session = (over) => ({ id: "s", course: "MATH 126", title: "Drop-in", where: "Lloyd Hall 111", days: [1], start: "18:00", end: "19:00", signUp: [], demo: true, ...over });
@@ -50,6 +50,13 @@ describe("tutoringFor", () => {
   it("returns nothing for a course with no tutoring, or no code", () => {
     expect(tutoringFor("MKT 300", { sessions, places })).toEqual([]);
     expect(tutoringFor("", { sessions, places })).toEqual([]);
+  });
+});
+
+describe("tutoringCourses", () => {
+  it("lists each course with tutoring once, in order", () => {
+    const sessions = [{ course: "MATH 126" }, { course: "ch 101" }, { course: "Math126" }];
+    expect(tutoringCourses({ sessions })).toEqual(["MATH 126", "CH 101"]);
   });
 });
 

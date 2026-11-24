@@ -2,12 +2,15 @@
  * The scripted guide. Pure rules, no LLM, no network. Safety order matters:
  *   1. crisis    -> 988 and the Counseling Center, no picks
  *   2. sensitive -> one official office, never stored
- *   3. matched   -> 2 or 3 resources, each with a one line reason
- *   4. not_sure  -> the full directory and who to ask
+ *   3. course    -> a class the student named by number or code (#211): that class's tutoring,
+ *                   "Which one?" when the number fits several, or the tutoring list when it fits none
+ *   4. matched   -> 2 or 3 resources, each with a one line reason
+ *   5. not_sure  -> the full directory and who to ask
  * Do not weaken these checks without the safety lead's review (see CLAUDE.md).
  */
 
 import { near } from "../../lib/fuzzy.js";
+import { HELP_INTENT, courseRefs, coursesAsked } from "./courseTutoring.js";
 
 export const NOT_SURE_MESSAGE = "I'm not sure. Here's the full directory and who to ask.";
 export const CRISIS_MESSAGE = "You are not alone. Please talk to a person right now. Call or text 988 any time.";
@@ -103,10 +106,40 @@ function rank(text, student, resources, { min = 3, max = 3 } = {}) {
     .map((x) => toItem(x.r, whyFor(x.hits, x.r)));
 }
 
+/** Tutoring for any class, offered next to (or instead of) one class's tutoring. Never a sensitive office. */
+const generalTutoring = (resources) =>
+  ["ingenuity-lab-tutoring", "center-for-academic-success"]
+    .map((id) => (resources || []).find((r) => r.id === id && !r.sensitive))
+    .filter(Boolean)
+    .map((r) => toItem(r, r.category === "tutoring" ? "Free tutoring for many classes." : "Study help for any class."));
+
 /**
- * @returns {{ kind: "crisis"|"sensitive"|"matched"|"not_sure", items: object[], message: string, doNotStore?: boolean }}
+ * Step 3 (#211): the student named one of their classes and asked for help. Only course codes come in, never grades.
+ * `courses`: the student's course codes. `tutoringFor(code)`: that class's sessions. `tutoringCourses`: codes with tutoring.
  */
-export function match(text, student, resources) {
+function courseAnswer(text, resources, { courses, tutoringFor = () => [], tutoringCourses = [] }) {
+  if (!HELP_INTENT.test(text) || !courseRefs(text).length) return null;
+  const asked = coursesAsked(text, courses);
+  if (asked.length > 1) return { kind: "which_course", items: [], choices: asked, message: "Which one?" };
+  if (asked.length === 1) {
+    const course = asked[0];
+    const sessions = tutoringFor(course) || [];
+    const message = sessions.length ? `Tutoring for ${course}.` : `There is no tutoring just for ${course} yet. These help with any class.`;
+    return { kind: "course", items: generalTutoring(resources), course, sessions, message };
+  }
+  return {
+    kind: "course_none",
+    items: generalTutoring(resources),
+    catalog: tutoringCourses,
+    message: "I could not find that class in your classes. Here is the class tutoring we know about, then tutoring for any class.",
+  };
+}
+
+/**
+ * `options.courses` (the student's course codes) turns on step 3. Without it, the guide works as before.
+ * @returns {{ kind: "crisis"|"sensitive"|"course"|"which_course"|"course_none"|"matched"|"not_sure", items: object[], message: string, doNotStore?: boolean }}
+ */
+export function match(text, student, resources, options = {}) {
   const q = normalize(text);
 
   if (CRISIS_PATTERNS.some((p) => p.test(q))) {
@@ -126,6 +159,11 @@ export function match(text, student, resources) {
   if (group) {
     const office = (resources || []).find((r) => r.id === group.id);
     return { kind: "sensitive", items: office ? [toItem(office, "This office handles it. Talk to a person there.")] : [], message: SENSITIVE_MESSAGE, doNotStore: true };
+  }
+
+  if (options.courses) {
+    const answer = courseAnswer(text, resources, options);
+    if (answer) return answer;
   }
 
   const items = rank(text, student, resources || []);

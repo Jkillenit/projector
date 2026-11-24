@@ -9,6 +9,7 @@ import { checkedLabel, signInNeeded, siteUrl, sourceName, stepsOf } from "../res
 import { ASK_COPY, EXAMPLE_QUESTIONS } from "./copy.js";
 import { match, orgsAsResources } from "./matcher.js";
 import { ShowOnMap } from "../map/ShowOnMap.jsx";
+import { tutoringCourses, tutoringFor } from "../resources/tutoring.js";
 
 const FEEDBACK_KEY = "fd.askFeedback";
 const COUNT = ["", "One place fits.", "Two places fit.", "Three places fit."];
@@ -44,6 +45,44 @@ function ResourceAnswer({ item }) {
   );
 }
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const clock = (t) => {
+  const [h, m] = String(t).split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+};
+
+/** One class's tutoring session (#211): when, where, how to sign up, and its pin. */
+function SessionCard({ s }) {
+  const where = s.place ? [s.place.name, s.room].filter(Boolean).join(" ") : s.where;
+  return (
+    <Card className="ask-res">
+      <div className="ask-res-head">
+        <h3 className="ask-res-name">{s.title}</h3>
+        {s.demo ? <Pill tone="neutral">Demo</Pill> : null}
+      </div>
+      <p className="t-small t-muted">{`${(s.days || []).map((d) => DAYS[d]).join(", ")} · ${clock(s.start)} to ${clock(s.end)} · ${where}`}</p>
+      <StepList steps={s.signUp || []} />
+      <span className="show-on-map">
+        {s.mapHref ? <TextLink href={s.mapHref}>Show on map</TextLink> : null}
+        {s.locationNote ? <span className="t-small t-faint">{s.locationNote}</span> : null}
+      </span>
+    </Card>
+  );
+}
+
+/** "I could not find that class": the classes with tutoring as chips; picking one shows its sessions here. */
+function Catalog({ codes }) {
+  const [open, setOpen] = useState(null);
+  return (
+    <>
+      <div className="ui-chips" role="group" aria-label="Classes with tutoring">
+        {codes.map((code) => <Chip key={code} filter pressed={open === code} onClick={() => setOpen(open === code ? null : code)}>{code}</Chip>)}
+      </div>
+      {open ? tutoringFor(open).map((s) => <SessionCard key={s.id} s={s} />) : null}
+    </>
+  );
+}
+
 function Helped({ result }) {
   const [sent, setSent] = useState(false);
   if (sent) return <p className="t-small t-faint">{ASK_COPY.thanks}</p>;
@@ -60,7 +99,7 @@ function Helped({ result }) {
   );
 }
 
-function Answer({ result }) {
+function Answer({ result, onAsk }) {
   if (result.kind === "crisis") {
     const counseling = resources.find((r) => r.id === result.contacts[1].resourceId);
     // Only a verified link or phone number from the resources data is used. Never a typed-in number.
@@ -107,6 +146,27 @@ function Answer({ result }) {
       </div>
     );
   }
+  if (result.kind === "which_course") {
+    return (
+      <div className="stack">
+        <p className="ask-lead">{result.message}</p>
+        <div className="ui-chips" role="group" aria-label="Your classes">
+          {result.choices.map((code) => <Chip key={code} onClick={() => onAsk(`I need tutoring for ${code}`)}>{code}</Chip>)}
+        </div>
+      </div>
+    );
+  }
+  if (result.kind === "course" || result.kind === "course_none") {
+    return (
+      <div className="stack">
+        <p className="ask-lead">{result.message}</p>
+        {result.kind === "course" ? result.sessions.map((s) => <SessionCard key={s.id} s={s} />) : <Catalog codes={result.catalog} />}
+        {result.items.length ? <p className="t-small t-muted">Tutoring for any class:</p> : null}
+        {result.items.map((item) => <ResourceAnswer key={item.resource.id} item={item} />)}
+        <Helped result={result} />
+      </div>
+    );
+  }
   if (result.kind === "matched") {
     return (
       <div className="stack">
@@ -139,8 +199,9 @@ function Answer({ result }) {
  * The scripted guide. Crisis and private topics are checked first by the matcher, before anything else,
  * and nothing on this screen is saved: the conversation lives in memory and is gone when you leave.
  * `seed`: { text, prefill } to ask right away, or with `prefill` just to put in the box.
+ * `courseCodes`: the student's course codes ("MATH 126"), so "I'm failing 126" finds that class's tutoring (#211).
  */
-export function AskScreen({ profile, seed }) {
+export function AskScreen({ profile, seed, courseCodes }) {
   const [text, setText] = useState("");
   const [turns, setTurns] = useState([]);
   const pool = useMemo(() => [...resources, ...orgsAsResources(organizations)], []);
@@ -151,7 +212,8 @@ export function AskScreen({ profile, seed }) {
   const ask = (q) => {
     const question = q.trim();
     if (!question) return;
-    const result = match(question, student, pool);
+    // Only course codes go to the guide, never grades (#211, rule 4).
+    const result = match(question, student, pool, courseCodes ? { courses: courseCodes, tutoringFor, tutoringCourses: tutoringCourses() } : {});
     // A crisis answer clears the screen so nothing else competes with it.
     setTurns((t) => (result.kind === "crisis" ? [{ question, result }] : [...t.filter((x) => x.result.kind !== "crisis"), { question, result }]));
     setText("");
@@ -183,7 +245,7 @@ export function AskScreen({ profile, seed }) {
           turns.map((t, i) => (
             <div key={i} className="ask-turn">
               <p className="ask-you">{t.question}</p>
-              <Answer result={t.result} />
+              <Answer result={t.result} onAsk={ask} />
             </div>
           ))
         ) : (
