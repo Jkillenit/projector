@@ -8,6 +8,7 @@ import { routeHref } from "../../shell/useRoute.js";
 import { checkedLabel, signInNeeded, siteUrl, sourceName, stepsOf } from "../resources/resourceView.js";
 import { ASK_COPY, EXAMPLE_QUESTIONS } from "./copy.js";
 import { match, orgsAsResources } from "./matcher.js";
+import { ShowOnMap } from "../map/ShowOnMap.jsx";
 
 const FEEDBACK_KEY = "fd.askFeedback";
 const COUNT = ["", "One place fits.", "Two places fit.", "Three places fit."];
@@ -33,6 +34,7 @@ function ResourceAnswer({ item }) {
       </div>
       <p className="ask-why"><span className="ask-why-label">{ASK_COPY.whyThis}</span> {item.why}</p>
       <StepList steps={stepsOf(r)} />
+      <ShowOnMap locationId={r.locationId} where={r.location} />
       <div className="card-foot">
         <span>Source: {sourceName(r)}</span>
         <span>{checkedLabel(r)}</span>

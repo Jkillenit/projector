@@ -13,6 +13,7 @@ import { greeting } from "./dueSoon.js";
 
 import { useCampusEvents } from "../campus/useCampusEvents.js";
 import { GuideCard } from "../companion/GuideCard.jsx";
+import { ShowOnMap } from "../map/ShowOnMap.jsx";
 import { tomorrowWalks } from "../map/classLayer.js";
 import { useIndoor } from "../map/useIndoor.js";
 import { useMyClasses } from "../map/useMyClasses.js";
@@ -187,6 +188,7 @@ function HelpItem({ p, style }) {
       <span className="home-help-name">{p.resource.name}</span>
       <span className="t-small t-muted">{p.resource.description}</span>
       <TextLink href={routeHref("campus", ["r", p.resource.id])}>How to get in</TextLink>
+      <ShowOnMap locationId={p.resource.locationId} where={p.resource.location} />
     </li>
   );
 }
@@ -231,6 +233,7 @@ function EventsCard({ interests }) {
               <span className="home-event-body">
                 <span className="home-event-title">{e.title}</span>
                 {e.where ? <span className="t-small t-muted">{e.where}</span> : null}
+                <ShowOnMap where={e.where} online={e.online} />
               </span>
               {e.match.length ? <Pill tone="good" tiny>For you</Pill> : <span />}
             </li>

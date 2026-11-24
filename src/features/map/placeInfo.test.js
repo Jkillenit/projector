@@ -18,6 +18,14 @@ describe("place panel info", () => {
     expect(resourcesAt(null, resources, places)).toEqual([]);
   });
 
+  it("lists resources whose locationId points at this building, even before the text is checked (#209)", () => {
+    const resources = [
+      { id: "writing", name: "Writing Center", location: "TODO verify", locationId: "lloyd-hall" },
+      { id: "library", name: "Library", location: "TODO verify", locationId: "gorgas-library" },
+    ];
+    expect(resourcesAt(byName("Lloyd Hall"), resources, places).map((r) => r.id)).toEqual(["writing"]);
+  });
+
   it("writes the time short for today and with the day for this week", () => {
     const iso = new Date(2026, 10, 9, 18, 0).toISOString(); // Mon Nov 9, 6 PM local
     expect(whenAt(iso, "today")).toBe("6:00 PM");

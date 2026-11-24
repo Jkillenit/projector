@@ -172,5 +172,6 @@ export function orgsAsResources(orgs) {
     source_url: "TODO verify",
     last_checked: "TODO verify",
     verified: false,
+    locationId: o.locationId, // where it meets, for Show on map (#209)
   }));
 }
