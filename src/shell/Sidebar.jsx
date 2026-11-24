@@ -4,6 +4,7 @@ import { CourseDot, Icon } from "../components/ui/index.jsx";
 import { Brand } from "./Brand.jsx";
 import { syncedAgo } from "../features/today/syncedAgo.js";
 import { useCourseStyle } from "./CourseColors.jsx";
+import { flagOn } from "./features.js";
 import { railCode } from "./railCode.js";
 import { routeHref } from "./useRoute.js";
 
@@ -110,6 +111,7 @@ function useRailTip(enabled) {
  */
 export function Sidebar({ route, courses, onSearch, syncBox, rail = false }) {
   const on = (name) => route.name === name;
+  const perCourse = flagOn("courseSidebar");
   const { tip, handlers } = useRailTip(rail);
   return (
     <nav className={`sb${rail ? " is-rail" : ""}`} aria-label="Main" {...handlers}>
@@ -126,10 +128,13 @@ export function Sidebar({ route, courses, onSearch, syncBox, rail = false }) {
       <NavItem href={routeHref("calendar")} icon="calendar" active={on("calendar")}>Calendar</NavItem>
       <NavItem href={routeHref("ask")} icon="ask" active={on("ask")}>Ask</NavItem>
 
-      {courses.length ? <div className="sb-section">Courses</div> : null}
-      {courses.map((c) => (
-        <CourseItem key={c.id} c={c} rail={rail} active={on("course") && route.parts[0] === c.id} />
-      ))}
+      <NavItem href={routeHref("classes")} icon="folder" active={on("classes") || (on("course") && !perCourse)}>Classes</NavItem>
+
+      {/* One entry per course, as before the Classes page (#213). Off unless the courseSidebar flag is on. */}
+      {perCourse && courses.length ? <div className="sb-section">Courses</div> : null}
+      {perCourse
+        ? courses.map((c) => <CourseItem key={c.id} c={c} rail={rail} active={on("course") && route.parts[0] === c.id} />)
+        : null}
 
       <div className="sb-section">Campus</div>
       <NavItem href={routeHref("campus")} icon="book" active={on("campus") && route.parts[0] !== "clubs"}>Resources</NavItem>
