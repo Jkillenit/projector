@@ -1,7 +1,19 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 // #53: `three` loads only inside src/features/map/three/, and only with a dynamic import(), so the 2D map stays small.
-const sources = import.meta.glob(["/src/**/*.{js,jsx}", "!/src/**/*.test.js"], { query: "?raw", import: "default", eager: true });
+// Read from disk with fileURLToPath, not import.meta.glob: Vite's fs guard denies the glob on Windows when the drive letter is lowercase (#206).
+const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
+const walk = (dir) =>
+  readdirSync(dir).flatMap((f) => {
+    const p = join(dir, f);
+    return statSync(p).isDirectory() ? walk(p) : /\.jsx?$/.test(p) && !p.endsWith(".test.js") ? [p] : [];
+  });
+const sources = Object.fromEntries(
+  walk(join(ROOT, "src")).map((p) => ["/" + relative(ROOT, p).split(sep).join("/"), readFileSync(p, "utf8")]),
+);
 const STATIC = /(^|\n)\s*import\s[^;]*?from\s*["']three(\/[^"']*)?["']|(^|\n)\s*import\s*["']three(\/[^"']*)?["']/;
 const ANY = /["']three(\/[^"']*)?["']/;
 

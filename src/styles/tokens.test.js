@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const SRC = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const SRC = fileURLToPath(new URL("..", import.meta.url));
 const tokens = readFileSync(join(SRC, "styles/tokens.css"), "utf8");
 const light = tokens.slice(0, tokens.indexOf(':root[data-theme="dark"]'));
 const dark = tokens.slice(tokens.indexOf(':root[data-theme="dark"]'));
