@@ -152,7 +152,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   else if (route.name === "events") screen = <EventsScreen profile={profile} />;
   else if (route.name === "map") screen = <Suspense fallback={<div className="page" aria-busy="true" />}><MapScreen query={route.query.q} placeId={route.query.place} addKind={route.query.add} addTitle={route.query.title} walk={route.query.walk} room={route.query.room} /></Suspense>;
   else if (route.name === "calendar") screen = <CalendarScreen day={route.query.day} actions={actions} />;
-  else if (route.name === "settings") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
+  else if (route.name === "settings" || route.name === "profile") screen = <SettingsScreen profile={profile} onProfile={onProfile} onPickStudent={onPickStudent} theme={theme} onTheme={onTheme} userCourses={courses} mode={mode} sync={sync} />;
   else if (route.name === "dev") screen = route.parts[0] === "plan" ? <Suspense fallback={<div className="page" aria-busy="true" />}><PlanImporter /></Suspense> : <UiGallery />;
   else screen = <FrontDoorScreen profile={profile} mode={mode} expired={expired} onSignIn={signIn} gradesShown={gradesShown} onGradesShown={setGradesShown} actions={actions} />;
 
@@ -160,9 +160,9 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
     { key: "a-grades", label: gradesShown ? "Hide grades" : "Show grades", run: () => setGradesShown((v) => !v) },
     ...(mode === "live" ? [{ key: "a-signin", label: "Sign in again", run: signIn }] : []),
     { key: "a-theme", label: "Switch theme", run: () => onTheme(theme === "light" ? "dark" : "light") },
-    { key: "a-settings", label: "Open settings", run: () => navigate("settings") },
+    { key: "a-settings", label: "Open profile", run: () => navigate("profile") },
   ];
-  const syncBox = <SyncBox mode={mode} studentName={profile.name} sync={sync} expired={expired} onSettings={() => navigate("settings")} />;
+  const syncBox = <SyncBox mode={mode} studentName={profile.name} sync={sync} expired={expired} onSettings={() => navigate("profile")} />;
   const sidebar = (rail) => <Sidebar route={route} courses={sideCourses} onSearch={() => setPaletteOpen(true)} syncBox={syncBox} rail={rail} />;
 
   return (

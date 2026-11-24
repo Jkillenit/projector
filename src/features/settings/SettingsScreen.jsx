@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import students from "../../demo/students.json";
 import { Button, Card, Chip, Segmented, TextLink } from "../../components/ui/index.jsx";
 import { BLACKBOARD_URL, DISCLAIMER } from "../../constants/app.js";
@@ -8,10 +8,45 @@ import { BlackboardSyncPanel } from "../blackboard/BlackboardSyncPanel.jsx";
 import { SyncBar } from "../blackboard/SyncBar.jsx";
 import { BlackboardTab } from "./BlackboardTab.jsx";
 import { ConnectionsCard } from "./ConnectionsCard.jsx";
+import { checkEmail, checkPhone, cleanPhone } from "./contact.js";
 import { IndoorCard } from "../map/IndoorCard.jsx";
 
 const YEARS = ["Freshman", "Sophomore", "Junior", "Senior"];
 
+/**
+ * An email or phone field (#214). It saves when you leave the field, and only when the value passes its check;
+ * otherwise it says what to fix. Saved on this computer only. Nothing is sent from here.
+ */
+function ContactField({ id, label, type, value, check, clean = (s) => s.trim(), onSave, hint }) {
+  const [draft, setDraft] = useState(value || "");
+  const [error, setError] = useState(null);
+  useEffect(() => setDraft(value || ""), [value]);
+  const save = () => {
+    const problem = check(draft);
+    setError(problem);
+    if (!problem && clean(draft) !== (value || "")) onSave(clean(draft));
+  };
+  return (
+    <div className="set-field">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="ui-input"
+        type={type}
+        value={draft}
+        autoComplete={type === "email" ? "email" : "tel"}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={`${id}-note`}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => e.key === "Enter" && save()}
+      />
+      <span id={`${id}-note`} className={`t-small ${error ? "set-error" : "t-faint"}`} role={error ? "alert" : undefined}>{error || hint}</span>
+    </div>
+  );
+}
+
+/** Profile (#214): who you are, how clubs can reach you, and your connections. `#/settings` still opens it. */
 export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onTheme, userCourses, mode, sync }) {
   const reduced = useReducedMotion();
   const [confirm, setConfirm] = useState(false);
@@ -27,7 +62,7 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
   return (
     <div className="page set-page">
       <header className="page-head">
-        <h1 className="t-display">Settings</h1>
+        <h1 className="t-display">Profile</h1>
       </header>
 
       <Card aria-labelledby="set-you">
@@ -50,6 +85,24 @@ export function SettingsScreen({ profile, onProfile, onPickStudent, theme, onThe
             ))}
           </div>
         </div>
+      </Card>
+
+      <Card aria-labelledby="set-contact">
+        <h2 id="set-contact" className="t-heading">Contact</h2>
+        <p className="t-small t-muted">For club newsletters. Saved on this computer only. Nothing is sent until you subscribe and confirm.</p>
+        <ContactField id="set-email" label="Email" type="email" value={profile.email} check={checkEmail} onSave={(email) => onProfile({ email })} hint="Your UA email works best." />
+        <ContactField id="set-phone" label="Phone (optional)" type="tel" value={profile.phone} check={checkPhone} clean={cleanPhone} onSave={(phone) => onProfile({ phone })} hint="Only if you want texts from a club." />
+      </Card>
+
+      <Card aria-labelledby="set-bb">
+        <h2 id="set-bb" className="t-heading">Blackboard</h2>
+        {mode === "live" ? (
+          <p className="t-small t-muted">You sign in on Blackboard's own page. AL reads your courses and never changes anything there. Sync and sign in are below.</p>
+        ) : (
+          <p className="t-small t-muted">
+            Demo mode: the courses are made up. In the desktop app you sign in on Blackboard's own page, and AL reads your courses. It never asks for your password.
+          </p>
+        )}
       </Card>
 
       <Card aria-labelledby="set-look">

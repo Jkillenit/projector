@@ -6,7 +6,7 @@ import { PROFILE_KEY } from "./demoBridge.js";
 
 export const INTEREST_OPTIONS = interests.map((i) => i.name);
 const CHANGED = "fd-profile-changed";
-const EMPTY = { studentId: null, name: "", classYear: "Freshman", major: "", interests: [], freeTimes: [] };
+const EMPTY = { studentId: null, name: "", classYear: "Freshman", major: "", interests: [], freeTimes: [], email: "", phone: "" };
 
 export function profileFromStudent(s) {
   return { studentId: s.id, name: s.name, classYear: s.class_year, major: s.major, interests: [...s.interests], freeTimes: s.free_times };

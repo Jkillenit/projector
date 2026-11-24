@@ -11,5 +11,5 @@ export const TABS = [
 
 const OWNER = { home: "home", calendar: "calendar", ask: "ask", campus: "campus", events: "campus", map: "map" };
 
-/** Which tab a route belongs to, or null (course pages and settings live in the drawer). */
+/** Which tab a route belongs to, or null (course pages and Profile live in the drawer). */
 export const activeTab = (route) => OWNER[route.name] ?? null;
