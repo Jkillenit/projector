@@ -211,6 +211,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "lloyd-hall",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
@@ -322,6 +323,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "houser-hall",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
@@ -395,6 +397,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "student-services-center",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
@@ -507,6 +510,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "gorgas-library",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
@@ -618,6 +622,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "rec-center",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
@@ -654,6 +659,7 @@
     ],
     "hours": "TODO verify",
     "location": "TODO verify",
+    "locationId": "student-center",
     "contact": "TODO verify",
     "how_to_get_in": [
       {
