@@ -30,9 +30,12 @@ export const ASK_COPY = {
   danger: "If you are in danger right now, call 911.",
 };
 
-/** Sample questions for the empty screen. Together they show all four kinds of answer. */
+/**
+ * Sample questions for the empty screen: class tutoring, a club, a question for a person, and a private topic.
+ * Each one is a row in DEMO.md's Ask lines, and the first is the demo's main line (#212).
+ */
 export const EXAMPLE_QUESTIONS = [
-  "I'm behind in MATH 126 and the exam is Sunday",
+  "I'm failing 126",
   "Find a club for coding",
   "Who do I talk to about a late drop refund?",
   "How do I get extra time on exams?",
