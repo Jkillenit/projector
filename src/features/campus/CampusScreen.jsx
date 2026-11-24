@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import resources from "../../demo/resources.json";
 import { SOURCE_DIRECTORY_URL } from "../clubs/sourceClubs.js";
 import { useClubs } from "../clubs/useClubs.js";
+import { ShowOnMap } from "../map/ShowOnMap.jsx";
 import { Button, Card, Chip, Icon, Pill, StepList, TextLink } from "../../components/ui/index.jsx";
 import { fuzzyFilter } from "../../lib/fuzzy.js";
 import { toStudent } from "../../platform/profile.js";
@@ -24,6 +25,7 @@ function Detail({ r, onAsk, onClose }) {
       <h2 id="campus-detail-name" className="t-title">{r.name}</h2>
       <p className="t-muted">{r.description}</p>
       <SignInPill r={r} />
+      <ShowOnMap locationId={r.locationId} where={r.location} />
       <h3 className="campus-how">How to get in</h3>
       <StepList steps={stepsOf(r)} />
       {url ? (
@@ -87,6 +89,7 @@ function Clubs({ profile, sectionRef }) {
               ) : (
                 <TextLink href={routeHref("campus", ["r", "the-source"])}>How to join</TextLink>
               )}
+              <ShowOnMap locationId={club.locationId} />
             </Card>
           );
         })}

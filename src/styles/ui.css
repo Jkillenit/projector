@@ -220,6 +220,8 @@ button.ui-card:hover { border-color: var(--border-hover); color: inherit; }
 .ui-chip[aria-pressed="true"] { background: var(--accent-tint); border-color: var(--accent-line); color: var(--accent-text); font-weight: 600; }
 @media (max-width: 899px) { .ui-chip { min-height: 44px; } }
 .ui-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Show on map (#209): the link, then a short note like "Location not checked yet" or "Online". */
+.show-on-map { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 
 /* ─── Segmented ─── */
 .ui-seg {

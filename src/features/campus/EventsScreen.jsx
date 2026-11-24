@@ -5,6 +5,7 @@ import { routeHref } from "../../shell/useRoute.js";
 import { interestsOf } from "../clubs/sourceClubs.js";
 import { CALENDAR_URL, eventTime, groupByDay } from "./campusEvents.js";
 import { useCampusEvents } from "./useCampusEvents.js";
+import { ShowOnMap } from "../map/ShowOnMap.jsx";
 
 const FILTERS = [
   ["all", "All"],
@@ -65,7 +66,7 @@ export function EventsScreen({ profile }) {
                   {e.match.length ? <Pill tone="good">Matches your interest in {e.match.join(" and ")}</Pill> : null}
                 </div>
                 {e.url ? <TextLink href={e.url} external>{e.source === "calendar" ? "See it on UA's calendar" : "See it on The SOURCE"}</TextLink> : null}
-                {!e.online && e.where ? <TextLink href={routeHref("map", [], { q: e.where })}>On the map</TextLink> : null}
+                <ShowOnMap where={e.where} online={e.online} />
               </Card>
             ))}
           </div>

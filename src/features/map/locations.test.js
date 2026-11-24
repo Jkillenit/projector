@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import campus from "./campus.json";
 import resources from "../../demo/resources.json";
 import organizations from "../../demo/organizations.json";
-import { LOCATIONS, locationOf, mapHref } from "./locations.js";
+import { LOCATIONS, locationOf, mapHref, mapLink } from "./locations.js";
 
 const places = [...campus.buildings, ...campus.areas];
 
@@ -46,6 +46,40 @@ describe("mapHref", () => {
   it("returns null when there is nowhere to walk to", () => {
     for (const where of [undefined, null, "", "  ", "Online", "Zoom", "TODO verify"]) {
       expect(mapHref(where), String(where)).toBeNull();
+    }
+  });
+});
+
+describe("mapLink", () => {
+  it("links a registry id to its pin, and says when nobody has checked it", () => {
+    expect(mapLink({ locationId: "lloyd-hall" })).toEqual({ href: "#/map?place=w233695042", note: "Location not checked yet" });
+  });
+
+  it("drops the note once a row is checked", () => {
+    LOCATIONS["test-checked"] = { placeId: "w233695042", label: "Lloyd Hall", room: "322", verified: true };
+    try {
+      expect(mapLink({ locationId: "test-checked" })).toEqual({ href: "#/map?place=w233695042", note: null });
+    } finally {
+      delete LOCATIONS["test-checked"];
+    }
+  });
+
+  it("prefers the registry id over place text", () => {
+    expect(mapLink({ locationId: "lloyd-hall", where: "Bidgood Hall" }).href).toBe("#/map?place=w233695042");
+  });
+
+  it("searches the map for place text", () => {
+    expect(mapLink({ where: "Bidgood Hall 116" })).toEqual({ href: "#/map?q=Bidgood+Hall+116", note: null });
+  });
+
+  it("says Online, with no link, for online places", () => {
+    expect(mapLink({ where: "Zoom" })).toEqual({ href: null, note: "Online" });
+    expect(mapLink({ where: "Ferguson Center", online: true })).toEqual({ href: null, note: "Online" });
+  });
+
+  it("returns null when there is no place at all", () => {
+    for (const thing of [undefined, {}, { where: "" }, { where: "TODO verify" }, { locationId: "nowhere" }]) {
+      expect(mapLink(thing)).toBeNull();
     }
   });
 });

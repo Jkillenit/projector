@@ -34,3 +34,16 @@ export function mapHref(where) {
   if (!text || isOnline(text) || /todo/i.test(text)) return null;
   return routeHref("map", [], { q: text });
 }
+
+/**
+ * What a "Show on map" link needs (#209): `{ href, note }`, or null when there is no place at all.
+ * - A registry id wins over place text. An unchecked row still links, with "Location not checked yet".
+ * - Online places get no link and the note "Online".
+ */
+export function mapLink({ locationId, where, online } = {}) {
+  const loc = locationOf(locationId);
+  if (loc) return { href: mapHref(locationId), note: loc.verified ? null : "Location not checked yet" };
+  if (online || isOnline(where)) return { href: null, note: "Online" };
+  const href = mapHref(where);
+  return href ? { href, note: null } : null;
+}
