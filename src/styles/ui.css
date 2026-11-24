@@ -764,6 +764,18 @@ select.ui-input { padding-right: 8px; }
 .home-grade-num { font-size: 14px; color: var(--text); white-space: pre; }
 .is-blurred { filter: blur(6px); user-select: none; }
 .home-grade-note { font-size: 12px; line-height: 16px; color: var(--faint); }
+/* Classes (#213): one card per class; a class at risk shows its tutoring inside the card. */
+.classes-list { display: flex; flex-direction: column; gap: 16px; }
+.class-card { padding: 20px; gap: 10px; }
+.class-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.class-code { font-size: 16px; font-weight: 600; color: var(--text); text-decoration: none; }
+.class-title { flex: 1; min-width: 0; }
+.class-grade { margin-left: auto; }
+.class-help { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+.class-help-any { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+@media (max-width: 599px) {
+  .class-title { order: 1; flex-basis: 100%; }
+}
 .home-help { display: flex; flex-direction: column; padding: 0; list-style: none; }
 .home-help-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 0; }
 .home-help-item:first-child { padding-top: 0; }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { courseStore } from "../../db/courseStore.js";
-import { getCourseLabel } from "../dashboard/courseLabel.js";
+import { friendlyCourse, getCourseLabel } from "../dashboard/courseLabel.js";
 import { isShell } from "../dashboard/courseColor.js";
 import { categoryStanding, computeCourseGrade } from "../grades/courseGrade.js";
 import { letterFor } from "../grades/gradeMath.js";
@@ -47,7 +47,7 @@ export function useHomeData(skip = []) {
         const current = st.current ?? g.current;
         const code = getCourseLabel(c);
         return {
-          course: { id: c.uuid, code, current, letter: letterFor(current, scale), doneW: st.doneW, graded: items.filter((i) => i.score != null).map((i) => ({ name: i.name, at: i.graded_at || i.synced_at })) },
+          course: { id: c.uuid, code, title: friendlyCourse(c).title, current, letter: letterFor(current, scale), doneW: st.doneW, graded: items.filter((i) => i.score != null).map((i) => ({ name: i.name, at: i.graded_at || i.synced_at })) },
           rows: (Array.isArray(rows) ? rows : []).map((r) => ({ ...r, course_uuid: c.uuid })),
           fact: { id: c.uuid, code, current, target: g.target, items: (c.assignments || []).filter((a) => a.score == null) },
         };

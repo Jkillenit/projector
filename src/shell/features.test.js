@@ -23,5 +23,6 @@ describe("flagsFrom", () => {
     expect(flagsFrom({ stored: "classesFirstHome" }).classesFirstHome).toBe(true);
     expect(flagsFrom({ stored: "classesFirstHome", search: "?flags=-classesFirstHome" }).classesFirstHome).toBe(false);
     expect(flagsFrom({ search: "?x=1&flags=classesFirstHome" }).classesFirstHome).toBe(true);
+    expect(flagsFrom({ search: "?flags=classesFirstHome,courseSidebar" })).toEqual({ classesFirstHome: true, courseSidebar: true });
   });
 });

@@ -8,6 +8,7 @@ import { CourseScreen } from "../features/courses/CourseScreen.jsx";
 import { useOrgIds } from "../features/courses/useOrgIds.js";
 import { useUserCourses } from "../features/courses/useUserCourses.js";
 import { CalendarScreen } from "../features/dashboard/CalendarView.jsx";
+import { ClassesScreen } from "../features/courses/ClassesScreen.jsx";
 import { friendlyCourse, getCourseLabel } from "../features/dashboard/courseLabel.js";
 import { isShell } from "../features/dashboard/courseColor.js";
 import { UiGallery } from "../features/dev/UiGallery.jsx";
@@ -145,6 +146,7 @@ function Shell({ profile, onProfile, onPickStudent, theme, onTheme, mode }) {
   let screen;
   if (!loaded) screen = <div className="page" aria-busy="true" />;
   else if (route.name === "course" && activeCourse) screen = <CourseScreen key={activeCourse.id} course={activeCourse} tab={route.parts[1] || "overview"} item={route.query.item} label={getCourseLabel(activeCourse)} actions={actions} />;
+  else if (route.name === "classes") screen = <ClassesScreen gradesShown={gradesShown} onGradesShown={setGradesShown} />;
   else if (route.name === "ask") screen = <AskScreen profile={profile} seed={askSeed} actions={actions} courseCodes={sideCourses.filter((c) => !c.gray).map((c) => c.label)} />;
   else if (route.name === "campus") screen = <CampusScreen profile={profile} section={route.parts[0]} resourceId={route.parts[0] === "r" ? route.parts[1] : null} actions={actions} />;
   else if (route.name === "events") screen = <EventsScreen profile={profile} />;

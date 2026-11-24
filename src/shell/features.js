@@ -4,8 +4,9 @@
  * or save "name,name" under the browser storage key "al.flags".
  *
  * - classesFirstHome: Home's old order, with classes and homework first (#210).
+ * - courseSidebar: one sidebar entry per course, as before the Classes page (#213).
  */
-export const DEFAULTS = Object.freeze({ classesFirstHome: false });
+export const DEFAULTS = Object.freeze({ classesFirstHome: false, courseSidebar: false });
 
 const STORE_KEY = "al.flags";
 
