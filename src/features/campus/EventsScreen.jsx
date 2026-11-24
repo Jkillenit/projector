@@ -45,7 +45,7 @@ export function EventsScreen({ profile }) {
       {status === "ready" && !shown.length ? (
         <p className="t-small t-muted">
           {filter === "mine" ? (
-            <>Nothing matches your interests in the next two weeks. <TextLink href={routeHref("settings")}>Edit interests</TextLink></>
+            <>Nothing matches your interests in the next two weeks. <TextLink href={routeHref("profile")}>Edit interests</TextLink></>
           ) : (
             "No events in the next two weeks."
           )}

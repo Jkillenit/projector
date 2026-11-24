@@ -48,7 +48,7 @@ function useMinute() {
   }, []);
 }
 
-/** Live / Demo status, last sync and the Settings button. */
+/** Live / Demo status, last sync and the Profile button. */
 export function SyncBox({ mode, studentName, sync, expired, onSettings }) {
   useMinute();
   const state = mode !== "live" ? "demo" : expired ? "expired" : sync?.running ? "syncing" : "live";
@@ -59,13 +59,13 @@ export function SyncBox({ mode, studentName, sync, expired, onSettings }) {
     : state === "syncing" ? "Syncing…"
     : syncedAgo(sync?.lastSyncAt) || "Not synced yet";
   return (
-    <div className="sb-sync" data-tip="Settings" data-tip-sub={`${top}. ${bottom}`}>
+    <div className="sb-sync" data-tip="Profile" data-tip-sub={`${top}. ${bottom}`}>
       <span className={`sb-sync-dot is-${state}`} aria-hidden />
       <span className="sb-sync-text" role="status">
         <span className="sb-sync-top">{top}</span>
         <span className="sb-sync-bottom">{bottom}</span>
       </span>
-      <button type="button" className="sb-icon-btn" aria-label="Settings" onClick={onSettings}>
+      <button type="button" className="sb-icon-btn" aria-label="Profile" onClick={onSettings}>
         <Icon name="settings" size={16} />
       </button>
     </div>

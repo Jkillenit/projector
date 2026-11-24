@@ -1208,6 +1208,9 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .set-page { max-width: 760px; }
 .set-field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-2); }
 .set-seg { max-width: 360px; }
+.set-field .t-small { font-weight: 400; }
+/* Profile contact fields (#214): what to fix, in the warning text color. */
+.set-error { color: var(--warn-text); }
 .set-switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; font-size: 16px; cursor: pointer; }
 .set-switch input { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
 .set-error { color: var(--warn-text); }

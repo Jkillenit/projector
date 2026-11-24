@@ -115,7 +115,7 @@ export function PlanImporter() {
           <div>
             <Button variant="primary" onClick={save}>{result.check.ok ? "Save indoor file" : "Save anyway"}</Button>
           </div>
-          <p className="t-small t-muted">Put the saved file in Settings, Indoor maps on this computer. Never commit it (rule 14).</p>
+          <p className="t-small t-muted">Put the saved file in Profile, Indoor maps on this computer. Never commit it (rule 14).</p>
         </Card>
       ) : null}
     </div>

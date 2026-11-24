@@ -64,7 +64,7 @@ function Clubs({ profile, sectionRef }) {
       <div className="campus-clubs-head">
         <h2 id="clubs-h" className="t-title">Clubs that fit you</h2>
         <span className="t-small t-faint">{fromSource ? `Matched to your interests from The SOURCE${stale ? ". Showing the last list we got" : ""}` : "Matched to your interests and your free time"}</span>
-        <TextLink href={routeHref("settings")} className="card-foot-end">Edit interests</TextLink>
+        <TextLink href={routeHref("profile")} className="card-foot-end">Edit interests</TextLink>
       </div>
       {status === "loading" ? <p className="t-small t-muted">Getting clubs…</p> : null}
       {status === "error" ? (

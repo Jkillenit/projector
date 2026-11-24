@@ -20,17 +20,17 @@ export function MyClasses({ week, indoor, spots, unplaced, range, onPick, onAdd,
       <h2 className="t-title">{range === "today" ? "Your day" : "Your week"}</h2>
       {week.status === "notConnected" ? (
         <p className="t-small t-muted">
-          See your classes here: <TextLink href={routeHref("settings")}>connect your UA account in Settings</TextLink>
+          See your classes here: <TextLink href={routeHref("profile")}>connect your UA account in Profile</TextLink>
         </p>
       ) : week.status === "signedOut" || week.status === "error" ? (
         <p className="t-small t-muted">
-          {week.signedOut ? "myBama signed you out." : "Could not get your classes right now."} <TextLink href={routeHref("settings")}>Sign in again</TextLink>
+          {week.signedOut ? "myBama signed you out." : "Could not get your classes right now."} <TextLink href={routeHref("profile")}>Sign in again</TextLink>
         </p>
       ) : null}
       {week.stale ? <p className="t-small t-faint">Classes from your last myBama check.</p> : null}
       {week.status === "syllabus" ? (
         <p className="t-small t-faint">
-          From your syllabi. For your myBama schedule, <TextLink href={routeHref("settings")}>connect your UA account</TextLink>
+          From your syllabi. For your myBama schedule, <TextLink href={routeHref("profile")}>connect your UA account</TextLink>
         </p>
       ) : null}
       {rows.length ? (
