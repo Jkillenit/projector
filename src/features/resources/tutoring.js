@@ -36,6 +36,11 @@ export function placeTutoring(sessions, places) {
   });
 }
 
+/** Every course that has tutoring, once each: the guide's list when a class number fits none of the student's (#211). */
+export function tutoringCourses({ sessions = SESSIONS } = {}) {
+  return [...new Set(sessions.map((s) => courseKey(s.course)).filter(Boolean))];
+}
+
 /** Tutoring for one course, placed on the map. Empty when the course has none. */
 export function tutoringFor(courseCode, { sessions = SESSIONS, places = PLACES } = {}) {
   const key = courseKey(courseCode);
