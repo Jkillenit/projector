@@ -4,11 +4,12 @@ import { Button, Card, Chip, CodeTag, CourseDot, Icon, Loading, Notice, Pill, Pr
 import { courseStore } from "../../db/courseStore.js";
 import { useColorLookup, useCourseStyle } from "../../shell/CourseColors.jsx";
 import { courseStyle } from "../dashboard/courseColor.js";
+import { flagOn } from "../../shell/features.js";
 import { routeHref } from "../../shell/useRoute.js";
 import { useOrgIds } from "../courses/useOrgIds.js";
 import { formatPct } from "../today/priority.js";
 import { openInBlackboard } from "../mirror/openInBlackboard.js";
-import { coursePicks } from "./coursePicks.js";
+import { coursePicks, groupPicks } from "./coursePicks.js";
 import { greeting } from "./dueSoon.js";
 
 import { useCampusEvents } from "../campus/useCampusEvents.js";
@@ -193,14 +194,43 @@ function HelpItem({ p, style }) {
   );
 }
 
-function HelpCard({ facts }) {
+/** Resources first (#210): one card per resource with a line for each class it helps, grade gaps included. */
+function GroupedHelpItem({ g }) {
   const colorOf = useColorLookup();
+  return (
+    <li className="home-help-item">
+      {g.reasons.map((x) => (
+        <span key={x.key} className="home-help-for" style={courseStyle(colorOf(x.courseId))}>
+          <CourseDot size={6} />
+          {`For ${x.code} · ${x.why}`}
+        </span>
+      ))}
+      <span className="home-help-name">{g.resource.name}</span>
+      <span className="t-small t-muted">{g.resource.description}</span>
+      <TextLink href={routeHref("campus", ["r", g.resource.id])}>How to get in</TextLink>
+      <ShowOnMap locationId={g.resource.locationId} where={g.resource.location} />
+    </li>
+  );
+}
+
+/**
+ * `gaps`: the resources-first Home (#210). Grade gaps count too, and picks for the same resource share one card.
+ * A gap pick says "under your target", never the grade, because Home shows picks while grades are hidden.
+ */
+function HelpCard({ facts, gaps = false }) {
+  const colorOf = useColorLookup();
+  const general = () => GENERAL.map((id) => ({ key: id, resource: resources.find((r) => r.id === id) })).filter((p) => p.resource);
   const picks = useMemo(() => {
-    // Only picks tied to a real task; one card per resource.
+    if (gaps) {
+      const groups = groupPicks(coursePicks(facts, resources, { max: 6 }));
+      return groups.length ? groups : general().map((p) => ({ ...p, reasons: [] }));
+    }
+    // The old Home: picks tied to a real task only; one card per resource.
     const seen = new Set();
     const found = coursePicks(facts, resources).filter((p) => !p.key.startsWith("gap:") && !seen.has(p.resource.id) && seen.add(p.resource.id));
-    return found.length ? found : GENERAL.map((id) => ({ key: id, resource: resources.find((r) => r.id === id) })).filter((p) => p.resource);
-  }, [facts]);
+    return found.length ? found : general();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facts, gaps]);
   return (
     <Card aria-labelledby="help-h">
       <div className="card-head">
@@ -208,7 +238,7 @@ function HelpCard({ facts }) {
         <TextLink href={routeHref("campus")}>All resources</TextLink>
       </div>
       <ul className="home-help">
-        {picks.map((p) => <HelpItem key={p.key} p={p} style={p.courseId ? courseStyle(colorOf(p.courseId)) : undefined} />)}
+        {picks.map((p) => (p.reasons?.length ? <GroupedHelpItem key={p.key} g={p} /> : <HelpItem key={p.key} p={p} style={p.courseId ? courseStyle(colorOf(p.courseId)) : undefined} />))}
       </ul>
     </Card>
   );
@@ -295,9 +325,10 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
   const now = data.now || new Date();
   const suggestions = useMemo(() => askSuggestions(data.tasks || [], profile.interests), [data.tasks, profile.interests]);
   const first = (profile.name || "").trim().split(/\s+/)[0];
+  const classesFirst = flagOn("classesFirstHome");
 
   return (
-    <div className="page">
+    <div className={classesFirst ? "page" : "page home--resources"}>
       <header className="page-head home-head">
         <h1 className="t-display">{first ? `${greeting()}, ${first}` : greeting()}</h1>
         {data.loaded ? <p className="page-sub">{subtitleText(new Date(), data.dueCount, newCount)}</p> : null}
@@ -308,29 +339,61 @@ export function FrontDoorScreen({ profile, mode, expired, onSignIn, gradesShown,
         <Notice action="Sign in again" onAction={onSignIn}>Your Blackboard sign in ran out. Due dates and grades may be a little old.</Notice>
       ) : null}
 
-      <TomorrowWalk />
-
-      <div className="home-cols">
-        <div className="home-main" aria-busy={!data.loaded || undefined}>
-          {!data.loaded ? (
-            <Loading>Loading your week…</Loading>
-          ) : (
-            <>
-              <HelpCard facts={data.facts} />
-              <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
-              <Tonight tasks={data.tasks} now={now} />
-              <ThisWeek week={data.week} />
-              <EventsCard interests={profile.interests} />
-            </>
-          )}
-        </div>
-        <aside className="home-side" aria-label="Guide and map">
-          <GuideCard first={first} />
-          <Suspense fallback={<MapLoading />}>
-            <MapPreview />
-          </Suspense>
-        </aside>
-      </div>
+      {classesFirst ? (
+        // The old order, classes and homework first. Kept behind the classesFirstHome flag (#210).
+        <>
+          <TomorrowWalk />
+          <div className="home-cols">
+            <div className="home-main" aria-busy={!data.loaded || undefined}>
+              {!data.loaded ? (
+                <Loading>Loading your week…</Loading>
+              ) : (
+                <>
+                  <HelpCard facts={data.facts} />
+                  <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
+                  <Tonight tasks={data.tasks} now={now} />
+                  <ThisWeek week={data.week} />
+                  <EventsCard interests={profile.interests} />
+                </>
+              )}
+            </div>
+            <aside className="home-side" aria-label="Guide and map">
+              <GuideCard first={first} />
+              <Suspense fallback={<MapLoading />}>
+                <MapPreview />
+              </Suspense>
+            </aside>
+          </div>
+        </>
+      ) : (
+        // Resources first (#210): ask, campus help and the map above the fold; classes and homework below.
+        <>
+          <div className="home-top" aria-busy={!data.loaded || undefined}>
+            {data.loaded ? <HelpCard facts={data.facts} gaps /> : <Loading>Finding help for you…</Loading>}
+            <Suspense fallback={<MapLoading />}>
+              <MapPreview />
+            </Suspense>
+          </div>
+          <TomorrowWalk />
+          <div className="home-cols">
+            <div className="home-main" aria-busy={!data.loaded || undefined}>
+              {!data.loaded ? (
+                <Loading>Loading your week…</Loading>
+              ) : (
+                <>
+                  <ClassesCard courses={data.courses} shown={gradesShown} onShown={onGradesShown} freshFor={freshFor} />
+                  <Tonight tasks={data.tasks} now={now} />
+                  <ThisWeek week={data.week} />
+                  <EventsCard interests={profile.interests} />
+                </>
+              )}
+            </div>
+            <aside className="home-side" aria-label="Guide">
+              <GuideCard first={first} />
+            </aside>
+          </div>
+        </>
+      )}
     </div>
   );
 }

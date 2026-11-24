@@ -45,3 +45,19 @@ export function coursePicks(courses, resources, { now = new Date(), max = 3 } = 
   const rank = (p) => ["exam", "write", "gap"].indexOf(p.key.split(":")[0]);
   return out.sort((a, b) => rank(a) - rank(b)).slice(0, max);
 }
+
+/**
+ * One card per resource, with every reason it fits (#210): "Ingenuity Lab tutoring, for MATH 126 exam Tuesday
+ * and for CH 101 under your target". Keeps the picks' order. Returns at most `max` of { key, resource, reasons }.
+ */
+export function groupPicks(picks, { max = 3 } = {}) {
+  const groups = new Map();
+  for (const p of picks || []) {
+    if (!groups.has(p.resource.id)) groups.set(p.resource.id, { key: p.resource.id, resource: p.resource, reasons: [] });
+    const { reasons } = groups.get(p.resource.id);
+    const same = reasons.find((x) => x.courseId === p.courseId);
+    if (same) same.why = `${same.why}, ${p.why}`;
+    else reasons.push({ key: p.key, courseId: p.courseId, code: p.code, why: p.why });
+  }
+  return [...groups.values()].slice(0, max);
+}
