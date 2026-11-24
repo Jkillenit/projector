@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, Icon, Segmented } from "../../components/ui/index.jsx";
+import { Card, Icon, Pill, Segmented, TextLink } from "../../components/ui/index.jsx";
 import { TaskLine } from "../../components/TaskLine.jsx";
 import { courseStore } from "../../db/courseStore.js";
 import { loadJson, saveJson } from "../../lib/storage.js";
 import { useCourseStyle } from "../../shell/CourseColors.jsx";
 import { routeHref } from "../../shell/useRoute.js";
 import { getCourseLabel } from "./courseLabel.js";
+import { eventsByDay, tagEvents } from "./calendarEvents.js";
+import { eventTime } from "../campus/campusEvents.js";
+import { useCampusEvents } from "../campus/useCampusEvents.js";
+import { mapLink } from "../map/locations.js";
 import { dayKey, groupByDay, monthGrid, rangeFor, shiftWeek, weekDays, weekStart } from "./calendarWeek.js";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -21,8 +25,30 @@ function weekLabel(days) {
   return `${fmt(days[0], days[0].getFullYear() !== days[6].getFullYear())} – ${fmt(days[6], true)}`;
 }
 
-/** Week or month grid in the This week cell style; picking a day lists its work as task rows. `day`: YYYY-MM-DD. */
-export function CalendarScreen({ day }) {
+/** One campus event in the day list (#215): the title opens its pin on the map; an interest match says why. */
+function EventLine({ e }) {
+  const link = mapLink({ where: e.where, online: e.online });
+  return (
+    <div className={`cal-event${e.match.length ? " is-match" : ""}`}>
+      <span className="t-small t-faint">{eventTime(e.start)}</span>
+      {link?.href ? <TextLink href={link.href} className="cal-event-title">{e.title}</TextLink> : <span className="cal-event-title">{e.title}</span>}
+      <span className="t-small t-muted">{[e.where, e.host].filter(Boolean).join(" · ")}</span>
+      {e.why ? (
+        <span className="cal-event-why">
+          <Pill tone="good" tiny>For you</Pill>
+          <span className="t-small">{e.why}</span>
+        </span>
+      ) : null}
+      {link?.note ? <span className="t-small t-faint">{link.note}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Week or month grid in the This week cell style; picking a day lists its work as task rows, then campus events
+ * (#215), with the ones that fit the student's interests marked. `day`: YYYY-MM-DD. `profile`: for interests.
+ */
+export function CalendarScreen({ day, profile }) {
   const start = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? at(day) : new Date();
   const [mode, setMode] = useState(() => (loadJson(MODE_KEY, "month") === "week" ? "week" : "month"));
   const [week, setWeek] = useState(() => weekStart(start));
@@ -47,6 +73,8 @@ export function CalendarScreen({ day }) {
   }, [load]);
 
   const byDay = useMemo(() => groupByDay(items), [items]);
+  const { events } = useCampusEvents();
+  const evByDay = useMemo(() => eventsByDay(tagEvents(events, profile?.interests)), [events, profile?.interests]);
   const pickMode = (next) => {
     setMode(next);
     saveJson(MODE_KEY, next);
@@ -68,13 +96,14 @@ export function CalendarScreen({ day }) {
 
   const todayKey = dayKey(new Date());
   const list = byDay.get(selected) || [];
+  const dayEvents = evByDay.get(selected) || [];
   const unit = mode === "week" ? "week" : "month";
 
   return (
     <div className="page">
       <header className="page-head">
         <h1 className="t-display">Calendar</h1>
-        <p className="page-sub">Everything due, from every class.</p>
+        <p className="page-sub">Everything due, from every class, and what is on around campus.</p>
       </header>
       <Card>
         <div className="cal-head">
@@ -96,6 +125,8 @@ export function CalendarScreen({ day }) {
           {days.map((d) => {
             const key = dayKey(d);
             const due = byDay.get(key) || [];
+            const evs = evByDay.get(key) || [];
+            const forYou = evs.filter((e) => e.match.length).length;
             const outside = mode === "month" && d.getMonth() !== month.getMonth();
             return (
               <button
@@ -103,7 +134,7 @@ export function CalendarScreen({ day }) {
                 type="button"
                 className={`home-day cal-day${key === todayKey ? " is-today" : ""}${key === selected ? " is-selected" : ""}${outside ? " is-outside" : ""}`}
                 aria-pressed={key === selected}
-                aria-label={`${d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}, ${due.length} due`}
+                aria-label={`${d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}, ${due.length} due${evs.length ? `, ${evs.length} campus ${evs.length === 1 ? "event" : "events"}${forYou ? `, ${forYou} for you` : ""}` : ""}`}
                 onClick={() => setSelected(key)}
               >
                 <span className="home-day-num num">{d.getDate()}</span>
@@ -111,6 +142,11 @@ export function CalendarScreen({ day }) {
                   {due.slice(0, 4).map((a) => <Dot key={a.uuid} id={a.course_uuid} />)}
                   {due.length > 4 ? <span className="home-day-more">+{due.length - 4}</span> : null}
                 </span>
+                {evs.length ? (
+                  <span className="cal-ev-dots" aria-hidden>
+                    {evs.slice(0, 3).map((e) => <span key={e.id} className={`cal-ev-dot${e.match.length ? " is-match" : ""}`} />)}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -127,6 +163,12 @@ export function CalendarScreen({ day }) {
         ) : (
           <p className="t-muted">Nothing due.</p>
         )}
+        {dayEvents.length ? (
+          <section className="cal-events" aria-labelledby="cal-ev-h">
+            <h3 id="cal-ev-h" className="t-label t-faint">On campus</h3>
+            {dayEvents.map((e) => <EventLine key={e.id} e={e} />)}
+          </section>
+        ) : null}
       </Card>
     </div>
   );

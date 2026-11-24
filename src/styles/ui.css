@@ -968,6 +968,15 @@ details[open] > .asg-summary .asg-caret { transform: rotate(90deg); }
 .cal-weekday { padding: 0 4px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--faint); text-align: center; }
 .cal-day { min-height: 64px; justify-content: flex-start; background: transparent; font: inherit; }
 .cal-day.is-selected { border-color: var(--border-hover); background: var(--surface-2); }
+/* Campus events on the Calendar (#215): square dots under the due dots, filled when an event fits your interests. */
+.cal-ev-dots { display: flex; justify-content: center; gap: 3px; min-height: 6px; }
+.cal-ev-dot { width: 6px; height: 6px; border: 1px solid var(--faint); }
+.cal-ev-dot.is-match { border-color: var(--accent); background: var(--accent); }
+.cal-events { display: flex; flex-direction: column; gap: 8px; }
+.cal-event { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: var(--r-sm); }
+.cal-event.is-match { border-color: var(--accent-line); background: var(--accent-tint); }
+.cal-event-title { font-weight: 600; }
+.cal-event-why { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cal-day.is-today.is-selected { background: var(--today-bg); border-color: var(--today-line); }
 .cal-day.is-today.is-selected:not(:focus-visible) { outline: 1px solid var(--today-line); outline-offset: -1px; }
 .cal-day.is-outside { opacity: 0.45; }
