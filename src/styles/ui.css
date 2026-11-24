@@ -684,14 +684,27 @@ select.ui-input { padding-right: 8px; }
 .home-map-credit { position: absolute; right: 6px; bottom: 6px; padding: 1px 6px; border-radius: var(--r-sm); background: var(--surface); font-size: 12px; line-height: 16px; color: var(--muted); }
 .home-map-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px 4px; }
 .home-map-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Resources first (#210): campus help and the map side by side at the top, above the fold at 1280x720.
+   On a phone the map card comes first and short, so the ask bar, the map and campus help all show on the first screen.
+   Reading order stays help first, then the map. */
+.home-top {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+}
+.home-top .home-map-svg { aspect-ratio: 4 / 3; }
 @media (max-width: 1199px) {
-  .home-cols, .home-main { gap: 20px; }
+  .home-cols, .home-main, .home-top { gap: 20px; }
 }
 @media (max-width: 899px) {
   .home-cols { gap: 16px; grid-template-columns: minmax(0, 1fr); }
   .home-main { gap: 16px; }
   .home-side { position: static; gap: 16px; }
   .home-map-svg { aspect-ratio: 16 / 9; }
+  .home-top { gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .home-top .home-map { order: -1; }
+  .home-top .home-map-svg { aspect-ratio: 5 / 2; }
 }
 .home-card { gap: 0; }
 .home-tonight-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 0 4px 12px; }
@@ -774,6 +787,12 @@ select.ui-input { padding-right: 8px; }
   .home-ask { flex-wrap: wrap; }
   .home-ask .ui-input { flex: 1 1 100%; }
   .home-ask .ui-btn { width: 100%; }
+  /* Resources first: the Ask button stays on the input's line, and the suggestions scroll in one row. */
+  .home--resources .home-ask { flex-wrap: nowrap; }
+  .home--resources .home-ask .ui-input { flex: 1 1 auto; min-width: 0; }
+  .home--resources .home-ask .ui-btn { width: auto; }
+  .home--resources .home-askbar .ui-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .home--resources .home-askbar .ui-chip { flex: 0 0 auto; }
 }
 
 /* ─── Shared layouts ─── */
